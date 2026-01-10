@@ -26,6 +26,7 @@ export class AudioEngine {
   private pipeline: AudioPipeline
   private currentPreset: Preset | null = null
   private isMuted = false
+  private globalLFOEngine: LFOEngine | null = null // For visualization
 
   private constructor() {
     this.voicePool = new VoicePool(8) // Max 8 voix
@@ -159,6 +160,12 @@ export class AudioEngine {
     this.currentPreset = preset
     this.masterGain.gain.value = preset.masterVolume
 
+    // Create global LFO engine for visualization
+    if (this.globalLFOEngine) {
+      this.globalLFOEngine.dispose()
+    }
+    this.globalLFOEngine = new LFOEngine(preset.lfos, preset.lfoCombineMode)
+
     console.log(`✅ Preset loaded: ${preset.name} (Algorithm ${String(preset.algorithm)})`)
   }
 
@@ -232,6 +239,13 @@ export class AudioEngine {
   }
 
   /**
+   * Get global LFO engine (for visualisation)
+   */
+  getGlobalLFOEngine(): LFOEngine | null {
+    return this.globalLFOEngine
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
@@ -239,6 +253,9 @@ export class AudioEngine {
     this.masterGain.dispose()
     this.pipeline.dispose()
     this.voicePool.dispose()
+    if (this.globalLFOEngine) {
+      this.globalLFOEngine.dispose()
+    }
     AudioEngine.instance = null
   }
 }

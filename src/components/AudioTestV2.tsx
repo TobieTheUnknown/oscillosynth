@@ -128,8 +128,6 @@ export function AudioTestV2() {
           {currentPreset && (
             <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
               <LFOVisualizer
-                lfoParams={currentPreset.lfos}
-                combineMode={currentPreset.lfoCombineMode}
                 width={Math.min(800, window.innerWidth - 64)}
                 height={400}
               />

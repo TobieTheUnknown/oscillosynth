@@ -5,11 +5,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { LFOEngine } from '../audio/LFOEngine'
-import { LFOParams, LFOCombineMode } from '../audio/types'
+import { audioEngine } from '../audio/AudioEngine'
 
 interface LFOVisualizerProps {
-  lfoParams: [LFOParams, LFOParams, LFOParams, LFOParams]
-  combineMode: LFOCombineMode
   width?: number
   height?: number
 }
@@ -24,15 +22,9 @@ const LFO_COLORS = [
 
 const COMBINED_COLOR = 'rgba(255, 255, 255, 1.0)' // White for combined
 
-export function LFOVisualizer({
-  lfoParams,
-  combineMode,
-  width = 800,
-  height = 400,
-}: LFOVisualizerProps) {
+export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
-  const lfoEngineRef = useRef<LFOEngine | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
 
   useEffect(() => {
@@ -48,9 +40,6 @@ export function LFOVisualizer({
     canvas.height = height * dpr
     ctx.scale(dpr, dpr)
 
-    // Create LFO engine for visualization
-    lfoEngineRef.current = new LFOEngine(lfoParams, combineMode)
-
     console.log('✅ LFO Visualizer initialized')
 
     let phase = 0
@@ -58,7 +47,12 @@ export function LFOVisualizer({
 
     // Main render loop
     const render = () => {
-      if (!lfoEngineRef.current) return
+      // Get global LFO engine from audio engine
+      const lfoEngine = audioEngine.getGlobalLFOEngine()
+      if (!lfoEngine) {
+        animationFrameRef.current = requestAnimationFrame(render)
+        return
+      }
 
       phase += phaseSpeed
 
@@ -71,16 +65,16 @@ export function LFOVisualizer({
 
       // Draw each LFO
       for (let i = 0; i < 4; i++) {
-        const lfo = lfoEngineRef.current.getLFO(i as 0 | 1 | 2 | 3)
+        const lfo = lfoEngine.getLFO(i as 0 | 1 | 2 | 3)
         const color = LFO_COLORS[i] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
         drawLFO(ctx, lfo, i, width, height, phase, color)
       }
 
       // Draw combined signal
-      drawCombinedSignal(ctx, lfoEngineRef.current, width, height, phase, COMBINED_COLOR)
+      drawCombinedSignal(ctx, lfoEngine, width, height, phase, COMBINED_COLOR)
 
       // Draw phase indicators
-      drawPhaseIndicators(ctx, lfoEngineRef.current, width, height)
+      drawPhaseIndicators(ctx, lfoEngine, width, height)
 
       animationFrameRef.current = requestAnimationFrame(render)
     }
@@ -93,13 +87,9 @@ export function LFOVisualizer({
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
-      if (lfoEngineRef.current) {
-        lfoEngineRef.current.dispose()
-        lfoEngineRef.current = null
-      }
       setIsAnimating(false)
     }
-  }, [width, height, lfoParams, combineMode])
+  }, [width, height])
 
   return (
     <div
