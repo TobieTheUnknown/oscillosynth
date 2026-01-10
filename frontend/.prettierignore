@@ -1,7 +1,0 @@
-node_modules
-dist
-dist-ssr
-coverage
-.nyc_output
-*.min.js
-*.min.css
