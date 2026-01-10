@@ -9,21 +9,21 @@
 
 ---
 
-## Phase 0 : Setup Projet
+## Phase 0 : Setup Projet ✅ COMPLÉTÉ
 
 ### Infrastructure
-- [ ] 💻 Initialiser repo Git dans `/Users/TobieRaggi/Desktop/oscillosynth`
-- [ ] 💻 Configurer Vite + React + TypeScript
-- [ ] 💻 Installer dépendances core (Tone.js, Zustand)
-- [ ] 💻 Setup ESLint + Prettier
-- [ ] 💻 Créer Dockerfile + docker-compose.yml
-- [ ] 💻 Setup CI/CD basique (GitHub Actions ou équivalent)
-- [ ] 💻 Créer structure de dossiers selon specs-techniques.md
+- [x] 💻 Initialiser repo Git dans `/Users/TobieRaggi/Desktop/oscillosynth`
+- [x] 💻 Configurer Vite + React + TypeScript
+- [x] 💻 Installer dépendances core (Tone.js, Zustand)
+- [x] 💻 Setup ESLint + Prettier
+- [x] 💻 Créer Dockerfile + docker-compose.yml
+- [x] 💻 Setup CI/CD basique (GitHub Actions)
+- [x] 💻 Créer structure de dossiers selon specs-techniques.md
 
 ### Design System Initial
-- [ ] 🎨 Définir palette oscilloscope (vert phosphore + blanc)
-- [ ] 🎨 Sélectionner typographie monospace
-- [ ] 🎨 Créer tokens CSS (couleurs, spacing, tailles)
+- [x] 🎨 Définir palette oscilloscope (vert phosphore + blanc)
+- [x] 🎨 Sélectionner typographie monospace (JetBrains Mono)
+- [x] 🎨 Créer tokens CSS (couleurs, spacing, tailles)
 - [ ] 🔄 **Valider le design system avec le codeur avant UI**
 
 ---

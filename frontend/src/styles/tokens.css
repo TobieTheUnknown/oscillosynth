@@ -1,0 +1,253 @@
+/**
+ * OscilloSynth Design System
+ * Style: Oscilloscope Vintage CRT
+ * Palette: Phosphore vert/blanc sur fond noir
+ */
+
+:root {
+  /* ============================================
+     COLORS - Oscilloscope Phosphor Palette
+     ============================================ */
+
+  /* Background */
+  --color-bg: #000000;
+  --color-bg-elevated: #0a0a0a;
+  --color-bg-subtle: #050505;
+
+  /* Phosphor Green (primary trace color) */
+  --color-phosphor-green: #00FF41;
+  --color-phosphor-green-bright: #00FF88;
+  --color-phosphor-green-dim: #00AA2B;
+  --color-phosphor-green-glow: rgba(0, 255, 65, 0.6);
+  --color-phosphor-green-faint: rgba(0, 255, 65, 0.15);
+
+  /* Phosphor White (secondary trace color) */
+  --color-phosphor-white: #FFFFFF;
+  --color-phosphor-white-dim: #CCCCCC;
+  --color-phosphor-white-glow: rgba(255, 255, 255, 0.8);
+
+  /* Grid & UI elements */
+  --color-grid: #001a0a;
+  --color-grid-major: #003314;
+  --color-border: #004411;
+  --color-border-bright: #00FF41;
+
+  /* Status colors (phosphor-inspired) */
+  --color-success: #00FF41;
+  --color-warning: #FFB800;
+  --color-error: #FF3B3B;
+  --color-info: #00D4FF;
+
+  /* Text */
+  --color-text-primary: #00FF41;
+  --color-text-secondary: #FFFFFF;
+  --color-text-dim: #888888;
+  --color-text-disabled: #444444;
+
+  /* LFO colors (4 distinct phosphor hues) */
+  --color-lfo-1: #00FF41; /* Green */
+  --color-lfo-2: #00D4FF; /* Cyan */
+  --color-lfo-3: #FF00FF; /* Magenta */
+  --color-lfo-4: #FFB800; /* Amber */
+
+  /* ============================================
+     TYPOGRAPHY - Monospace Terminal
+     ============================================ */
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  --font-display: 'JetBrains Mono', monospace;
+
+  /* Font sizes */
+  --text-xs: 0.625rem;   /* 10px - Labels */
+  --text-sm: 0.75rem;    /* 12px - Secondary */
+  --text-base: 0.875rem; /* 14px - Body */
+  --text-lg: 1rem;       /* 16px - Headers */
+  --text-xl: 1.25rem;    /* 20px - Large headers */
+  --text-2xl: 1.5rem;    /* 24px - Titles */
+
+  /* Font weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-bold: 700;
+
+  /* Line heights */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Letter spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+
+  /* ============================================
+     SPACING - Compact Layout
+     ============================================ */
+
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ============================================
+     SIZING
+     ============================================ */
+
+  /* Control sizes */
+  --size-control-sm: 2rem;    /* 32px */
+  --size-control-md: 2.5rem;  /* 40px */
+  --size-control-lg: 3rem;    /* 48px */
+
+  /* Canvas dimensions */
+  --canvas-lfo-width: 800px;
+  --canvas-lfo-height: 600px;
+  --canvas-scope-width: 400px;
+  --canvas-scope-height: 300px;
+
+  /* ============================================
+     BORDERS & RADIUS
+     ============================================ */
+
+  --border-width: 1px;
+  --border-width-thick: 2px;
+
+  --radius-none: 0;
+  --radius-sm: 0.125rem;  /* 2px */
+  --radius-md: 0.25rem;   /* 4px */
+  --radius-lg: 0.5rem;    /* 8px */
+  --radius-full: 9999px;
+
+  /* ============================================
+     SHADOWS & GLOWS - CRT Phosphor Effects
+     ============================================ */
+
+  /* Text glow */
+  --glow-text-sm: 0 0 4px var(--color-phosphor-green-glow);
+  --glow-text-md: 0 0 8px var(--color-phosphor-green-glow),
+                  0 0 16px var(--color-phosphor-green-glow);
+  --glow-text-lg: 0 0 8px var(--color-phosphor-green-glow),
+                  0 0 16px var(--color-phosphor-green-glow),
+                  0 0 24px var(--color-phosphor-green-glow);
+
+  /* Trace glow (for canvas drawings) */
+  --glow-trace: 0 0 6px var(--color-phosphor-green),
+                0 0 12px var(--color-phosphor-green-glow);
+
+  /* UI element glow */
+  --glow-border: 0 0 4px var(--color-phosphor-green-glow);
+  --glow-focus: 0 0 0 2px var(--color-phosphor-green-faint),
+                0 0 8px var(--color-phosphor-green-glow);
+
+  /* ============================================
+     TRANSITIONS & ANIMATIONS
+     ============================================ */
+
+  --transition-fast: 100ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* CRT flicker animation timing */
+  --flicker-duration: 80ms;
+
+  /* ============================================
+     Z-INDEX LAYERS
+     ============================================ */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 900;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+
+  /* ============================================
+     OPACITY
+     ============================================ */
+
+  --opacity-disabled: 0.4;
+  --opacity-hover: 0.8;
+  --opacity-press: 0.6;
+}
+
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* CRT Scanline effect (subtle) */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0px,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: var(--z-tooltip);
+  opacity: 0.3;
+}
+
+/* Phosphor glow on all text by default */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text-primary);
+  text-shadow: var(--glow-text-sm);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Selection style */
+::selection {
+  background-color: var(--color-phosphor-green-glow);
+  color: var(--color-bg);
+}
+
+/* Focus visible (accessibility) */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-focus);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-phosphor-green-dim);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-phosphor-green);
+  box-shadow: var(--glow-border);
+}
