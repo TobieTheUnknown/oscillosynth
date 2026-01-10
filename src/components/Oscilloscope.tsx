@@ -162,7 +162,28 @@ function drawGrid(
 }
 
 /**
- * Draw waveform with phosphor green glow
+ * Find zero-crossing point (rising edge) for stable trigger
+ */
+function findZeroCrossing(waveform: Float32Array): number {
+  // Look for rising zero crossing in first 25% of buffer
+  const searchRange = Math.floor(waveform.length * 0.25)
+
+  for (let i = 1; i < searchRange; i++) {
+    const prev = waveform[i - 1] ?? 0
+    const curr = waveform[i] ?? 0
+
+    // Found rising edge through zero
+    if (prev <= 0 && curr > 0) {
+      return i
+    }
+  }
+
+  // No zero crossing found, start at beginning
+  return 0
+}
+
+/**
+ * Draw waveform with phosphor green glow and zero-crossing trigger
  */
 function drawWaveform(
   ctx: CanvasRenderingContext2D,
@@ -174,6 +195,12 @@ function drawWaveform(
 ): void {
   const centerY = height / 2
   const amplitude = height / 2 - 20 // Leave padding
+
+  // Find stable trigger point
+  const triggerIndex = findZeroCrossing(waveform)
+
+  // Calculate how many samples to display (approximately 20ms window)
+  const displaySamples = Math.min(width * 2, waveform.length - triggerIndex)
 
   // Draw glow layers for phosphor effect
   const glowLayers = [
@@ -189,11 +216,11 @@ function drawWaveform(
     ctx.lineJoin = 'round'
 
     ctx.beginPath()
-    const step = Math.ceil(waveform.length / width)
+    const step = displaySamples / width
 
     for (let i = 0; i < width; i++) {
-      const index = Math.floor(i * step)
-      const value = waveform[index] ?? 0
+      const sampleIndex = triggerIndex + Math.floor(i * step)
+      const value = waveform[sampleIndex] ?? 0
       const x = i
       const y = centerY + value * amplitude
 
