@@ -7,6 +7,7 @@ import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
 import { LFOVisualizer } from './LFOVisualizer'
+import { LFOEditor } from './LFOEditor'
 
 export function AudioTestV2() {
   const {
@@ -20,6 +21,7 @@ export function AudioTestV2() {
     setAlgorithm,
     noteOn,
     noteOff,
+    updateCurrentPresetLFO,
   } = useAudioEngine()
 
   const playNote = (midiNote: number) => {
@@ -130,6 +132,15 @@ export function AudioTestV2() {
                 combineMode={currentPreset.lfoCombineMode}
                 width={Math.min(800, window.innerWidth - 64)}
                 height={400}
+              />
+            </div>
+          )}
+
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
+              <LFOEditor
+                lfoParams={currentPreset.lfos}
+                onLFOChange={updateCurrentPresetLFO}
               />
             </div>
           )}

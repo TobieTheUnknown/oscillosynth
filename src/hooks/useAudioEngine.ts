@@ -96,5 +96,6 @@ export function useAudioEngine() {
     loadPreset: presetStore.loadPreset,
     saveUserPreset: presetStore.saveUserPreset,
     deleteUserPreset: presetStore.deleteUserPreset,
+    updateCurrentPresetLFO: presetStore.updateCurrentPresetLFO,
   }
 }

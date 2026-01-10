@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Preset } from '../audio/types'
+import { Preset, LFOParams } from '../audio/types'
 import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
 
@@ -21,6 +21,7 @@ interface PresetStore {
   saveUserPreset: (preset: Preset) => void
   deleteUserPreset: (presetId: string) => void
   initPresets: () => void
+  updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -82,6 +83,50 @@ export const usePresetStore = create<PresetStore>()(
         const preset = defaultPreset
         audioEngine.loadPreset(preset)
         set({ currentPresetId: preset.id, isInitialized: true })
+      },
+
+      updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated LFOs array
+        const updatedLFOs = [...currentPreset.lfos] as [
+          LFOParams,
+          LFOParams,
+          LFOParams,
+          LFOParams
+        ]
+        updatedLFOs[index] = { ...updatedLFOs[index], ...params }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          lfos: updatedLFOs,
+        }
+
+        // Reload preset in audio engine
+        audioEngine.loadPreset(updatedPreset)
+
+        // Update store (factory presets update won't persist, which is correct)
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          // Update in presets array (temporary, won't persist)
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          // Update in userPresets array (will persist)
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
       },
 
       // Getters
