@@ -1,11 +1,14 @@
 import './App.css'
+import { AudioErrorBoundary } from './components/AudioErrorBoundary'
+import { AudioTest } from './components/AudioTest'
 
 function App() {
   return (
-    <div className="app">
-      <h1>OscilloSynth</h1>
-      <p>FM Synthesizer - Phase 0 Setup Complete</p>
-    </div>
+    <AudioErrorBoundary>
+      <div className="app">
+        <AudioTest />
+      </div>
+    </AudioErrorBoundary>
   )
 }
 
