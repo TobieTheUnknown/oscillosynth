@@ -139,18 +139,18 @@ Utilisez `python ~/.claude/skills/team-dev/orchestrator-claude-code.py` pour gé
 
 ---
 
-## Phase 2 : Visualisation
+## Phase 2 : Visualisation ⚡ EN COURS
 
 ### Canvas Infrastructure
-- [ ] **[CODEUR]** Setup Canvas 2D dans composant React
-- [ ] **[CODEUR]** Détecter support OffscreenCanvas (feature detection)
-- [ ] **[CODEUR]** Créer Web Worker pour rendering canvas (si OffscreenCanvas disponible)
-- [ ] **[CODEUR]** Implémenter fallback : Canvas main thread + throttle 30fps (Safari)
-- [ ] **[CODEUR]** Implémenter pipeline : Audio Analyser → Worker/Main → ImageData → Canvas
+- [x] **[CODEUR]** Setup Canvas 2D dans composant React
+- [x] **[CODEUR]** Détecter support OffscreenCanvas (feature detection)
+- [x] **[CODEUR]** Implémenter fallback : Canvas main thread + throttle 60fps
+- [x] **[CODEUR]** Implémenter pipeline : Audio Analyser → Main Thread → Canvas
+- [x] **[UX-DESIGNER]** Designer style oscilloscope (grid, tracés phosphore, glow effect)
+- [x] **[CODEUR]** Appliquer style oscilloscope au canvas (multi-layer glow effects)
+- [ ] **[CODEUR]** Créer Web Worker pour rendering canvas (optimization, si nécessaire)
 - [ ] **[CODEUR]** Implémenter cleanup cycle Canvas (dispose ImageData, terminate workers)
 - [ ] **[CODEUR]** Implémenter double-buffering si nécessaire (prévenir flicker)
-- [ ] **[UX-DESIGNER]** Designer style oscilloscope (grid, tracés phosphore, glow effect)
-- [ ] **[CODEUR]** Appliquer style oscilloscope au canvas (shader-like effects en 2D)
 - [ ] **[TESTEUR]** Valider rendu visuel cross-browser
 - [ ] **[TESTEUR]** Tester performance : 60 FPS sur Chrome/Firefox, 30 FPS acceptable Safari
 
@@ -163,11 +163,12 @@ Utilisez `python ~/.claude/skills/team-dev/orchestrator-claude-code.py` pour gé
 - [ ] **[TESTEUR]** Test performance : 60 FPS avec 4 LFOs actifs
 
 ### Oscilloscope Audio
-- [ ] **[CODEUR]** Créer canvas séparé 400×300px pour waveform
-- [ ] **[CODEUR]** Implémenter affichage waveform audio final (20ms window)
-- [ ] **[CODEUR]** Implémenter auto-trigger zero-crossing
-- [ ] **[UX-DESIGNER]** Appliquer style tracé : 2px anti-aliased, vert phosphore
+- [x] **[CODEUR]** Créer canvas oscilloscope 800×300px pour waveform
+- [x] **[CODEUR]** Implémenter affichage waveform audio final en temps réel
+- [x] **[UX-DESIGNER]** Appliquer style tracé : multi-layer glow, vert phosphore, grid
+- [ ] **[CODEUR]** Implémenter auto-trigger zero-crossing (stabilisation waveform)
 - [ ] **[AUDIO-DESIGNER]** Valider affichage waveform avec qualité audio
+- [ ] **[CODEUR]** Optimiser window size et sampling (20ms window optimal)
 
 ---
 
