@@ -28,36 +28,45 @@
 
 ---
 
-## Phase 1 : Moteur Audio (Core)
+## Phase 1 : Moteur Audio (Core) ✅ IMPLÉMENTATION COMPLÈTE
 
 ### Engine FM Basique
-- [ ] 🔊 Architecture 4 opérateurs Tone.js
-- [ ] 🔊 Implémenter 8 algorithmes DX7-style
-- [ ] 🔊 ADSR par opérateur
-- [ ] 🔊 Paramètres : Ratio, Level, Feedback
+- [x] 🔊 Architecture 4 opérateurs Tone.js
+- [x] 🔊 Implémenter 8 algorithmes DX7-style
+- [x] 🔊 ADSR par opérateur
+- [x] 🔊 Paramètres : Ratio, Level, Feedback
 - [ ] ✅ Tests unitaires algorithmes FM
 - [ ] 🔄 **Review son avec UX-Designer (qualité audio baseline)**
 
 ### LFO Engine
-- [ ] 🔊 Créer classe LFOEngine (4 instances)
-- [ ] 🔊 Formes preset : Sine, Square, Saw, Triangle, Random
-- [ ] 🔊 Paramètres : Rate, Depth, Phase, Sync
-- [ ] 🔊 Système de combinaison : ADD, MULTIPLY, RING_MOD, CHAIN
+- [x] 🔊 Créer classe LFOEngine (4 instances)
+- [x] 🔊 Formes preset : Sine, Square, Saw, Triangle, Random
+- [x] 🔊 Paramètres : Rate, Depth, Phase, Sync
+- [x] 🔊 Système de combinaison : ADD, MULTIPLY, RING_MOD, CHAIN
 - [ ] ✅ Tests unitaires combinaisons LFO
-- [ ] 🔊 Formes custom (array 128 points + interpolation)
+- [x] 🔊 Formes custom (array 128 points + interpolation)
 
 ### Matrice de Modulation
-- [ ] 💻 Système de routage LFO → Paramètres
-- [ ] 💻 20 cibles minimum (ops, filter, global, enveloppes)
-- [ ] 💻 Intensité -100% à +100% par connexion
+- [x] 💻 Système de routage LFO → Paramètres
+- [x] 💻 20 cibles minimum (ops, filter, global, enveloppes)
+- [x] 💻 Intensité -100% à +100% par connexion
 - [ ] ✅ Tests modulation en temps réel
 
 ### Audio Pipeline
-- [ ] 🔊 Intégrer low-pass filter 24dB
-- [ ] 🔊 Limiteur anti-clipping (-0.3dB ceiling)
-- [ ] 🔊 Analyser node pour données viz
-- [ ] 🔊 Buffer adaptatif (128/256/512)
+- [x] 🔊 Intégrer low-pass filter 24dB
+- [x] 🔊 Limiteur anti-clipping (-0.3dB ceiling)
+- [x] 🔊 Analyser node pour données viz
+- [x] 🔊 Buffer adaptatif (128/256/512)
 - [ ] ✅ Tests : zéro clipping même à saturation
+
+### Intégration App
+- [x] 💻 Types TypeScript (audio/types.ts)
+- [x] 💻 Stores Zustand (audioStore, uiStore)
+- [x] 💻 Icônes SVG (9 icônes phosphore green)
+- [x] 💻 Composants UI (LFOEditor, FMControls, MatrixRouter)
+- [x] 💻 Hook useAudioEngine avec lifecycle complet
+- [x] 💻 App.tsx avec clavier QWERTY (A-K = C4-C5)
+- [~] ✅ Test end-to-end audio (serveur running, attente validation user)
 
 ---
 
