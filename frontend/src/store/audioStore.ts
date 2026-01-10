@@ -10,10 +10,9 @@ import type {
   LFOState,
   CombineMode,
   ModulationConnection,
-  AlgorithmType,
-  WaveformType,
   MIDINoteNumber,
 } from '../audio/types';
+import { AlgorithmType, WaveformType } from '../audio/types';
 
 interface AudioStore {
   // FM Synth state
