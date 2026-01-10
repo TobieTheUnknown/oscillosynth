@@ -8,6 +8,7 @@ import * as Tone from 'tone';
 import { FMSynth } from '../audio/engine/FMSynth';
 import { LFOEngine } from '../audio/engine/LFOEngine';
 import { AudioPipeline } from '../audio/engine/AudioPipeline';
+import { ModulationMatrix } from '../audio/engine/ModulationMatrix';
 import { useAudioStore } from '../store/audioStore';
 import type { MIDINoteNumber } from '../audio/types';
 
@@ -15,6 +16,7 @@ interface AudioEngineInstance {
   synth: FMSynth;
   lfoEngine: LFOEngine;
   pipeline: AudioPipeline;
+  modulationMatrix: ModulationMatrix;
   isInitialized: boolean;
 }
 
@@ -29,6 +31,7 @@ export function useAudioEngine() {
   const combineMode = useAudioStore((state) => state.combineMode);
   const filterCutoff = useAudioStore((state) => state.filterCutoff);
   const filterResonance = useAudioStore((state) => state.filterResonance);
+  const modulationConnections = useAudioStore((state) => state.modulationMatrix);
 
   /**
    * Initialize audio engine
@@ -59,11 +62,19 @@ export function useAudioEngine() {
       // Start LFOs
       lfoEngine.start();
 
+      // Create modulation matrix
+      const modulationMatrix = new ModulationMatrix(synth, lfoEngine, pipeline);
+      modulationMatrix.setConnections(modulationConnections);
+      modulationMatrix.setBaseValue('filter_cutoff', filterCutoff);
+      modulationMatrix.setBaseValue('filter_resonance', filterResonance);
+      modulationMatrix.start();
+
       // Store engine instance
       engineRef.current = {
         synth,
         lfoEngine,
         pipeline,
+        modulationMatrix,
         isInitialized: true,
       };
 
@@ -165,8 +176,19 @@ export function useAudioEngine() {
     if (engineRef.current?.isInitialized) {
       engineRef.current.pipeline.setFilterCutoff(filterCutoff);
       engineRef.current.pipeline.setFilterResonance(filterResonance);
+      engineRef.current.modulationMatrix.setBaseValue('filter_cutoff', filterCutoff);
+      engineRef.current.modulationMatrix.setBaseValue('filter_resonance', filterResonance);
     }
   }, [filterCutoff, filterResonance]);
+
+  /**
+   * Update modulation connections
+   */
+  useEffect(() => {
+    if (engineRef.current?.isInitialized) {
+      engineRef.current.modulationMatrix.setConnections(modulationConnections);
+    }
+  }, [modulationConnections]);
 
   /**
    * Cleanup on unmount
@@ -177,6 +199,7 @@ export function useAudioEngine() {
         engineRef.current.synth.dispose();
         engineRef.current.lfoEngine.dispose();
         engineRef.current.pipeline.dispose();
+        engineRef.current.modulationMatrix.dispose();
       }
     };
   }, []);
