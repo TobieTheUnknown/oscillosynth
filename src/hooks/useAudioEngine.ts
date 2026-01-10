@@ -81,12 +81,8 @@ export function useAudioEngine() {
     return undefined
   }, [audioStore.isStarted, handleKeyDown, handleKeyUp])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      audioStore.stopAll()
-    }
-  }, [audioStore])
+  // Note: No cleanup needed - audio engine persists across component mounts
+  // This allows the synth to keep playing even if the component unmounts/remounts
 
   return {
     // Audio state

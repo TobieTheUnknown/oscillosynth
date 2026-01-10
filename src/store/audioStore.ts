@@ -44,7 +44,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
   stopAll: () => {
     audioEngine.stopAll()
-    get().updateState()
+    // updateState will be called by auto-update interval
   },
 
   setMuted: (muted: boolean) => {
@@ -76,17 +76,27 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
   noteOn: (note: number, velocity = 100) => {
     audioEngine.noteOn(note, velocity)
-    get().updateState()
+    // updateState will be called by auto-update interval
   },
 
   noteOff: (note: number) => {
     audioEngine.noteOff(note)
-    get().updateState()
+    // updateState will be called by auto-update interval
   },
 
   updateState: () => {
-    const state = audioEngine.getState()
-    set(state)
+    const newState = audioEngine.getState()
+    const currentState = get()
+
+    // Only update if values have actually changed
+    if (
+      newState.isStarted !== currentState.isStarted ||
+      newState.activeVoices !== currentState.activeVoices ||
+      newState.isMuted !== currentState.isMuted ||
+      newState.currentPreset?.id !== currentState.currentPreset?.id
+    ) {
+      set(newState)
+    }
   },
 }))
 
