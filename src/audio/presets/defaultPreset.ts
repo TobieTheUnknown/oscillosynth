@@ -83,9 +83,9 @@ const defaultLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
     phase: 0,
     sync: false,
   },
-  // LFO 4: Random texture
+  // LFO 4: Sawtooth texture (random not supported by Tone.js)
   {
-    waveform: WaveformType.RANDOM,
+    waveform: WaveformType.SAWTOOTH,
     rate: 0.2,
     depth: 3,
     phase: 0,
@@ -248,7 +248,7 @@ const padLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
     sync: false,
   },
   {
-    waveform: WaveformType.RANDOM,
+    waveform: WaveformType.SAWTOOTH,
     rate: 0.1,
     depth: 8,
     phase: 0,

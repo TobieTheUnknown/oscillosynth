@@ -19,13 +19,14 @@ export enum AlgorithmType {
 
 /**
  * Forme d'onde LFO
+ * Note: RANDOM not supported by Tone.js LFO - use SAWTOOTH as alternative
  */
 export enum WaveformType {
   SINE = 'sine',
   SQUARE = 'square',
   SAWTOOTH = 'sawtooth',
   TRIANGLE = 'triangle',
-  RANDOM = 'random',
+  RANDOM = 'random', // Not supported by Tone.js - placeholder for future implementation
 }
 
 /**
