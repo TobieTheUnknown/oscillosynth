@@ -6,8 +6,7 @@
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
-import { LFOVisualizer } from './LFOVisualizer'
-import { LFOEditor } from './LFOEditor'
+import { LFOPairPanel } from './LFOPairPanel'
 
 export function AudioTestV2() {
   const {
@@ -125,23 +124,52 @@ export function AudioTestV2() {
             />
           </div>
 
-          {/* LFO Visualizer - 8 LFOs in 4 pairs */}
+          {/* LFO Pair Panels - Integrated visualizer and controls */}
           {currentPreset && (
-            <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
-              <LFOVisualizer
-                width={Math.min(800, window.innerWidth - 64)}
-                height={600}
-              />
-            </div>
-          )}
+            <div
+              style={{
+                marginBottom: 'var(--spacing-6)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--spacing-4)',
+              }}
+            >
+              {[1, 2, 3, 4].map((pairNum) => {
+                const pairNumber = pairNum as 1 | 2 | 3 | 4
+                const lfo1Index = ((pairNum - 1) * 2) as 0 | 2 | 4 | 6
+                const lfo2Index = ((pairNum - 1) * 2 + 1) as 1 | 3 | 5 | 7
 
-          {/* LFO Editor - 8 LFOs with destination routing */}
-          {currentPreset && (
-            <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
-              <LFOEditor
-                lfoParams={currentPreset.lfos}
-                onLFOChange={updateCurrentPresetLFO}
-              />
+                const LFO_COLORS = [
+                  '#00FF41',
+                  '#00FFFF',
+                  '#FFFF00',
+                  '#FF64FF',
+                  '#64C8FF',
+                  '#FF9664',
+                  '#96FF96',
+                  '#FF6496',
+                ]
+
+                return (
+                  <LFOPairPanel
+                    key={pairNumber}
+                    pairNumber={pairNumber}
+                    lfo1Params={currentPreset.lfos[lfo1Index]}
+                    lfo2Params={currentPreset.lfos[lfo2Index]}
+                    lfo1Index={lfo1Index}
+                    lfo2Index={lfo2Index}
+                    destination={currentPreset.lfos[lfo1Index].destination}
+                    color1={LFO_COLORS[lfo1Index] ?? '#00FF41'}
+                    color2={LFO_COLORS[lfo2Index] ?? '#00FFFF'}
+                    onLFO1Change={(params) => {
+                      updateCurrentPresetLFO(lfo1Index, params)
+                    }}
+                    onLFO2Change={(params) => {
+                      updateCurrentPresetLFO(lfo2Index, params)
+                    }}
+                  />
+                )
+              })}
             </div>
           )}
 

@@ -172,8 +172,9 @@ export class AudioEngine {
         break
 
       case LFODestination.AMPLITUDE:
-        // Amplitude tremolo: 0.7 to 1.3 (±30%)
-        fmEngine.applyAmplitudeModulation(1 + value * 0.3)
+        // Amplitude tremolo: 0.1 to 1.9 (±90% with clamp at 0.1 to prevent silence)
+        const ampMod = 1 + value * 0.9
+        fmEngine.applyAmplitudeModulation(Math.max(0.1, ampMod))
         break
 
       case LFODestination.FILTER_CUTOFF:

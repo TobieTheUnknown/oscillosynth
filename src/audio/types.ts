@@ -80,7 +80,7 @@ export interface OperatorParams {
 export interface LFOParams {
   waveform: WaveformType
   rate: number // 0.01 - 40 Hz
-  depth: number // 0 - 100%
+  depth: number // 0 - 200%
   phase: number // 0 - 360 degrés
   sync: boolean // Sync tempo vs free-running
   syncValue?: string // '1/16', '1/8', '1/4', '1/2', '1', '2', '4', '8' bars
