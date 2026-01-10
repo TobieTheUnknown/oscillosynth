@@ -91,6 +91,28 @@ export class FMOperator {
   }
 
   /**
+   * Apply operator level modulation
+   */
+  applyLevelModulation(baseLevel: number, modulationValue: number): void {
+    // modulationValue is -1 to 1
+    // Map to ±50% of base level
+    const modulatedLevel = baseLevel * (1 + modulationValue * 0.5)
+    const clampedLevel = Math.max(0, Math.min(100, modulatedLevel))
+    this.gain.gain.value = clampedLevel / 100
+  }
+
+  /**
+   * Apply operator ratio modulation
+   */
+  applyRatioModulation(baseRatio: number, modulationValue: number): void {
+    // modulationValue is -1 to 1
+    // Map to ±20% of base ratio
+    const modulatedRatio = baseRatio * (1 + modulationValue * 0.2)
+    const clampedRatio = Math.max(0.5, Math.min(16, modulatedRatio))
+    this.oscillator.frequency.value = this.baseFrequency * clampedRatio
+  }
+
+  /**
    * Mise à jour des paramètres en temps réel
    */
   updateParams(params: Partial<OperatorParams>): void {

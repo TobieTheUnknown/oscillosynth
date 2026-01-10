@@ -9,7 +9,7 @@ import { VoicePool, Voice } from './VoicePool'
 import { FMEngine } from './FMEngine'
 import { LFOEngine } from './LFOEngine'
 import { AudioPipeline } from './AudioPipeline'
-import { Preset, AlgorithmType, AudioEngineState } from './types'
+import { Preset, AlgorithmType, AudioEngineState, LFODestination } from './types'
 
 interface ActiveVoice {
   voice: Voice
@@ -85,20 +85,34 @@ export class AudioEngine {
     // Trigger note
     fmEngine.noteOn(frequency, velocity)
 
-    // Setup LFO modulation
-    // Paire 1 (LFO 1+2) → Pitch modulation
-    // Paire 2 (LFO 3+4) → Amplitude modulation
-    // Poll LFO values every 10ms
+    // Setup LFO modulation with dynamic routing
+    // Poll LFO values every 10ms and route to appropriate destinations
     const lfoInterval = setInterval(() => {
-      // Paire 1: Pitch modulation (vibrato)
-      const pitchValue = lfoEngine.getPair1Value() // -1 to 1
-      const cents = pitchValue * 50 // ±50 cents max modulation
-      fmEngine.applyPitchModulation(cents)
+      // Process each of the 4 LFO pairs
+      for (let pairIndex = 1; pairIndex <= 4; pairIndex++) {
+        const pairIdx = pairIndex as 1 | 2 | 3 | 4
+        const destination = lfoEngine.getPairDestination(pairIdx)
+        let value = 0
 
-      // Paire 2: Amplitude modulation (tremolo)
-      const ampValue = lfoEngine.getPair2Value() // -1 to 1
-      const ampMod = 1 + ampValue * 0.3 // 0.7 to 1.3 (±30% amplitude)
-      fmEngine.applyAmplitudeModulation(ampMod)
+        // Get pair value
+        switch (pairIdx) {
+          case 1:
+            value = lfoEngine.getPair1Value()
+            break
+          case 2:
+            value = lfoEngine.getPair2Value()
+            break
+          case 3:
+            value = lfoEngine.getPair3Value()
+            break
+          case 4:
+            value = lfoEngine.getPair4Value()
+            break
+        }
+
+        // Route to destination
+        this.applyLFOModulation(destination, value, fmEngine)
+      }
     }, 10)
 
     // Stocker voix active
@@ -142,6 +156,74 @@ export class AudioEngine {
   }
 
   /**
+   * Apply LFO modulation to the appropriate destination
+   */
+  private applyLFOModulation(
+    destination: LFODestination,
+    value: number,
+    fmEngine: FMEngine
+  ): void {
+    if (!this.currentPreset) return
+
+    switch (destination) {
+      case LFODestination.PITCH:
+        // Pitch vibrato: ±50 cents
+        fmEngine.applyPitchModulation(value * 50)
+        break
+
+      case LFODestination.AMPLITUDE:
+        // Amplitude tremolo: 0.7 to 1.3 (±30%)
+        fmEngine.applyAmplitudeModulation(1 + value * 0.3)
+        break
+
+      case LFODestination.FILTER_CUTOFF:
+        // Filter cutoff modulation
+        this.pipeline.applyFilterCutoffModulation(this.currentPreset.filter.cutoff, value)
+        break
+
+      case LFODestination.FILTER_RESONANCE:
+        // Filter resonance modulation
+        this.pipeline.applyFilterResonanceModulation(this.currentPreset.filter.resonance, value)
+        break
+
+      case LFODestination.OP1_LEVEL:
+        fmEngine.applyOperatorLevelModulation(0, this.currentPreset.operators[0].level, value)
+        break
+
+      case LFODestination.OP2_LEVEL:
+        fmEngine.applyOperatorLevelModulation(1, this.currentPreset.operators[1].level, value)
+        break
+
+      case LFODestination.OP3_LEVEL:
+        fmEngine.applyOperatorLevelModulation(2, this.currentPreset.operators[2].level, value)
+        break
+
+      case LFODestination.OP4_LEVEL:
+        fmEngine.applyOperatorLevelModulation(3, this.currentPreset.operators[3].level, value)
+        break
+
+      case LFODestination.OP1_RATIO:
+        fmEngine.applyOperatorRatioModulation(0, this.currentPreset.operators[0].ratio, value)
+        break
+
+      case LFODestination.OP2_RATIO:
+        fmEngine.applyOperatorRatioModulation(1, this.currentPreset.operators[1].ratio, value)
+        break
+
+      case LFODestination.OP3_RATIO:
+        fmEngine.applyOperatorRatioModulation(2, this.currentPreset.operators[2].ratio, value)
+        break
+
+      case LFODestination.OP4_RATIO:
+        fmEngine.applyOperatorRatioModulation(3, this.currentPreset.operators[3].ratio, value)
+        break
+
+      default:
+        console.warn(`Unknown LFO destination: ${String(destination)}`)
+    }
+  }
+
+  /**
    * Libère une voix
    */
   private releaseVoice(voiceId: number): void {
@@ -168,6 +250,11 @@ export class AudioEngine {
     this.currentPreset = preset
     this.masterGain.gain.value = preset.masterVolume
 
+    // Configure filter
+    this.pipeline.setFilterType(preset.filter.type)
+    this.pipeline.setFilterCutoff(preset.filter.cutoff)
+    this.pipeline.setFilterResonance(preset.filter.resonance)
+
     // Create global LFO engine for visualization
     if (this.globalLFOEngine) {
       this.globalLFOEngine.dispose()
@@ -175,6 +262,9 @@ export class AudioEngine {
     this.globalLFOEngine = new LFOEngine(preset.lfos, preset.lfoCombineMode)
 
     console.log(`✅ Preset loaded: ${preset.name} (Algorithm ${String(preset.algorithm)})`)
+    console.log(
+      `   Filter: ${preset.filter.type} @ ${String(preset.filter.cutoff)}Hz, Q=${String(preset.filter.resonance)}`
+    )
   }
 
   /**

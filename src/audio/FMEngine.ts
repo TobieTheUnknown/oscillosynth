@@ -178,6 +178,28 @@ export class FMEngine {
   }
 
   /**
+   * Apply level modulation to a specific operator
+   */
+  applyOperatorLevelModulation(
+    operatorIndex: 0 | 1 | 2 | 3,
+    baseLevel: number,
+    modulationValue: number
+  ): void {
+    this.operators[operatorIndex].applyLevelModulation(baseLevel, modulationValue)
+  }
+
+  /**
+   * Apply ratio modulation to a specific operator
+   */
+  applyOperatorRatioModulation(
+    operatorIndex: 0 | 1 | 2 | 3,
+    baseRatio: number,
+    modulationValue: number
+  ): void {
+    this.operators[operatorIndex].applyRatioModulation(baseRatio, modulationValue)
+  }
+
+  /**
    * Mise à jour paramètres opérateur
    */
   updateOperator(index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>): void {

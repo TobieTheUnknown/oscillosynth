@@ -54,6 +54,13 @@ export class AudioPipeline {
   }
 
   /**
+   * Set filter type
+   */
+  setFilterType(type: 'lowpass' | 'highpass' | 'bandpass' | 'notch'): void {
+    this.filter.type = type
+  }
+
+  /**
    * Set filter cutoff frequency
    */
   setFilterCutoff(frequency: number): void {
@@ -65,6 +72,29 @@ export class AudioPipeline {
    */
   setFilterResonance(q: number): void {
     this.filter.Q.value = Math.max(0.1, Math.min(30, q))
+  }
+
+  /**
+   * Apply filter cutoff modulation (cents offset from base cutoff)
+   */
+  applyFilterCutoffModulation(baseCutoff: number, modulationValue: number): void {
+    // modulationValue is -1 to 1
+    // Map to ±2 octaves (±2400 cents)
+    const cents = modulationValue * 2400
+    const semitones = cents / 100
+    const multiplier = Math.pow(2, semitones / 12)
+    const modulatedCutoff = baseCutoff * multiplier
+    this.setFilterCutoff(modulatedCutoff)
+  }
+
+  /**
+   * Apply filter resonance modulation
+   */
+  applyFilterResonanceModulation(baseResonance: number, modulationValue: number): void {
+    // modulationValue is -1 to 1
+    // Map to ±50% of base resonance
+    const modulatedResonance = baseResonance * (1 + modulationValue * 0.5)
+    this.setFilterResonance(modulatedResonance)
   }
 
   /**
