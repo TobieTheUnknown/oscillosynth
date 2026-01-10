@@ -174,9 +174,10 @@ MIDI In → Note → FM Synth (4 op)
 
 **Configuration Audio :**
 - Sample Rate : 48000 Hz (fallback 44100)
-- Buffer Size : Adaptive (128/256/512 basé sur latency monitoring)
+- Buffer Size : Adaptive (démarrer 128, monter 256→512 si underruns détectés)
 - Limiter : Threshold -0.3dB, Attack 0.003s, Release 0.01s
-- Polyphonie : 8 voix max (pour performances)
+- Polyphonie : 8 voix max avec voice stealing (LRU algorithm)
+- AudioContext unlock : Requis sur interaction utilisateur (navigateurs modernes)
 
 ---
 
@@ -220,13 +221,19 @@ MIDI In → Note → FM Synth (4 op)
 
 **Web Worker :**
 ```typescript
-// canvas.worker.ts
+// canvas.worker.ts (si OffscreenCanvas disponible)
 onmessage = (e: MessageEvent<AudioBuffer>) => {
   const waveform = analyzeBuffer(e.data);
   const imageData = renderWaveform(waveform);
   postMessage(imageData);
 };
 ```
+
+**Fallbacks Navigateurs :**
+- **Safari** : OffscreenCanvas non supporté → Canvas main thread + throttle 30fps
+- **AudioWorklet** : Tone.js utilise AudioWorklet (moderne) avec fallback ScriptProcessor automatique
+- **MIDI Web API** : Vérifier support avant activation features MIDI
+- **Feature Detection** : Toujours tester disponibilité avant utilisation (graceful degradation)
 
 ---
 
@@ -554,20 +561,55 @@ services:
 ## Points de Vigilance
 
 ### Performance
-- Profiler EARLY : dès que les 4 LFOs sont actifs
-- Target : <5% CPU idle, <50ms total latency
+- **Profiler EARLY** : dès Phase 1 (4 LFOs actifs), ne PAS attendre Phase 5
+- **Targets critiques** :
+  - Latence totale <50ms (MIDI in → audio out)
+  - CPU idle >95% sans son actif (équivalent : CPU utilisé <5%)
+  - 60 FPS visualisation Canvas (Chrome/Firefox), 30 FPS acceptable (Safari)
+  - Zéro buffer underrun en conditions normales (4 LFOs + 8 voix)
+  - Zéro clipping audio (limiteur -0.3dB effectif)
 - Monitoring continu dans DevTools Performance
 
 ### Accessibilité
-- Tous les contrôles accessibles au clavier
-- ARIA labels sur canvas
-- Focus visible
-- Contrast ratio WCAG AA minimum
+- Tous les contrôles accessibles au clavier (navigation complète sans souris)
+- ARIA labels sur canvas et composants interactifs
+- Focus visible (outline distinct)
+- Contrast ratio WCAG AA minimum (4.5:1 texte normal, 3:1 large)
+- Touch targets minimum 44×44px (iOS guidelines)
 
 ### Compatibilité
-- Test sur Chrome, Firefox, Safari, Edge
-- Test sur iPad (tactile critique)
-- Fallback si Web Audio API indisponible
+- **Navigateurs supportés** : Chrome, Firefox, Safari, Edge (dernières versions stables)
+- **Devices** : Desktop (1440px+), Laptop (1024px+), Tablet (768px+)
+- **Tests obligatoires** : iPad Pro (1024×1366), iPad (768×1024)
+- **Fallbacks requis** :
+  - OffscreenCanvas → Canvas main thread (Safari)
+  - Web Audio API indisponible → Message d'erreur gracieux
+  - MIDI API indisponible → Clavier virtuel seulement
+
+---
+
+## Métriques de Succès (Document de Référence)
+
+**Note** : Ces métriques sont la source de vérité. La checklist s'y réfère.
+
+### Performance Mesurable
+- [ ] Latence totale <50ms (mesurée via Performance API)
+- [ ] CPU idle >95% mesuré sans son actif
+- [ ] 60 FPS visualisation (Chrome/Firefox) via requestAnimationFrame timing
+- [ ] Aucun buffer underrun pendant tests charge (4 LFOs + 8 voix simultanées)
+- [ ] Zéro clipping détecté (analyser peak detection)
+
+### Qualité Code
+- [ ] Couverture tests >70% (Vitest coverage report)
+- [ ] Zero crash non géré (error boundaries + monitoring)
+- [ ] TypeScript strict mode : zéro erreur compilation
+- [ ] ESLint : zéro warning en production build
+
+### Accessibilité & UX
+- [ ] WCAG AA validé (axe-core automated tests)
+- [ ] Navigation clavier complète testée manuellement
+- [ ] Touch response <100ms sur iPad (mesure manuelle)
+- [ ] Temps onboarding <5min (test utilisateur avec tutoriel)
 
 ---
 
