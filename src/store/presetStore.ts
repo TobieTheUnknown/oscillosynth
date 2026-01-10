@@ -14,6 +14,7 @@ interface PresetStore {
   currentPresetId: string | null
   presets: Preset[]
   userPresets: Preset[]
+  isInitialized: boolean
 
   // Actions
   loadPreset: (presetId: string) => void
@@ -33,6 +34,7 @@ export const usePresetStore = create<PresetStore>()(
       currentPresetId: null,
       presets: factoryPresets,
       userPresets: [],
+      isInitialized: false,
 
       // Actions
       loadPreset: (presetId: string) => {
@@ -71,10 +73,15 @@ export const usePresetStore = create<PresetStore>()(
       },
 
       initPresets: () => {
+        // Only initialize once
+        if (get().isInitialized) {
+          return
+        }
+
         // Load default preset on init
         const preset = defaultPreset
         audioEngine.loadPreset(preset)
-        set({ currentPresetId: preset.id })
+        set({ currentPresetId: preset.id, isInitialized: true })
       },
 
       // Getters

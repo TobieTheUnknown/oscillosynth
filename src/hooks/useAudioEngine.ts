@@ -11,10 +11,10 @@ export function useAudioEngine() {
   const audioStore = useAudioStore()
   const presetStore = usePresetStore()
 
-  // Initialize on mount
+  // Initialize on mount (only once)
   useEffect(() => {
-    presetStore.initPresets()
-  }, [presetStore])
+    usePresetStore.getState().initPresets()
+  }, [])
 
   // Keyboard MIDI mapping (computer keyboard → MIDI notes)
   const keyboardMap = useMemo(() => ({
