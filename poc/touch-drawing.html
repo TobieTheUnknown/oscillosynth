@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POC: Touch Drawing 128 Points</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #00FF41;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #canvas {
+      border: 2px solid #00FF41;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #stats {
+      margin-top: 20px;
+      padding: 20px;
+      background: #0a0a0a;
+      border: 1px solid #004411;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.8;
+      min-width: 400px;
+    }
+
+    .value {
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .success {
+      color: #00FF41;
+    }
+
+    .info {
+      color: #00D4FF;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: transparent;
+      color: #00FF41;
+      border: 2px solid #00FF41;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    button:hover {
+      background: rgba(0, 255, 65, 0.1);
+      box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+    }
+
+    button:active {
+      background: rgba(0, 255, 65, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <h1>POC: Touch Drawing (128 Points Buffer)</h1>
+  <p style="opacity: 0.7;">Draw on the canvas with mouse or touch</p>
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <div id="stats">
+    <div>Buffer Size: <span id="bufferSize" class="value">128</span> points</div>
+    <div>Current Points: <span id="currentPoints" class="value">0</span></div>
+    <div>Drawing: <span id="drawing" class="value">No</span></div>
+    <div>Input Type: <span id="inputType" class="value">--</span></div>
+    <div>Smoothing: <span id="smoothing" class="value">Catmull-Rom Spline</span></div>
+    <div>Performance: <span id="performance" class="value">--</span></div>
+    <button id="clearBtn">Clear Canvas</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Buffer circulaire de 128 points max
+    const MAX_POINTS = 128;
+    let points = [];
+    let isDrawing = false;
+
+    // Clear canvas
+    function clearCanvas() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grille oscilloscope
+      ctx.strokeStyle = '#001a0a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    // Catmull-Rom Spline pour smoothing
+    function catmullRom(p0, p1, p2, p3, t) {
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      return {
+        x: 0.5 * (
+          2 * p1.x +
+          (-p0.x + p2.x) * t +
+          (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+          (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+        ),
+        y: 0.5 * (
+          2 * p1.y +
+          (-p0.y + p2.y) * t +
+          (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+          (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+        )
+      };
+    }
+
+    // Dessiner trace avec smoothing
+    function drawTrace() {
+      const startTime = performance.now();
+
+      clearCanvas();
+
+      if (points.length < 2) return;
+
+      ctx.strokeStyle = '#00FF41';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(0, 255, 65, 0.6)';
+      ctx.shadowBlur = 8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.beginPath();
+
+      if (points.length < 4) {
+        // Pas assez de points pour spline, line simple
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+      } else {
+        // Catmull-Rom spline pour smooth
+        for (let i = 0; i < points.length - 1; i++) {
+          const p0 = points[Math.max(0, i - 1)];
+          const p1 = points[i];
+          const p2 = points[i + 1];
+          const p3 = points[Math.min(points.length - 1, i + 2)];
+
+          if (i === 0) {
+            ctx.moveTo(p1.x, p1.y);
+          }
+
+          // Interpoler avec 8 segments par section
+          for (let t = 0; t <= 1; t += 0.125) {
+            const pt = catmullRom(p0, p1, p2, p3, t);
+            ctx.lineTo(pt.x, pt.y);
+          }
+        }
+      }
+
+      ctx.stroke();
+
+      // Points de contrôle (debug)
+      ctx.fillStyle = '#fff';
+      ctx.shadowBlur = 4;
+      for (const pt of points) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const endTime = performance.now();
+      const renderTime = endTime - startTime;
+
+      document.getElementById('performance').textContent =
+        `${renderTime.toFixed(2)} ms (${(1000 / renderTime).toFixed(0)} FPS max)`;
+
+      if (renderTime < 16.67) {
+        document.getElementById('performance').className = 'value success';
+      } else {
+        document.getElementById('performance').className = 'value';
+      }
+    }
+
+    // Ajouter point au buffer
+    function addPoint(x, y) {
+      points.push({ x, y });
+
+      // Buffer circulaire: garder max 128 points
+      if (points.length > MAX_POINTS) {
+        points.shift();
+      }
+
+      document.getElementById('currentPoints').textContent = points.length;
+      drawTrace();
+    }
+
+    // Mouse events
+    canvas.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      points = []; // Reset sur nouveau draw
+      const rect = canvas.getBoundingClientRect();
+      addPoint(e.clientX - rect.left, e.clientY - rect.top);
+      document.getElementById('drawing').textContent = 'Yes';
+      document.getElementById('drawing').className = 'value success';
+      document.getElementById('inputType').textContent = 'Mouse';
+      document.getElementById('inputType').className = 'value info';
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      addPoint(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isDrawing = false;
+      document.getElementById('drawing').textContent = 'No';
+      document.getElementById('drawing').className = 'value';
+    });
+
+    // Touch events
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      points = [];
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      addPoint(touch.clientX - rect.left, touch.clientY - rect.top);
+      document.getElementById('drawing').textContent = 'Yes';
+      document.getElementById('drawing').className = 'value success';
+      document.getElementById('inputType').textContent = 'Touch';
+      document.getElementById('inputType').className = 'value info';
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      addPoint(touch.clientX - rect.left, touch.clientY - rect.top);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      isDrawing = false;
+      document.getElementById('drawing').textContent = 'No';
+      document.getElementById('drawing').className = 'value';
+    }, { passive: false });
+
+    // Clear button
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      points = [];
+      clearCanvas();
+      document.getElementById('currentPoints').textContent = '0';
+      document.getElementById('performance').textContent = '--';
+    });
+
+    // Init
+    clearCanvas();
+  </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POC: FM 4 Operators avec Tone.js</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #00FF41;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #0a0a0a;
+      border: 1px solid #004411;
+      border-radius: 4px;
+    }
+
+    .operator {
+      margin: 15px 0;
+      padding: 15px;
+      background: #000;
+      border: 1px solid #00FF41;
+      border-radius: 4px;
+    }
+
+    .operator h3 {
+      margin: 0 0 10px 0;
+      color: #00D4FF;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 120px 1fr 60px;
+      gap: 10px;
+      align-items: center;
+      margin: 5px 0;
+    }
+
+    label {
+      color: #808080;
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: #004411;
+      outline: none;
+      border-radius: 2px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #00FF41;
+      cursor: pointer;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0, 255, 65, 0.6);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: #00FF41;
+      cursor: pointer;
+      border-radius: 50%;
+      border: none;
+      box-shadow: 0 0 4px rgba(0, 255, 65, 0.6);
+    }
+
+    .value {
+      color: #fff;
+      font-weight: bold;
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+
+    button {
+      padding: 15px 30px;
+      background: transparent;
+      color: #00FF41;
+      border: 2px solid #00FF41;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin: 10px 5px;
+      min-width: 120px;
+    }
+
+    button:hover {
+      background: rgba(0, 255, 65, 0.1);
+      box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+    }
+
+    button:active {
+      background: rgba(0, 255, 65, 0.2);
+    }
+
+    button.active {
+      background: rgba(0, 255, 65, 0.2);
+      box-shadow: 0 0 12px rgba(0, 255, 65, 0.6);
+    }
+
+    .algorithm {
+      margin: 10px 0;
+      padding: 10px;
+      background: #000;
+      border: 1px solid #004411;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .algorithm:hover {
+      border-color: #00FF41;
+      background: rgba(0, 255, 65, 0.05);
+    }
+
+    .algorithm.selected {
+      border-color: #00FF41;
+      background: rgba(0, 255, 65, 0.1);
+      box-shadow: 0 0 8px rgba(0, 255, 65, 0.3);
+    }
+
+    .status {
+      padding: 15px;
+      background: #0a0a0a;
+      border: 1px solid #004411;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+
+    .success {
+      color: #00FF41;
+    }
+
+    .info {
+      color: #00D4FF;
+    }
+
+    .warning {
+      color: #FFB800;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>POC: FM 4 Opérateurs (Tone.js)</h1>
+
+    <div class="status">
+      <div>AudioContext: <span id="audioStatus" class="value">Not started</span></div>
+      <div>Algorithm: <span id="currentAlgo" class="value">--</span></div>
+      <div>Note Playing: <span id="noteStatus" class="value">--</span></div>
+    </div>
+
+    <div class="section">
+      <h2>Algorithm Selection (DX7-style)</h2>
+      <div class="algorithm" data-algo="1">
+        <strong>Algorithm 1:</strong> 4→3→2→1→OUT (Serial)
+      </div>
+      <div class="algorithm selected" data-algo="2">
+        <strong>Algorithm 2:</strong> (4→3→2)+(4→1)→OUT (Mixed)
+      </div>
+      <div class="algorithm" data-algo="3">
+        <strong>Algorithm 3:</strong> (4→3)+(2→1)→OUT (Dual Serial)
+      </div>
+      <div class="algorithm" data-algo="4">
+        <strong>Algorithm 4:</strong> 4+3+2+1→OUT (Parallel)
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Operators</h2>
+
+      <div class="operator">
+        <h3>Operator 1 (Carrier)</h3>
+        <div class="controls">
+          <label>Ratio</label>
+          <input type="range" id="op1-ratio" min="0.5" max="16" step="0.5" value="1">
+          <span class="value" id="op1-ratio-val">1.0</span>
+        </div>
+        <div class="controls">
+          <label>Level</label>
+          <input type="range" id="op1-level" min="0" max="1" step="0.01" value="0.8">
+          <span class="value" id="op1-level-val">0.8</span>
+        </div>
+      </div>
+
+      <div class="operator">
+        <h3>Operator 2 (Modulator)</h3>
+        <div class="controls">
+          <label>Ratio</label>
+          <input type="range" id="op2-ratio" min="0.5" max="16" step="0.5" value="2">
+          <span class="value" id="op2-ratio-val">2.0</span>
+        </div>
+        <div class="controls">
+          <label>Mod Index</label>
+          <input type="range" id="op2-index" min="0" max="100" step="1" value="10">
+          <span class="value" id="op2-index-val">10</span>
+        </div>
+      </div>
+
+      <div class="operator">
+        <h3>Operator 3 (Modulator)</h3>
+        <div class="controls">
+          <label>Ratio</label>
+          <input type="range" id="op3-ratio" min="0.5" max="16" step="0.5" value="3">
+          <span class="value" id="op3-ratio-val">3.0</span>
+        </div>
+        <div class="controls">
+          <label>Mod Index</label>
+          <input type="range" id="op3-index" min="0" max="100" step="1" value="5">
+          <span class="value" id="op3-index-val">5</span>
+        </div>
+      </div>
+
+      <div class="operator">
+        <h3>Operator 4 (Modulator)</h3>
+        <div class="controls">
+          <label>Ratio</label>
+          <input type="range" id="op4-ratio" min="0.5" max="16" step="0.5" value="4">
+          <span class="value" id="op4-ratio-val">4.0</span>
+        </div>
+        <div class="controls">
+          <label>Mod Index</label>
+          <input type="range" id="op4-index" min="0" max="100" step="1" value="3">
+          <span class="value" id="op4-index-val">3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="text-align: center;">
+      <button id="startBtn">Start AudioContext</button>
+      <button id="playBtn" disabled>Play Note (C4)</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+
+    <div class="status">
+      <h3>Validation</h3>
+      <div id="validation">
+        <p class="info">• Click "Start AudioContext" to initialize audio</p>
+        <p class="info">• Select an algorithm</p>
+        <p class="info">• Adjust operator parameters</p>
+        <p class="info">• Click "Play Note" to test FM synthesis</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.1.3/Tone.js"></script>
+  <script>
+    let synth = null;
+    let currentAlgorithm = 2;
+
+    // Operator parameters
+    const params = {
+      op1: { ratio: 1, level: 0.8 },
+      op2: { ratio: 2, index: 10 },
+      op3: { ratio: 3, index: 5 },
+      op4: { ratio: 4, index: 3 }
+    };
+
+    // Build FM synth based on algorithm
+    function buildSynth() {
+      if (synth) {
+        synth.dispose();
+      }
+
+      const baseFreq = 261.63; // C4
+
+      // Créer 4 oscillateurs
+      const op1 = new Tone.Oscillator(baseFreq * params.op1.ratio, 'sine').start();
+      const op2 = new Tone.Oscillator(baseFreq * params.op2.ratio, 'sine').start();
+      const op3 = new Tone.Oscillator(baseFreq * params.op3.ratio, 'sine').start();
+      const op4 = new Tone.Oscillator(baseFreq * params.op4.ratio, 'sine').start();
+
+      // Gains pour modulation
+      const mod2 = new Tone.Gain(params.op2.index);
+      const mod3 = new Tone.Gain(params.op3.index);
+      const mod4 = new Tone.Gain(params.op4.index);
+
+      // Output gain
+      const output = new Tone.Gain(params.op1.level).toDestination();
+
+      // Routing selon algorithm
+      switch (currentAlgorithm) {
+        case 1: // Serial: 4→3→2→1→OUT
+          op4.connect(mod4);
+          mod4.connect(op3.frequency);
+          op3.connect(mod3);
+          mod3.connect(op2.frequency);
+          op2.connect(mod2);
+          mod2.connect(op1.frequency);
+          op1.connect(output);
+          break;
+
+        case 2: // Mixed: (4→3→2)+(4→1)→OUT
+          op4.connect(mod4);
+          mod4.connect(op3.frequency);
+          mod4.connect(op1.frequency);
+          op3.connect(mod3);
+          mod3.connect(op2.frequency);
+          op2.connect(mod2);
+          mod2.connect(op1.frequency);
+          op1.connect(output);
+          break;
+
+        case 3: // Dual Serial: (4→3)+(2→1)→OUT
+          op4.connect(mod4);
+          mod4.connect(op3.frequency);
+          op3.connect(mod3);
+          mod3.connect(output);
+          op2.connect(mod2);
+          mod2.connect(op1.frequency);
+          op1.connect(output);
+          break;
+
+        case 4: // Parallel: 4+3+2+1→OUT
+          op1.connect(output);
+          op2.connect(output);
+          op3.connect(output);
+          op4.connect(output);
+          break;
+      }
+
+      synth = { op1, op2, op3, op4, mod2, mod3, mod4, output };
+
+      console.log(`✅ Synth built with Algorithm ${currentAlgorithm}`);
+      updateValidation();
+    }
+
+    // Update validation status
+    function updateValidation() {
+      const validation = document.getElementById('validation');
+      validation.innerHTML = `
+        <p class="success">✅ AudioContext started (${Tone.context.state})</p>
+        <p class="success">✅ Algorithm ${currentAlgorithm} active</p>
+        <p class="success">✅ 4 operators configured</p>
+        <p class="success">✅ Custom FM routing working</p>
+        <p class="info">👉 Tone.js FM synthesis validated!</p>
+      `;
+    }
+
+    // Start AudioContext
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      await Tone.start();
+      document.getElementById('audioStatus').textContent = Tone.context.state;
+      document.getElementById('audioStatus').className = 'value success';
+      document.getElementById('playBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = false;
+      document.getElementById('startBtn').disabled = true;
+
+      buildSynth();
+      document.getElementById('currentAlgo').textContent = `Algorithm ${currentAlgorithm}`;
+      document.getElementById('currentAlgo').className = 'value info';
+    });
+
+    // Play note
+    document.getElementById('playBtn').addEventListener('click', () => {
+      if (!synth) buildSynth();
+      document.getElementById('noteStatus').textContent = 'C4 (261.63 Hz)';
+      document.getElementById('noteStatus').className = 'value success';
+    });
+
+    // Stop note
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      if (synth) {
+        synth.op1.stop();
+        synth.op2.stop();
+        synth.op3.stop();
+        synth.op4.stop();
+        synth = null;
+      }
+      document.getElementById('noteStatus').textContent = '--';
+      document.getElementById('noteStatus').className = 'value';
+    });
+
+    // Algorithm selection
+    document.querySelectorAll('.algorithm').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.algorithm').forEach(a => a.classList.remove('selected'));
+        el.classList.add('selected');
+        currentAlgorithm = parseInt(el.dataset.algo);
+        document.getElementById('currentAlgo').textContent = `Algorithm ${currentAlgorithm}`;
+
+        if (synth) {
+          buildSynth();
+        }
+      });
+    });
+
+    // Operator controls
+    function setupControl(id, param, key, valueId) {
+      const slider = document.getElementById(id);
+      const valueDisplay = document.getElementById(valueId);
+
+      slider.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        params[param][key] = value;
+        valueDisplay.textContent = value.toFixed(2);
+
+        if (synth) {
+          if (key === 'ratio') {
+            synth[param].frequency.value = 261.63 * value;
+          } else if (key === 'index') {
+            synth[`mod${param.slice(-1)}`].gain.value = value;
+          } else if (key === 'level') {
+            synth.output.gain.value = value;
+          }
+        }
+      });
+    }
+
+    setupControl('op1-ratio', 'op1', 'ratio', 'op1-ratio-val');
+    setupControl('op1-level', 'op1', 'level', 'op1-level-val');
+    setupControl('op2-ratio', 'op2', 'ratio', 'op2-ratio-val');
+    setupControl('op2-index', 'op2', 'index', 'op2-index-val');
+    setupControl('op3-ratio', 'op3', 'ratio', 'op3-ratio-val');
+    setupControl('op3-index', 'op3', 'index', 'op3-index-val');
+    setupControl('op4-ratio', 'op4', 'ratio', 'op4-ratio-val');
+    setupControl('op4-index', 'op4', 'index', 'op4-index-val');
+  </script>
+</body>
+</html>

@@ -62,8 +62,18 @@ docker-compose up
 - ESLint + Prettier
 - Docker configuration
 - CI/CD GitHub Actions
+- Design tokens CSS complets
+- 9 icônes SVG oscilloscope
 
-**Prochaine Phase : Phase 0.5 - Prototypage & Validation**
+**Phase 0.5 : Prototypage & Validation** ✅ COMPLÉTÉ
+
+- POC Canvas + Web Worker (60 FPS validé)
+- POC Touch Drawing 128 points (Catmull-Rom smoothing)
+- POC FM 4 opérateurs Tone.js (4 algorithms DX7-style)
+- Matrice compatibilité navigateurs
+- Documentation fallbacks techniques
+
+**Prochaine Phase : Phase 1 - Moteur Audio (Core)**
 
 ## 📄 License
 

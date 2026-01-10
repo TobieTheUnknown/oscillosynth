@@ -31,40 +31,40 @@ Utilisez `python ~/.claude/skills/team-dev/orchestrator-claude-code.py` pour gé
 
 ---
 
-## Phase 0 : Setup Projet
+## Phase 0 : Setup Projet ✅ COMPLÉTÉ
 
 ### Infrastructure
-- [ ] **[CODEUR]** Initialiser repo Git dans `/Users/TobieRaggi/Desktop/oscillosynth`
-- [ ] **[CODEUR]** Configurer Vite + React + TypeScript selon specs-techniques.md
-- [ ] **[CODEUR]** Installer dépendances core (Tone.js, Zustand)
-- [ ] **[CODEUR]** Setup ESLint + Prettier avec règles strictes
-- [ ] **[CODEUR]** Créer Dockerfile + docker-compose.yml
-- [ ] **[CODEUR]** Setup CI/CD basique (GitHub Actions)
-- [ ] **[CODEUR]** Créer structure de dossiers selon specs-techniques.md
+- [x] **[CODEUR]** Initialiser repo Git dans `/Users/TobieRaggi/Desktop/oscillosynth`
+- [x] **[CODEUR]** Configurer Vite + React + TypeScript selon specs-techniques.md
+- [x] **[CODEUR]** Installer dépendances core (Tone.js, Zustand)
+- [x] **[CODEUR]** Setup ESLint + Prettier avec règles strictes
+- [x] **[CODEUR]** Créer Dockerfile + docker-compose.yml
+- [x] **[CODEUR]** Setup CI/CD basique (GitHub Actions)
+- [x] **[CODEUR]** Créer structure de dossiers selon specs-techniques.md
 
 ### Design System Initial
-- [ ] **[UX-DESIGNER]** Définir palette oscilloscope (vert phosphore + blanc) avec tokens CSS
-- [ ] **[UX-DESIGNER]** Sélectionner typographie monospace (JetBrains Mono) et créer scale
-- [ ] **[UX-DESIGNER]** Créer tokens CSS complets (couleurs, spacing, tailles, animations)
-- [ ] **[CODEUR]** Intégrer design tokens dans le projet (CSS variables)
-- [ ] **[VISUAL-ARTIST]** Créer icônes SVG phosphore green (9 icônes minimum)
+- [x] **[UX-DESIGNER]** Définir palette oscilloscope (vert phosphore + blanc) avec tokens CSS
+- [x] **[UX-DESIGNER]** Sélectionner typographie monospace (JetBrains Mono) et créer scale
+- [x] **[UX-DESIGNER]** Créer tokens CSS complets (couleurs, spacing, tailles, animations)
+- [x] **[CODEUR]** Intégrer design tokens dans le projet (CSS variables)
+- [x] **[VISUAL-ARTIST]** Créer icônes SVG phosphore green (9 icônes minimum)
 
 ---
 
-## Phase 0.5 : Prototypage & Validation Technique
+## Phase 0.5 : Prototypage & Validation Technique ✅ COMPLÉTÉ
 
 ### POCs Critiques (Avant Phase 1)
-- [ ] **[AUDIO-DESIGNER]** POC : FM 4 opérateurs custom avec Tone.js - valider approche technique
-- [ ] **[CODEUR]** POC : Canvas rendering + Web Worker - mesurer performance réelle vs main thread
-- [ ] **[CODEUR]** POC : Touch drawing 128 points - valider UX tactile sur tablette
-- [ ] **[TESTEUR]** Créer matrice compatibilité navigateurs (Chrome, Firefox, Safari, Edge)
-- [ ] **[TESTEUR]** Tester support OffscreenCanvas (Safari fallback nécessaire)
-- [ ] **[AUDIO-DESIGNER]** Tester latence AudioContext sur différents buffers (128/256/512)
-- [ ] **[CODEUR]** Valider anti-aliasing FM (oversampling) - prévenir aliasing haute fréquence
+- [x] **[AUDIO-DESIGNER]** POC : FM 4 opérateurs custom avec Tone.js - valider approche technique
+- [x] **[CODEUR]** POC : Canvas rendering + Web Worker - mesurer performance réelle vs main thread
+- [x] **[CODEUR]** POC : Touch drawing 128 points - valider UX tactile sur tablette
+- [x] **[TESTEUR]** Créer matrice compatibilité navigateurs (Chrome, Firefox, Safari, Edge)
+- [x] **[TESTEUR]** Tester support OffscreenCanvas (Safari fallback nécessaire)
+- [x] **[AUDIO-DESIGNER]** Tester latence AudioContext sur différents buffers (128/256/512)
+- [x] **[CODEUR]** Valider anti-aliasing FM (oversampling) - prévenir aliasing haute fréquence
 
 ### Documentation Technique
-- [ ] **[CODEUR]** Créer docs/browser-compatibility.md avec résultats POCs
-- [ ] **[CODEUR]** Documenter fallbacks techniques identifiés (Safari, anciens navigateurs)
+- [x] **[CODEUR]** Créer docs/browser-compatibility.md avec résultats POCs
+- [x] **[CODEUR]** Documenter fallbacks techniques identifiés (Safari, anciens navigateurs)
 
 ---
 

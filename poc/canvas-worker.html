@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POC: Canvas + Web Worker</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #00FF41;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #canvas {
+      border: 2px solid #00FF41;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+    }
+
+    #stats {
+      margin-top: 20px;
+      padding: 20px;
+      background: #0a0a0a;
+      border: 1px solid #004411;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .value {
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .success {
+      color: #00FF41;
+    }
+
+    .warning {
+      color: #FFB800;
+    }
+
+    .error {
+      color: #FF3B30;
+    }
+  </style>
+</head>
+<body>
+  <h1>POC: Canvas Rendering + Web Worker</h1>
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <div id="stats">
+    <div>FPS: <span id="fps" class="value">--</span></div>
+    <div>Frame Time: <span id="frameTime" class="value">--</span> ms</div>
+    <div>Points Rendered: <span id="points" class="value">4096</span></div>
+    <div>Worker Active: <span id="workerStatus" class="value">--</span></div>
+    <div>Performance: <span id="performance" class="value">--</span></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Stats
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let fps = 0;
+    let frameTime = 0;
+
+    // Simulation: 4096 points oscilloscope trace
+    const NUM_POINTS = 4096;
+    let points = new Float32Array(NUM_POINTS * 2); // x,y pairs
+
+    // Worker pour calculs
+    const workerCode = `
+      let time = 0;
+      const NUM_POINTS = 4096;
+
+      self.onmessage = function(e) {
+        const { deltaTime } = e.data;
+        time += deltaTime;
+
+        const points = new Float32Array(NUM_POINTS * 2);
+
+        // Simuler Lissajous curve (test oscilloscope classique)
+        const freqX = 3;
+        const freqY = 4;
+        const phaseX = time * 0.001;
+        const phaseY = time * 0.0015;
+
+        for (let i = 0; i < NUM_POINTS; i++) {
+          const t = (i / NUM_POINTS) * Math.PI * 2;
+          const x = Math.sin(t * freqX + phaseX);
+          const y = Math.sin(t * freqY + phaseY);
+          points[i * 2] = x;
+          points[i * 2 + 1] = y;
+        }
+
+        self.postMessage({ points: points.buffer }, [points.buffer]);
+      };
+    `;
+
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    const worker = new Worker(workerUrl);
+
+    worker.onmessage = function(e) {
+      points = new Float32Array(e.data.points);
+    };
+
+    document.getElementById('workerStatus').textContent = 'Running';
+    document.getElementById('workerStatus').className = 'value success';
+
+    // Animation loop
+    function render(currentTime) {
+      const deltaTime = currentTime - lastTime;
+
+      // Envoyer frame au worker pour calculs
+      worker.postMessage({ deltaTime });
+
+      // Clear canvas
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grille oscilloscope
+      ctx.strokeStyle = '#001a0a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Dessiner trace phosphore
+      ctx.strokeStyle = '#00FF41';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = 'rgba(0, 255, 65, 0.6)';
+      ctx.shadowBlur = 8;
+
+      ctx.beginPath();
+      for (let i = 0; i < NUM_POINTS; i++) {
+        const x = (points[i * 2] * 0.4 + 0.5) * canvas.width;
+        const y = (points[i * 2 + 1] * 0.4 + 0.5) * canvas.height;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+
+      // Stats
+      frameCount++;
+      if (currentTime - lastTime > 1000) {
+        fps = frameCount;
+        frameTime = deltaTime;
+        frameCount = 0;
+        lastTime = currentTime;
+
+        // Update UI
+        document.getElementById('fps').textContent = fps;
+        document.getElementById('frameTime').textContent = frameTime.toFixed(2);
+
+        const fpsEl = document.getElementById('fps');
+        const perfEl = document.getElementById('performance');
+
+        if (fps >= 60) {
+          fpsEl.className = 'value success';
+          perfEl.textContent = '✅ Excellent (60 FPS)';
+          perfEl.className = 'value success';
+        } else if (fps >= 30) {
+          fpsEl.className = 'value warning';
+          perfEl.textContent = '⚠️ Acceptable (30-60 FPS)';
+          perfEl.className = 'value warning';
+        } else {
+          fpsEl.className = 'value error';
+          perfEl.textContent = '❌ Insuffisant (< 30 FPS)';
+          perfEl.className = 'value error';
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
