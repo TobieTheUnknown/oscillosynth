@@ -1,12 +1,12 @@
 import './App.css'
 import { AudioErrorBoundary } from './components/AudioErrorBoundary'
-import { AudioTest } from './components/AudioTest'
+import { AudioTestV2 } from './components/AudioTestV2'
 
 function App() {
   return (
     <AudioErrorBoundary>
       <div className="app">
-        <AudioTest />
+        <AudioTestV2 />
       </div>
     </AudioErrorBoundary>
   )

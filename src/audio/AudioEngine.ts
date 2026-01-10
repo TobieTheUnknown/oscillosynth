@@ -8,6 +8,7 @@ import { audioContext } from './AudioContext'
 import { VoicePool, Voice } from './VoicePool'
 import { FMEngine } from './FMEngine'
 import { LFOEngine } from './LFOEngine'
+import { AudioPipeline } from './AudioPipeline'
 import { Preset, AlgorithmType, AudioEngineState } from './types'
 
 interface ActiveVoice {
@@ -21,16 +22,24 @@ export class AudioEngine {
   private voicePool: VoicePool
   private activeVoices: Map<number, ActiveVoice> = new Map()
   private masterGain: Tone.Gain
+  private pipeline: AudioPipeline
   private currentPreset: Preset | null = null
   private isMuted = false
 
   private constructor() {
     this.voicePool = new VoicePool(8) // Max 8 voix
 
-    // Master gain → destination
-    this.masterGain = new Tone.Gain(0.7).toDestination()
+    // Master gain
+    this.masterGain = new Tone.Gain(0.7)
 
-    console.log('✅ AudioEngine initialized')
+    // Audio pipeline (filter + limiter + analyser)
+    this.pipeline = new AudioPipeline()
+
+    // Routing: masterGain → pipeline → destination
+    this.masterGain.connect(this.pipeline.connect as unknown as Tone.InputNode)
+    this.pipeline.toDestination()
+
+    console.log('✅ AudioEngine initialized with audio pipeline')
   }
 
   static getInstance(): AudioEngine {
@@ -203,11 +212,19 @@ export class AudioEngine {
   }
 
   /**
+   * Get audio pipeline (for visualisation)
+   */
+  getPipeline(): AudioPipeline {
+    return this.pipeline
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
     this.stopAll()
     this.masterGain.dispose()
+    this.pipeline.dispose()
     this.voicePool.dispose()
     AudioEngine.instance = null
   }
