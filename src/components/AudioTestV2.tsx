@@ -6,7 +6,7 @@
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
-// import { LFOVisualizer } from './LFOVisualizer'
+import { LFOVisualizer } from './LFOVisualizer'
 // import { LFOEditor } from './LFOEditor'
 
 export function AudioTestV2() {
@@ -125,17 +125,18 @@ export function AudioTestV2() {
             />
           </div>
 
-          {/* TODO: Update LFOVisualizer and LFOEditor for 8 LFOs */}
-          {/* {currentPreset && (
+          {/* LFO Visualizer - 8 LFOs in 4 pairs */}
+          {currentPreset && (
             <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
               <LFOVisualizer
                 width={Math.min(800, window.innerWidth - 64)}
-                height={400}
+                height={600}
               />
             </div>
           )}
 
-          {currentPreset && (
+          {/* TODO: Update LFOEditor for 8 LFOs */}
+          {/* {currentPreset && (
             <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
               <LFOEditor
                 lfoParams={currentPreset.lfos}

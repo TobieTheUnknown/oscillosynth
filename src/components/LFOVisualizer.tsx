@@ -1,26 +1,47 @@
 /**
  * LFO Visualizer Component
- * Canvas visualization of 4 LFOs combined in real-time
+ * Canvas visualization of 8 LFOs in 4 pairs combined in real-time
  */
 
 import { useEffect, useRef, useState } from 'react'
 import { LFOEngine } from '../audio/LFOEngine'
 import { audioEngine } from '../audio/AudioEngine'
+import { LFODestination } from '../audio/types'
 
 interface LFOVisualizerProps {
   width?: number
   height?: number
 }
 
-// LFO colors (phosphor variations)
+// LFO colors (phosphor variations) - 8 LFOs
 const LFO_COLORS = [
   'rgba(0, 255, 65, 0.8)', // LFO 1: Green
   'rgba(0, 255, 255, 0.8)', // LFO 2: Cyan
   'rgba(255, 255, 0, 0.8)', // LFO 3: Yellow
   'rgba(255, 100, 255, 0.8)', // LFO 4: Magenta
+  'rgba(100, 200, 255, 0.8)', // LFO 5: Sky Blue
+  'rgba(255, 150, 100, 0.8)', // LFO 6: Orange
+  'rgba(150, 255, 150, 0.8)', // LFO 7: Light Green
+  'rgba(255, 100, 150, 0.8)', // LFO 8: Pink
 ]
 
 const COMBINED_COLOR = 'rgba(255, 255, 255, 1.0)' // White for combined
+
+// Destination labels
+const DESTINATION_LABELS: Record<LFODestination, string> = {
+  [LFODestination.PITCH]: 'PITCH',
+  [LFODestination.AMPLITUDE]: 'AMP',
+  [LFODestination.FILTER_CUTOFF]: 'FILTER CUTOFF',
+  [LFODestination.FILTER_RESONANCE]: 'FILTER RES',
+  [LFODestination.OP1_LEVEL]: 'OP1 LEVEL',
+  [LFODestination.OP2_LEVEL]: 'OP2 LEVEL',
+  [LFODestination.OP3_LEVEL]: 'OP3 LEVEL',
+  [LFODestination.OP4_LEVEL]: 'OP4 LEVEL',
+  [LFODestination.OP1_RATIO]: 'OP1 RATIO',
+  [LFODestination.OP2_RATIO]: 'OP2 RATIO',
+  [LFODestination.OP3_RATIO]: 'OP3 RATIO',
+  [LFODestination.OP4_RATIO]: 'OP4 RATIO',
+}
 
 export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -63,31 +84,37 @@ export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps)
       // Draw grid
       drawGrid(ctx, width, height)
 
-      const halfHeight = height / 2
+      const sectionHeight = height / 4
 
-      // === PAIRE 1: LFO 1+2 (Top half) ===
-      // Draw LFO 1 and LFO 2
-      for (let i = 0; i < 2; i++) {
-        const lfo = lfoEngine.getLFO(i as 0 | 1)
-        const color = LFO_COLORS[i] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
-        drawLFOInSection(ctx, lfo, i, width, halfHeight, phase, color, 0)
-      }
-      // Draw combined pair 1
-      drawPairCombined(ctx, lfoEngine, 1, width, halfHeight, phase, 0)
-      // Draw pair 1 label
-      drawPairLabel(ctx, 'PAIR 1: PITCH', width, 20)
+      // Draw all 4 pairs
+      for (let pairIndex = 1; pairIndex <= 4; pairIndex++) {
+        const pairIdx = pairIndex as 1 | 2 | 3 | 4
+        const yOffset = (pairIndex - 1) * sectionHeight
+        const lfo1Index = ((pairIndex - 1) * 2) as 0 | 1 | 2 | 3 | 4 | 5 | 6
+        const lfo2Index = ((pairIndex - 1) * 2 + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7
 
-      // === PAIRE 2: LFO 3+4 (Bottom half) ===
-      // Draw LFO 3 and LFO 4
-      for (let i = 2; i < 4; i++) {
-        const lfo = lfoEngine.getLFO(i as 2 | 3)
-        const color = LFO_COLORS[i] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
-        drawLFOInSection(ctx, lfo, i - 2, width, halfHeight, phase, color, halfHeight)
+        // Draw LFO 1 and LFO 2 of this pair
+        const lfo1 = lfoEngine.getLFO(lfo1Index)
+        const lfo2 = lfoEngine.getLFO(lfo2Index)
+        const color1 = LFO_COLORS[lfo1Index] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
+        const color2 = LFO_COLORS[lfo2Index] ?? LFO_COLORS[1] ?? 'rgba(0, 255, 255, 0.8)'
+
+        drawLFOInSection(ctx, lfo1, 0, width, sectionHeight, phase, color1, yOffset)
+        drawLFOInSection(ctx, lfo2, 1, width, sectionHeight, phase, color2, yOffset)
+
+        // Draw combined pair signal
+        drawPairCombined(ctx, lfoEngine, pairIdx, width, sectionHeight, phase, yOffset)
+
+        // Draw pair label with destination
+        const destination = lfoEngine.getPairDestination(pairIdx)
+        const destLabel = DESTINATION_LABELS[destination] ?? 'UNKNOWN'
+        drawPairLabel(
+          ctx,
+          `PAIR ${String(pairIndex)}: ${destLabel}`,
+          width,
+          yOffset + 20
+        )
       }
-      // Draw combined pair 2
-      drawPairCombined(ctx, lfoEngine, 2, width, halfHeight, phase, halfHeight)
-      // Draw pair 2 label
-      drawPairLabel(ctx, 'PAIR 2: AMP', width, halfHeight + 20)
 
       animationFrameRef.current = requestAnimationFrame(render)
     }
@@ -230,7 +257,7 @@ function drawLFOInSection(
 function drawPairCombined(
   ctx: CanvasRenderingContext2D,
   lfoEngine: LFOEngine,
-  pairNumber: 1 | 2,
+  pairNumber: 1 | 2 | 3 | 4,
   width: number,
   sectionHeight: number,
   phase: number,
@@ -240,18 +267,34 @@ function drawPairCombined(
   const amplitude = sectionHeight / 2 - 30
 
   ctx.strokeStyle = COMBINED_COLOR
-  ctx.lineWidth = 3
+  ctx.lineWidth = 2
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 
   // Add glow
-  ctx.shadowBlur = 10
+  ctx.shadowBlur = 8
   ctx.shadowColor = COMBINED_COLOR
 
   ctx.beginPath()
 
   const points = 200
-  const currentValue = pairNumber === 1 ? lfoEngine.getPair1Value() : lfoEngine.getPair2Value()
+  let currentValue = 0
+
+  // Get appropriate pair value
+  switch (pairNumber) {
+    case 1:
+      currentValue = lfoEngine.getPair1Value()
+      break
+    case 2:
+      currentValue = lfoEngine.getPair2Value()
+      break
+    case 3:
+      currentValue = lfoEngine.getPair3Value()
+      break
+    case 4:
+      currentValue = lfoEngine.getPair4Value()
+      break
+  }
 
   for (let i = 0; i < points; i++) {
     const x = (i / points) * width
