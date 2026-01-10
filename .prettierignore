@@ -1,0 +1,6 @@
+dist
+node_modules
+.tasks
+docs
+*.md
+package-lock.json
