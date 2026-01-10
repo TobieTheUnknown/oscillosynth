@@ -11,6 +11,7 @@ import { AudioPipeline } from '../audio/engine/AudioPipeline';
 import { ModulationMatrix } from '../audio/engine/ModulationMatrix';
 import { useAudioStore } from '../store/audioStore';
 import type { MIDINoteNumber } from '../audio/types';
+import { ModulationTarget } from '../audio/types';
 
 interface AudioEngineInstance {
   synth: FMSynth;
@@ -65,8 +66,8 @@ export function useAudioEngine() {
       // Create modulation matrix
       const modulationMatrix = new ModulationMatrix(synth, lfoEngine, pipeline);
       modulationMatrix.setConnections(modulationConnections);
-      modulationMatrix.setBaseValue('filter_cutoff', filterCutoff);
-      modulationMatrix.setBaseValue('filter_resonance', filterResonance);
+      modulationMatrix.setBaseValue(ModulationTarget.FILTER_CUTOFF, filterCutoff);
+      modulationMatrix.setBaseValue(ModulationTarget.FILTER_RESONANCE, filterResonance);
       modulationMatrix.start();
 
       // Store engine instance
@@ -176,8 +177,8 @@ export function useAudioEngine() {
     if (engineRef.current?.isInitialized) {
       engineRef.current.pipeline.setFilterCutoff(filterCutoff);
       engineRef.current.pipeline.setFilterResonance(filterResonance);
-      engineRef.current.modulationMatrix.setBaseValue('filter_cutoff', filterCutoff);
-      engineRef.current.modulationMatrix.setBaseValue('filter_resonance', filterResonance);
+      engineRef.current.modulationMatrix.setBaseValue(ModulationTarget.FILTER_CUTOFF, filterCutoff);
+      engineRef.current.modulationMatrix.setBaseValue(ModulationTarget.FILTER_RESONANCE, filterResonance);
     }
   }, [filterCutoff, filterResonance]);
 

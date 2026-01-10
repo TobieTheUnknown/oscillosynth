@@ -7,11 +7,11 @@ import * as Tone from 'tone';
 
 export class AudioPipeline {
   // Audio nodes
-  private input: Tone.Gain;
+  public input: Tone.Gain;
   private filter: Tone.Filter;
   private limiter: Tone.Limiter;
   private analyser: Tone.Analyser;
-  private output: Tone.Gain;
+  public output: Tone.Gain;
 
   // Configuration
   private filterCutoff: number = 2000;
@@ -52,8 +52,8 @@ export class AudioPipeline {
   /**
    * Connect input source
    */
-  connectInput(source: Tone.OutputNode) {
-    source.connect(this.input);
+  connectInput(source: Tone.ToneAudioNode) {
+    source.connect(this.input as any);
   }
 
   /**

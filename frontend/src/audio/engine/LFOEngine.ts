@@ -4,11 +4,12 @@
  */
 
 import * as Tone from 'tone';
-import type { LFOConfig, WaveformType, CombineMode } from '../types';
+import type { LFOConfig } from '../types';
+import { CombineMode } from '../types';
 
 export class LFOEngine {
   private lfos: LFO[] = [];
-  private combineMode: CombineMode = 'add';
+  private combineMode: CombineMode = CombineMode.ADD;
   private updateCallbacks: Map<number, (value: number) => void> = new Map();
 
   constructor(configs: LFOConfig[]) {

@@ -157,7 +157,7 @@ export class FMSynth {
    * Trigger note attack
    */
   triggerAttack(note: MIDINoteNumber, velocity: number = 1.0, time?: number) {
-    const baseFreq = Tone.Frequency(note, 'midi').toNumber();
+    const baseFreq = Tone.Frequency(note, 'midi').toFrequency();
     const pitchOffset = Math.pow(2, this.config.masterPitch / 12);
     const freq = baseFreq * pitchOffset;
 
@@ -202,7 +202,7 @@ export class FMSynth {
     voice.envs.forEach(env => env.triggerRelease(time));
 
     // Cleanup after release
-    const releaseTime = Math.max(...voice.envs.map(e => e.release));
+    const releaseTime = Math.max(...voice.envs.map(e => Tone.Time(e.release).toSeconds()));
     setTimeout(() => {
       voice.oscs.forEach(osc => {
         osc.stop();
