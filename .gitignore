@@ -1,0 +1,14 @@
+# Project specific
+.vite/
+.DS_Store
+
+# Docker
+.docker/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.npm-cache/
