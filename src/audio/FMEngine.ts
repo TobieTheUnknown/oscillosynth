@@ -160,6 +160,15 @@ export class FMEngine {
   }
 
   /**
+   * Apply pitch modulation to all operators (vibrato)
+   */
+  applyPitchModulation(cents: number): void {
+    this.operators.forEach((op) => {
+      op.applyPitchModulation(cents)
+    })
+  }
+
+  /**
    * Mise à jour paramètres opérateur
    */
   updateOperator(index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>): void {

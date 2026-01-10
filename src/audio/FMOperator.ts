@@ -76,6 +76,13 @@ export class FMOperator {
   }
 
   /**
+   * Apply pitch modulation (vibrato) in cents
+   */
+  applyPitchModulation(cents: number): void {
+    this.oscillator.detune.value = cents
+  }
+
+  /**
    * Mise à jour des paramètres en temps réel
    */
   updateParams(params: Partial<OperatorParams>): void {

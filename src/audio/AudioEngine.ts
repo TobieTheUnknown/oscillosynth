@@ -15,6 +15,7 @@ interface ActiveVoice {
   voice: Voice
   fmEngine: FMEngine
   lfoEngine: LFOEngine
+  lfoInterval: ReturnType<typeof setInterval> | null
 }
 
 export class AudioEngine {
@@ -83,8 +84,16 @@ export class AudioEngine {
     // Trigger note
     fmEngine.noteOn(frequency, velocity)
 
+    // Setup LFO modulation (pitch vibrato)
+    // Poll LFO value every 10ms and apply to pitch
+    const lfoInterval = setInterval(() => {
+      const lfoValue = lfoEngine.getCombinedValue() // -1 to 1
+      const cents = lfoValue * 50 // ±50 cents max modulation
+      fmEngine.applyPitchModulation(cents)
+    }, 10)
+
     // Stocker voix active
-    this.activeVoices.set(voice.id, { voice, fmEngine, lfoEngine })
+    this.activeVoices.set(voice.id, { voice, fmEngine, lfoEngine, lfoInterval })
 
     // Setup voice release callback
     voice.release = () => {
@@ -129,6 +138,10 @@ export class AudioEngine {
   private releaseVoice(voiceId: number): void {
     const activeVoice = this.activeVoices.get(voiceId)
     if (activeVoice) {
+      // Stop LFO modulation interval
+      if (activeVoice.lfoInterval) {
+        clearInterval(activeVoice.lfoInterval)
+      }
       activeVoice.fmEngine.dispose()
       activeVoice.lfoEngine.dispose()
       this.activeVoices.delete(voiceId)
