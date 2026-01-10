@@ -1,0 +1,50 @@
+/**
+ * OscilloSynth - Design Tokens Complete
+ * Import complet de tous les tokens de design
+ *
+ * Usage:
+ *   import '/design-tokens/design-tokens-complete.css'
+ */
+
+@import './design-tokens-colors.css';
+@import './design-tokens-typography.css';
+@import './design-tokens-spacing.css';
+@import './design-tokens-animations.css';
+
+/**
+ * Reset et base styles
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Définir base 16px pour rem */
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus visible pour accessibilité */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Selection text */
+::selection {
+  background-color: var(--color-active);
+  color: var(--color-text-primary);
+}

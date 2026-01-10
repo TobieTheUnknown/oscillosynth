@@ -4,16 +4,18 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 2rem;
+  padding: var(--spacing-8);
 }
 
 h1 {
-  font-size: 3rem;
-  color: #00FF41; /* Phosphore green */
-  margin-bottom: 1rem;
+  font-size: var(--font-size-3xl);
+  color: var(--color-trace-primary);
+  margin-bottom: var(--spacing-4);
+  text-shadow: 0 0 8px var(--color-trace-glow);
+  animation: var(--animation-glow-pulse);
 }
 
 p {
-  font-size: 1.2rem;
-  color: #FFFFFF;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
 }

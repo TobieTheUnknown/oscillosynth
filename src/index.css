@@ -1,25 +1,4 @@
-:root {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: dark;
-
-  /* Temporary colors - will be replaced by design tokens */
-  color: #FFFFFF;
-  background-color: #000000;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Design tokens imported in main.tsx */
 
 body {
   min-width: 320px;

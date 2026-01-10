@@ -1,0 +1,46 @@
+/**
+ * OscilloSynth - Design Tokens - Colors
+ * Palette oscilloscope vintage avec vert phosphore
+ */
+
+:root {
+  /* Background - Noir profond oscilloscope */
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #0a0a0a;
+  --color-bg-tertiary: #121212;
+
+  /* Trace - Phosphore green (couleur signature) */
+  --color-trace-primary: #00FF41;
+  --color-trace-secondary: #FFFFFF;
+  --color-trace-dim: #004411;
+  --color-trace-grid: #001a0a;
+  --color-trace-glow: rgba(0, 255, 65, 0.6);
+
+  /* Status colors */
+  --color-success: #00FF41;
+  --color-warning: #FFB800;
+  --color-error: #FF3B30;
+  --color-info: #00D4FF;
+
+  /* Text colors */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #00FF41;
+  --color-text-tertiary: #808080;
+  --color-text-disabled: #404040;
+
+  /* Interactive states */
+  --color-hover: rgba(0, 255, 65, 0.1);
+  --color-active: rgba(0, 255, 65, 0.2);
+  --color-focus: #00FF41;
+  --color-focus-ring: rgba(0, 255, 65, 0.4);
+
+  /* Borders */
+  --color-border-primary: #00FF41;
+  --color-border-secondary: #004411;
+  --color-border-subtle: #1a1a1a;
+
+  /* Overlays */
+  --color-overlay-light: rgba(0, 0, 0, 0.4);
+  --color-overlay-medium: rgba(0, 0, 0, 0.7);
+  --color-overlay-heavy: rgba(0, 0, 0, 0.9);
+}

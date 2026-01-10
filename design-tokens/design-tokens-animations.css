@@ -1,0 +1,101 @@
+/**
+ * OscilloSynth - Design Tokens - Animations
+ * Timing et easing pour interactions fluides
+ */
+
+:root {
+  /* Durations */
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 700ms;
+
+  /* Easing functions */
+  --easing-linear: linear;
+  --easing-ease: ease;
+  --easing-ease-in: ease-in;
+  --easing-ease-out: ease-out;
+  --easing-ease-in-out: ease-in-out;
+
+  /* Custom easing (Material Design inspired) */
+  --easing-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0.0, 1, 1);
+  --easing-sharp: cubic-bezier(0.4, 0.0, 0.6, 1);
+
+  /* Oscilloscope-specific easing (phosphore persistence) */
+  --easing-phosphore: cubic-bezier(0.0, 0.5, 0.5, 1.0);
+  --easing-trace: cubic-bezier(0.25, 0.1, 0.25, 1.0);
+
+  /* Common transitions */
+  --transition-color: color var(--duration-fast) var(--easing-standard);
+  --transition-background: background-color var(--duration-fast) var(--easing-standard);
+  --transition-border: border-color var(--duration-fast) var(--easing-standard);
+  --transition-opacity: opacity var(--duration-normal) var(--easing-standard);
+  --transition-transform: transform var(--duration-normal) var(--easing-standard);
+  --transition-all: all var(--duration-normal) var(--easing-standard);
+
+  /* Animation presets */
+  --animation-fade-in: fadeIn var(--duration-normal) var(--easing-standard);
+  --animation-fade-out: fadeOut var(--duration-normal) var(--easing-standard);
+  --animation-slide-in: slideIn var(--duration-normal) var(--easing-decelerate);
+  --animation-glow-pulse: glowPulse 2s var(--easing-ease-in-out) infinite;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px var(--color-trace-glow));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px var(--color-trace-glow));
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
