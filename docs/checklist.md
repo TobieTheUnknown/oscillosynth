@@ -139,7 +139,7 @@ Utilisez `python ~/.claude/skills/team-dev/orchestrator-claude-code.py` pour gé
 
 ---
 
-## Phase 2 : Visualisation ⚡ EN COURS
+## Phase 2 : Visualisation ✅ COMPLÉTÉ
 
 ### Canvas Infrastructure
 - [x] **[CODEUR]** Setup Canvas 2D dans composant React
@@ -148,27 +148,27 @@ Utilisez `python ~/.claude/skills/team-dev/orchestrator-claude-code.py` pour gé
 - [x] **[CODEUR]** Implémenter pipeline : Audio Analyser → Main Thread → Canvas
 - [x] **[UX-DESIGNER]** Designer style oscilloscope (grid, tracés phosphore, glow effect)
 - [x] **[CODEUR]** Appliquer style oscilloscope au canvas (multi-layer glow effects)
-- [ ] **[CODEUR]** Créer Web Worker pour rendering canvas (optimization, si nécessaire)
-- [ ] **[CODEUR]** Implémenter cleanup cycle Canvas (dispose ImageData, terminate workers)
-- [ ] **[CODEUR]** Implémenter double-buffering si nécessaire (prévenir flicker)
-- [ ] **[TESTEUR]** Valider rendu visuel cross-browser
-- [ ] **[TESTEUR]** Tester performance : 60 FPS sur Chrome/Firefox, 30 FPS acceptable Safari
+- [ ] **[CODEUR]** Créer Web Worker pour rendering canvas (optimization Phase 5)
+- [x] **[CODEUR]** Implémenter cleanup cycle Canvas (dispose dans useEffect cleanup)
+- [x] **[CODEUR]** Fade ghosting effect (double-buffering non nécessaire)
+- [ ] **[TESTEUR]** Valider rendu visuel cross-browser (Phase 6)
+- [ ] **[TESTEUR]** Tester performance : 60 FPS sur Chrome/Firefox, 30 FPS acceptable Safari (Phase 6)
 
 ### LFO Visualizer
-- [ ] **[UX-DESIGNER]** Designer zone centrale 800×600px avec layout paramètres
-- [ ] **[CODEUR]** Implémenter affichage 4 LFOs combinés en temps réel
-- [ ] **[CODEUR]** Implémenter indicateurs de phase (points colorés par LFO)
-- [ ] **[UX-DESIGNER]** Designer placement paramètres modulés au centre
-- [ ] **[CODEUR]** Intégrer placement paramètres dans visualisation
-- [ ] **[TESTEUR]** Test performance : 60 FPS avec 4 LFOs actifs
+- [x] **[UX-DESIGNER]** Designer zone centrale 800×400px avec layout paramètres
+- [x] **[CODEUR]** Implémenter affichage 4 LFOs combinés en temps réel
+- [x] **[CODEUR]** Implémenter indicateurs de phase (points colorés par LFO)
+- [x] **[CODEUR]** Implémenter couleurs distinctes par LFO (vert, cyan, jaune, magenta)
+- [x] **[CODEUR]** Implémenter signal combiné avec glow effect (blanc)
+- [ ] **[TESTEUR]** Test performance : 60 FPS avec 4 LFOs actifs (Phase 6)
 
 ### Oscilloscope Audio
 - [x] **[CODEUR]** Créer canvas oscilloscope 800×300px pour waveform
 - [x] **[CODEUR]** Implémenter affichage waveform audio final en temps réel
 - [x] **[UX-DESIGNER]** Appliquer style tracé : multi-layer glow, vert phosphore, grid
-- [ ] **[CODEUR]** Implémenter auto-trigger zero-crossing (stabilisation waveform)
-- [ ] **[AUDIO-DESIGNER]** Valider affichage waveform avec qualité audio
-- [ ] **[CODEUR]** Optimiser window size et sampling (20ms window optimal)
+- [x] **[CODEUR]** Implémenter auto-trigger zero-crossing (stabilisation waveform)
+- [x] **[CODEUR]** Optimiser window size et sampling (width * 2 samples, ~20ms)
+- [ ] **[AUDIO-DESIGNER]** Valider affichage waveform avec qualité audio (Phase 6)
 
 ---
 
