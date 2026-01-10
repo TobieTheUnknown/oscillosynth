@@ -4,16 +4,16 @@
 
 import { type FC, type SVGProps } from 'react';
 
-// Import SVG icons as React components
-import { ReactComponent as WaveSine } from '../assets/icons/wave-sine.svg';
-import { ReactComponent as WaveSquare } from '../assets/icons/wave-square.svg';
-import { ReactComponent as WaveSawtooth } from '../assets/icons/wave-sawtooth.svg';
-import { ReactComponent as WaveTriangle } from '../assets/icons/wave-triangle.svg';
-import { ReactComponent as WaveRandom } from '../assets/icons/wave-random.svg';
-import { ReactComponent as Play } from '../assets/icons/play.svg';
-import { ReactComponent as Pause } from '../assets/icons/pause.svg';
-import { ReactComponent as Stop } from '../assets/icons/stop.svg';
-import { ReactComponent as Speaker } from '../assets/icons/speaker.svg';
+// Import SVG icons as React components (vite-plugin-svgr)
+import WaveSine from '../assets/icons/wave-sine.svg?react';
+import WaveSquare from '../assets/icons/wave-square.svg?react';
+import WaveSawtooth from '../assets/icons/wave-sawtooth.svg?react';
+import WaveTriangle from '../assets/icons/wave-triangle.svg?react';
+import WaveRandom from '../assets/icons/wave-random.svg?react';
+import Play from '../assets/icons/play.svg?react';
+import Pause from '../assets/icons/pause.svg?react';
+import Stop from '../assets/icons/stop.svg?react';
+import Speaker from '../assets/icons/speaker.svg?react';
 
 const icons = {
   'wave-sine': WaveSine,
