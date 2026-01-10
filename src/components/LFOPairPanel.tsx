@@ -20,21 +20,7 @@ interface LFOPairPanelProps {
   color2: string
   onLFO1Change: (params: Partial<LFOParams>) => void
   onLFO2Change: (params: Partial<LFOParams>) => void
-}
-
-const DESTINATION_LABELS: Record<LFODestination, string> = {
-  [LFODestination.PITCH]: 'PITCH',
-  [LFODestination.AMPLITUDE]: 'AMP',
-  [LFODestination.FILTER_CUTOFF]: 'FILTER CUTOFF',
-  [LFODestination.FILTER_RESONANCE]: 'FILTER RES',
-  [LFODestination.OP1_LEVEL]: 'OP1 LEVEL',
-  [LFODestination.OP2_LEVEL]: 'OP2 LEVEL',
-  [LFODestination.OP3_LEVEL]: 'OP3 LEVEL',
-  [LFODestination.OP4_LEVEL]: 'OP4 LEVEL',
-  [LFODestination.OP1_RATIO]: 'OP1 RATIO',
-  [LFODestination.OP2_RATIO]: 'OP2 RATIO',
-  [LFODestination.OP3_RATIO]: 'OP3 RATIO',
-  [LFODestination.OP4_RATIO]: 'OP4 RATIO',
+  onDestinationChange: (destination: LFODestination) => void
 }
 
 export function LFOPairPanel({
@@ -48,9 +34,9 @@ export function LFOPairPanel({
   color2,
   onLFO1Change,
   onLFO2Change,
+  onDestinationChange,
 }: LFOPairPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const destLabel = DESTINATION_LABELS[destination] ?? 'UNKNOWN'
 
   const width = 400
   const height = 120
@@ -293,15 +279,36 @@ export function LFOPairPanel({
         >
           PAIR {pairNumber}
         </div>
-        <div
+        <select
+          value={destination}
+          onChange={(e) => {
+            onDestinationChange(e.target.value as LFODestination)
+          }}
           style={{
-            fontSize: 'var(--font-size-sm)',
+            padding: 'var(--spacing-1) var(--spacing-2)',
+            backgroundColor: 'var(--color-bg-primary)',
             color: 'var(--color-text-secondary)',
+            border: '1px solid var(--color-border-primary)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 'var(--font-size-xs)',
             fontFamily: 'var(--font-family-mono)',
+            cursor: 'pointer',
+            outline: 'none',
           }}
         >
-          → {destLabel}
-        </div>
+          <option value={LFODestination.PITCH}>PITCH</option>
+          <option value={LFODestination.AMPLITUDE}>AMPLITUDE</option>
+          <option value={LFODestination.FILTER_CUTOFF}>FILTER CUTOFF</option>
+          <option value={LFODestination.FILTER_RESONANCE}>FILTER RES</option>
+          <option value={LFODestination.OP1_LEVEL}>OP1 LEVEL</option>
+          <option value={LFODestination.OP2_LEVEL}>OP2 LEVEL</option>
+          <option value={LFODestination.OP3_LEVEL}>OP3 LEVEL</option>
+          <option value={LFODestination.OP4_LEVEL}>OP4 LEVEL</option>
+          <option value={LFODestination.OP1_RATIO}>OP1 RATIO</option>
+          <option value={LFODestination.OP2_RATIO}>OP2 RATIO</option>
+          <option value={LFODestination.OP3_RATIO}>OP3 RATIO</option>
+          <option value={LFODestination.OP4_RATIO}>OP4 RATIO</option>
+        </select>
 
         <canvas
           ref={canvasRef}

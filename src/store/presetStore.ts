@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Preset, LFOParams } from '../audio/types'
+import { Preset, LFOParams, OperatorParams, FilterParams } from '../audio/types'
 import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
 
@@ -22,6 +22,8 @@ interface PresetStore {
   deleteUserPreset: (presetId: string) => void
   initPresets: () => void
   updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => void
+  updateCurrentPresetOperator: (index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>) => void
+  updateCurrentPresetFilter: (params: Partial<FilterParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -125,6 +127,81 @@ export const usePresetStore = create<PresetStore>()(
           }))
         } else {
           // Update in userPresets array (will persist)
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+      },
+
+      updateCurrentPresetOperator: (index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated operators array
+        const updatedOperators = [...currentPreset.operators] as [
+          OperatorParams,
+          OperatorParams,
+          OperatorParams,
+          OperatorParams
+        ]
+        updatedOperators[index] = { ...updatedOperators[index]!, ...params }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          operators: updatedOperators,
+        }
+
+        // Reload preset in audio engine
+        audioEngine.loadPreset(updatedPreset)
+
+        // Update store
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+      },
+
+      updateCurrentPresetFilter: (params: Partial<FilterParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          filter: { ...currentPreset.filter, ...params },
+        }
+
+        // Reload preset in audio engine
+        audioEngine.loadPreset(updatedPreset)
+
+        // Update store
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
           set((state) => ({
             userPresets: state.userPresets.map((p) =>
               p.id === currentPreset.id ? updatedPreset : p

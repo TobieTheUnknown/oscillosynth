@@ -7,6 +7,8 @@ import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
 import { LFOPairPanel } from './LFOPairPanel'
+import { OperatorControls } from './OperatorControls'
+import { FilterControls } from './FilterControls'
 
 export function AudioTestV2() {
   const {
@@ -21,6 +23,8 @@ export function AudioTestV2() {
     noteOn,
     noteOff,
     updateCurrentPresetLFO,
+    updateCurrentPresetOperator,
+    updateCurrentPresetFilter,
   } = useAudioEngine()
 
   const playNote = (midiNote: number) => {
@@ -167,9 +171,64 @@ export function AudioTestV2() {
                     onLFO2Change={(params) => {
                       updateCurrentPresetLFO(lfo2Index, params)
                     }}
+                    onDestinationChange={(destination) => {
+                      updateCurrentPresetLFO(lfo1Index, { destination })
+                      updateCurrentPresetLFO(lfo2Index, { destination })
+                    }}
                   />
                 )
               })}
+            </div>
+          )}
+
+          {/* FM Operators */}
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)' }}>
+              <h2
+                style={{
+                  fontSize: 'var(--font-size-xl)',
+                  marginBottom: 'var(--spacing-4)',
+                  color: 'var(--color-trace-primary)',
+                  textShadow: '0 0 8px var(--color-trace-glow)',
+                }}
+              >
+                FM OPERATORS
+              </h2>
+              {[1, 2, 3, 4].map((opNum) => {
+                const opIndex = (opNum - 1) as 0 | 1 | 2 | 3
+                return (
+                  <OperatorControls
+                    key={opNum}
+                    operatorNumber={opNum as 1 | 2 | 3 | 4}
+                    params={currentPreset.operators[opIndex]}
+                    onChange={(params) => {
+                      updateCurrentPresetOperator(opIndex, params)
+                    }}
+                  />
+                )
+              })}
+            </div>
+          )}
+
+          {/* Filter */}
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)' }}>
+              <h2
+                style={{
+                  fontSize: 'var(--font-size-xl)',
+                  marginBottom: 'var(--spacing-4)',
+                  color: 'var(--color-trace-primary)',
+                  textShadow: '0 0 8px var(--color-trace-glow)',
+                }}
+              >
+                FILTER
+              </h2>
+              <FilterControls
+                params={currentPreset.filter}
+                onChange={(params) => {
+                  updateCurrentPresetFilter(params)
+                }}
+              />
             </div>
           )}
 
