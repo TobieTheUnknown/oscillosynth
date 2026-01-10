@@ -1,18 +1,36 @@
 /**
  * LFO Editor Component
- * Controls for editing 4 LFOs with oscilloscope aesthetic
+ * Controls for editing 8 LFOs with oscilloscope aesthetic
  */
 
 import { useState } from 'react'
-import { LFOParams, WaveformType } from '../audio/types'
+import { LFOParams, WaveformType, LFODestination } from '../audio/types'
 
 interface LFOEditorProps {
-  lfoParams: [LFOParams, LFOParams, LFOParams, LFOParams]
-  onLFOChange: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => void
+  lfoParams: [
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams
+  ]
+  onLFOChange: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => void
 }
 
-// LFO colors matching visualizer
-const LFO_COLORS = ['#00FF41', '#00FFFF', '#FFFF00', '#FF64FF']
+// LFO colors matching visualizer (8 colors)
+const LFO_COLORS = [
+  '#00FF41',
+  '#00FFFF',
+  '#FFFF00',
+  '#FF64FF',
+  '#64C8FF',
+  '#FF9664',
+  '#96FF96',
+  '#FF6496',
+]
 
 export function LFOEditor({ lfoParams, onLFOChange }: LFOEditorProps) {
   const [expandedLFO, setExpandedLFO] = useState<number | null>(0)
@@ -43,7 +61,7 @@ export function LFOEditor({ lfoParams, onLFOChange }: LFOEditorProps) {
       {lfoParams.map((lfo, index) => (
         <LFOPanel
           key={index}
-          index={index as 0 | 1 | 2 | 3}
+          index={index as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}
           params={lfo}
           color={LFO_COLORS[index] ?? '#00FF41'}
           isExpanded={expandedLFO === index}
@@ -51,7 +69,7 @@ export function LFOEditor({ lfoParams, onLFOChange }: LFOEditorProps) {
             setExpandedLFO(expandedLFO === index ? null : index)
           }}
           onChange={(params) => {
-            onLFOChange(index as 0 | 1 | 2 | 3, params)
+            onLFOChange(index as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params)
           }}
         />
       ))}
@@ -60,7 +78,7 @@ export function LFOEditor({ lfoParams, onLFOChange }: LFOEditorProps) {
 }
 
 interface LFOPanelProps {
-  index: 0 | 1 | 2 | 3
+  index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
   params: LFOParams
   color: string
   isExpanded: boolean
@@ -147,6 +165,51 @@ function LFOPanel({ index, params, color, isExpanded, onToggle, onChange }: LFOP
               <option value={WaveformType.SQUARE}>Square</option>
               <option value={WaveformType.SAWTOOTH}>Sawtooth</option>
               <option value={WaveformType.TRIANGLE}>Triangle</option>
+            </select>
+          </div>
+
+          {/* Destination Selector */}
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: 'var(--font-size-sm)',
+                color: 'var(--color-text-secondary)',
+                marginBottom: 'var(--spacing-2)',
+                fontFamily: 'var(--font-family-mono)',
+              }}
+            >
+              Destination
+            </label>
+            <select
+              value={params.destination}
+              onChange={(e) => {
+                onChange({ destination: e.target.value as LFODestination })
+              }}
+              style={{
+                width: '100%',
+                padding: 'var(--spacing-2)',
+                backgroundColor: 'var(--color-bg-primary)',
+                color: color,
+                border: `1px solid ${color}`,
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 'var(--font-size-sm)',
+                fontFamily: 'var(--font-family-mono)',
+                cursor: 'pointer',
+              }}
+            >
+              <option value={LFODestination.PITCH}>Pitch</option>
+              <option value={LFODestination.AMPLITUDE}>Amplitude</option>
+              <option value={LFODestination.FILTER_CUTOFF}>Filter Cutoff</option>
+              <option value={LFODestination.FILTER_RESONANCE}>Filter Resonance</option>
+              <option value={LFODestination.OP1_LEVEL}>Operator 1 Level</option>
+              <option value={LFODestination.OP2_LEVEL}>Operator 2 Level</option>
+              <option value={LFODestination.OP3_LEVEL}>Operator 3 Level</option>
+              <option value={LFODestination.OP4_LEVEL}>Operator 4 Level</option>
+              <option value={LFODestination.OP1_RATIO}>Operator 1 Ratio</option>
+              <option value={LFODestination.OP2_RATIO}>Operator 2 Ratio</option>
+              <option value={LFODestination.OP3_RATIO}>Operator 3 Ratio</option>
+              <option value={LFODestination.OP4_RATIO}>Operator 4 Ratio</option>
             </select>
           </div>
 

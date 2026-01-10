@@ -3,8 +3,8 @@
  */
 
 /**
- * Algorithm FM (DX7-style)
- * 8 algorithmes avec différentes configurations de routage
+ * Algorithm FM (DX7-style + extras)
+ * 12 algorithmes avec différentes configurations de routage
  */
 export enum AlgorithmType {
   ALGO_1 = 1, // 4→3→2→1→OUT (Serial complet)
@@ -12,9 +12,13 @@ export enum AlgorithmType {
   ALGO_3 = 3, // (4→3)+(2→1)→OUT (Dual serial)
   ALGO_4 = 4, // 4+3+2+1→OUT (Parallel complet)
   ALGO_5 = 5, // (4→3)+(2)+(1)→OUT (Semi-parallel)
-  ALGO_6 = 6, // (4→3→2→1)→OUT (Serial optimisé)
+  ALGO_6 = 6, // (4→3→2→1)→OUT (Serial avec feedback)
   ALGO_7 = 7, // (4→3)+(4→2)+(4→1)→OUT (Fan-out)
   ALGO_8 = 8, // (4+3)→2→1→OUT (Parallel input)
+  ALGO_9 = 9, // (4→3→2)+(1)→OUT (Serial trio + carrier)
+  ALGO_10 = 10, // (4→3)+(2→1)+(4→2)→OUT (Dual serial cross)
+  ALGO_11 = 11, // 4→(3+2)→1→OUT (Split modulator)
+  ALGO_12 = 12, // (4→2)+(3→1)→OUT (Dual parallel)
 }
 
 /**

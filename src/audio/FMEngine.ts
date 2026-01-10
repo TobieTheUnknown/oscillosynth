@@ -122,6 +122,40 @@ export class FMEngine {
         op1.connect(this.output)
         break
 
+      case AlgorithmType.ALGO_9:
+        // Serial trio + carrier: (4→3→2)+(1)→OUT
+        op4.connect(op3.frequencyParam)
+        op3.connect(op2.frequencyParam)
+        op2.connect(this.output)
+        op1.connect(this.output)
+        break
+
+      case AlgorithmType.ALGO_10:
+        // Dual serial cross: (4→3)+(2→1)+(4→2)→OUT
+        op4.connect(op3.frequencyParam)
+        op4.connect(op2.frequencyParam)
+        op3.connect(this.output)
+        op2.connect(op1.frequencyParam)
+        op1.connect(this.output)
+        break
+
+      case AlgorithmType.ALGO_11:
+        // Split modulator: 4→(3+2)→1→OUT
+        op4.connect(op3.frequencyParam)
+        op4.connect(op2.frequencyParam)
+        op3.connect(op1.frequencyParam)
+        op2.connect(op1.frequencyParam)
+        op1.connect(this.output)
+        break
+
+      case AlgorithmType.ALGO_12:
+        // Dual parallel: (4→2)+(3→1)→OUT
+        op4.connect(op2.frequencyParam)
+        op3.connect(op1.frequencyParam)
+        op2.connect(this.output)
+        op1.connect(this.output)
+        break
+
       default:
         console.warn(`Unknown algorithm: ${String(this.algorithm)}, using ALGO_1`)
         this.algorithm = AlgorithmType.ALGO_1

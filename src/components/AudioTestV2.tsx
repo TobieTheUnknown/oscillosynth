@@ -7,7 +7,7 @@ import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
 import { LFOVisualizer } from './LFOVisualizer'
-// import { LFOEditor } from './LFOEditor'
+import { LFOEditor } from './LFOEditor'
 
 export function AudioTestV2() {
   const {
@@ -21,7 +21,7 @@ export function AudioTestV2() {
     setAlgorithm,
     noteOn,
     noteOff,
-    // updateCurrentPresetLFO,
+    updateCurrentPresetLFO,
   } = useAudioEngine()
 
   const playNote = (midiNote: number) => {
@@ -135,15 +135,15 @@ export function AudioTestV2() {
             </div>
           )}
 
-          {/* TODO: Update LFOEditor for 8 LFOs */}
-          {/* {currentPreset && (
+          {/* LFO Editor - 8 LFOs with destination routing */}
+          {currentPreset && (
             <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
               <LFOEditor
                 lfoParams={currentPreset.lfos}
                 onLFOChange={updateCurrentPresetLFO}
               />
             </div>
-          )} */}
+          )}
 
           <div style={{ marginBottom: 'var(--spacing-6)' }}>
             <h2
@@ -195,11 +195,11 @@ export function AudioTestV2() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
+                gridTemplateColumns: 'repeat(6, 1fr)',
                 gap: 'var(--spacing-2)',
               }}
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((algo) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((algo) => (
                 <button
                   key={algo}
                   onClick={() => {
