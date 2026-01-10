@@ -169,6 +169,15 @@ export class FMEngine {
   }
 
   /**
+   * Apply amplitude modulation to all operators (tremolo)
+   */
+  applyAmplitudeModulation(multiplier: number): void {
+    this.operators.forEach((op) => {
+      op.applyAmplitudeModulation(multiplier)
+    })
+  }
+
+  /**
    * Mise à jour paramètres opérateur
    */
   updateOperator(index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>): void {

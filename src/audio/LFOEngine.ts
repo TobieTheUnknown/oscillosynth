@@ -1,31 +1,22 @@
 /**
  * LFO Engine
- * Système de 4 LFOs avec combinaison multiple
+ * Système de 4 LFOs avec combinaison par paires
+ * Paire 1 (LFO 1+2) → Pitch modulation
+ * Paire 2 (LFO 3+4) → Amplitude modulation
  */
 
 import * as Tone from 'tone'
-import { LFOParams, LFOCombineMode } from './types'
+import { LFOParams, LFOCombineMode, WaveformType } from './types'
 
 export class LFO {
-  private oscillator: Tone.LFO
   private params: LFOParams
-  private outputSignal: Tone.Signal
+  private startTime: number
+  private phase: number
 
   constructor(params: LFOParams) {
     this.params = params
-
-    // LFO oscillator (Tone.js uses standard types)
-    this.oscillator = new Tone.LFO({
-      type: params.waveform as Tone.ToneOscillatorType,
-      frequency: params.rate,
-      phase: params.phase,
-      min: -1,
-      max: 1,
-    }).start()
-
-    // Output signal (depth control)
-    this.outputSignal = new Tone.Signal(0)
-    this.oscillator.connect(this.outputSignal)
+    this.startTime = Tone.now()
+    this.phase = (params.phase / 360) * Math.PI * 2 // Convert degrees to radians
   }
 
   /**
@@ -34,12 +25,10 @@ export class LFO {
   updateParams(params: Partial<LFOParams>): void {
     if (params.waveform !== undefined) {
       this.params.waveform = params.waveform
-      this.oscillator.type = params.waveform as Tone.ToneOscillatorType
     }
 
     if (params.rate !== undefined) {
       this.params.rate = params.rate
-      this.oscillator.frequency.value = params.rate
     }
 
     if (params.depth !== undefined) {
@@ -48,7 +37,7 @@ export class LFO {
 
     if (params.phase !== undefined) {
       this.params.phase = params.phase
-      this.oscillator.phase = params.phase
+      this.phase = (params.phase / 360) * Math.PI * 2
     }
 
     if (params.sync !== undefined) {
@@ -58,50 +47,57 @@ export class LFO {
   }
 
   /**
+   * Calcule la valeur du waveform à un temps donné
+   */
+  private computeWaveform(t: number): number {
+    const phase = (t * this.params.rate * Math.PI * 2 + this.phase) % (Math.PI * 2)
+
+    switch (this.params.waveform) {
+      case WaveformType.SINE:
+        return Math.sin(phase)
+
+      case WaveformType.SQUARE:
+        return phase < Math.PI ? 1 : -1
+
+      case WaveformType.SAWTOOTH:
+        return (phase / Math.PI - 1)
+
+      case WaveformType.TRIANGLE:
+        return phase < Math.PI ? (phase / Math.PI) * 2 - 1 : 3 - (phase / Math.PI) * 2
+
+      default:
+        return Math.sin(phase)
+    }
+  }
+
+  /**
    * Récupère la valeur actuelle du LFO (-1 à 1)
    */
   getValue(): number {
+    const now = Tone.now()
+    const elapsed = now - this.startTime
+    const rawValue = this.computeWaveform(elapsed)
+
     // Applique depth
-    return this.outputSignal.value * (this.params.depth / 100)
-  }
-
-  /**
-   * Connecte le LFO à un AudioParam
-   */
-  connect(destination: AudioParam): void {
-    this.oscillator.connect(destination)
-  }
-
-  /**
-   * Déconnecte le LFO
-   */
-  disconnect(): void {
-    this.oscillator.disconnect()
-  }
-
-  /**
-   * Récupère l'output signal
-   */
-  get output(): Tone.LFO {
-    return this.oscillator
+    return rawValue * (this.params.depth / 100)
   }
 
   /**
    * Dispose
    */
   dispose(): void {
-    this.oscillator.dispose()
-    this.outputSignal.dispose()
+    // Rien à disposer pour le moment
   }
 }
 
 /**
- * LFO Engine avec 4 LFOs et combinaison
+ * LFO Engine avec 4 LFOs et combinaison par paires
+ * Paire 1 (LFO 1+2) → Pitch modulation
+ * Paire 2 (LFO 3+4) → Amplitude modulation
  */
 export class LFOEngine {
   private lfos: [LFO, LFO, LFO, LFO]
   private combineMode: LFOCombineMode
-  private combinedSignal: Tone.Signal
 
   constructor(
     lfoParams: [LFOParams, LFOParams, LFOParams, LFOParams],
@@ -117,38 +113,35 @@ export class LFOEngine {
       new LFO(lfoParams[3]),
     ]
 
-    // Signal combiné
-    this.combinedSignal = new Tone.Signal(0)
-
-    // Setup combine mode
-    this.updateCombineMode(combineMode)
+    console.log('✅ LFO Engine created with pairing system')
   }
 
   /**
-   * Calcule la valeur combinée des 4 LFOs
+   * Calcule la valeur combinée d'une paire de LFOs
    */
-  private computeCombinedValue(): number {
-    const values = this.lfos.map((lfo) => lfo.getValue())
+  private computePairValue(lfo1: LFO, lfo2: LFO): number {
+    const val1 = lfo1.getValue()
+    const val2 = lfo2.getValue()
 
     switch (this.combineMode) {
       case LFOCombineMode.ADD:
-        // ADD: lfo1 + lfo2 + lfo3 + lfo4 (clamped -1 to 1)
-        return Math.max(-1, Math.min(1, values.reduce((sum, v) => sum + v, 0) / 4))
+        // ADD: moyenne des deux LFOs (clamped -1 to 1)
+        return Math.max(-1, Math.min(1, (val1 + val2) / 2))
 
       case LFOCombineMode.MULTIPLY:
-        // MULTIPLY: lfo1 * lfo2 * lfo3 * lfo4
-        return values.reduce((product, v) => product * v, 1)
+        // MULTIPLY: produit des deux LFOs
+        return val1 * val2
 
       case LFOCombineMode.MIN:
-        // MIN: minimum de tous les LFOs
-        return Math.min(...values)
+        // MIN: minimum des deux LFOs
+        return Math.min(val1, val2)
 
       case LFOCombineMode.MAX:
-        // MAX: maximum de tous les LFOs
-        return Math.max(...values)
+        // MAX: maximum des deux LFOs
+        return Math.max(val1, val2)
 
       default:
-        return values[0] ?? 0
+        return val1
     }
   }
 
@@ -175,20 +168,25 @@ export class LFOEngine {
   }
 
   /**
-   * Récupère la valeur combinée actuelle
+   * Récupère la valeur combinée de la Paire 1 (LFO 1+2) pour pitch modulation
    */
-  getCombinedValue(): number {
-    return this.computeCombinedValue()
+  getPair1Value(): number {
+    return this.computePairValue(this.lfos[0], this.lfos[1])
   }
 
   /**
-   * Connecte le signal combiné à une destination
-   * Note: Pour l'instant, utilise une approche simplifiée
-   * Phase 2: Implémenter Web Audio routing complet
+   * Récupère la valeur combinée de la Paire 2 (LFO 3+4) pour amplitude modulation
    */
-  connect(_destination: AudioParam): void {
-    // TODO: Implémenter routing combiné complet
-    console.warn('LFO combined routing not yet implemented - use individual LFOs')
+  getPair2Value(): number {
+    return this.computePairValue(this.lfos[2], this.lfos[3])
+  }
+
+  /**
+   * Récupère la valeur combinée actuelle (legacy - maintenant utilise Paire 1)
+   * @deprecated Utiliser getPair1Value() ou getPair2Value() à la place
+   */
+  getCombinedValue(): number {
+    return this.getPair1Value()
   }
 
   /**
@@ -196,6 +194,5 @@ export class LFOEngine {
    */
   dispose(): void {
     this.lfos.forEach((lfo) => { lfo.dispose(); })
-    this.combinedSignal.dispose()
   }
 }

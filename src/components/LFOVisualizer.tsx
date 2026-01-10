@@ -63,18 +63,31 @@ export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps)
       // Draw grid
       drawGrid(ctx, width, height)
 
-      // Draw each LFO
-      for (let i = 0; i < 4; i++) {
-        const lfo = lfoEngine.getLFO(i as 0 | 1 | 2 | 3)
+      const halfHeight = height / 2
+
+      // === PAIRE 1: LFO 1+2 (Top half) ===
+      // Draw LFO 1 and LFO 2
+      for (let i = 0; i < 2; i++) {
+        const lfo = lfoEngine.getLFO(i as 0 | 1)
         const color = LFO_COLORS[i] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
-        drawLFO(ctx, lfo, i, width, height, phase, color)
+        drawLFOInSection(ctx, lfo, i, width, halfHeight, phase, color, 0)
       }
+      // Draw combined pair 1
+      drawPairCombined(ctx, lfoEngine, 1, width, halfHeight, phase, 0)
+      // Draw pair 1 label
+      drawPairLabel(ctx, 'PAIR 1: PITCH', width, 20)
 
-      // Draw combined signal
-      drawCombinedSignal(ctx, lfoEngine, width, height, phase, COMBINED_COLOR)
-
-      // Draw phase indicators
-      drawPhaseIndicators(ctx, lfoEngine, width, height)
+      // === PAIRE 2: LFO 3+4 (Bottom half) ===
+      // Draw LFO 3 and LFO 4
+      for (let i = 2; i < 4; i++) {
+        const lfo = lfoEngine.getLFO(i as 2 | 3)
+        const color = LFO_COLORS[i] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
+        drawLFOInSection(ctx, lfo, i - 2, width, halfHeight, phase, color, halfHeight)
+      }
+      // Draw combined pair 2
+      drawPairCombined(ctx, lfoEngine, 2, width, halfHeight, phase, halfHeight)
+      // Draw pair 2 label
+      drawPairLabel(ctx, 'PAIR 2: AMP', width, halfHeight + 20)
 
       animationFrameRef.current = requestAnimationFrame(render)
     }
@@ -166,19 +179,20 @@ function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number):
 }
 
 /**
- * Draw individual LFO waveform
+ * Draw individual LFO waveform in a section
  */
-function drawLFO(
+function drawLFOInSection(
   ctx: CanvasRenderingContext2D,
   lfo: ReturnType<LFOEngine['getLFO']>,
-  index: number,
+  indexInPair: number,
   width: number,
-  height: number,
+  sectionHeight: number,
   phase: number,
-  color: string
+  color: string,
+  yOffset: number
 ): void {
-  const centerY = height / 2
-  const amplitude = (height / 2 - 40) * 0.5 // Smaller amplitude for individual LFOs
+  const centerY = sectionHeight / 2 + yOffset
+  const amplitude = (sectionHeight / 2 - 20) * 0.4 // Smaller amplitude for individual LFOs
 
   ctx.strokeStyle = color
   ctx.lineWidth = 1.5
@@ -187,12 +201,17 @@ function drawLFO(
 
   ctx.beginPath()
 
-  // Draw one full cycle of the LFO
+  // Draw animated waveform
   const points = 200
+  const currentValue = lfo.getValue()
+
   for (let i = 0; i < points; i++) {
     const x = (i / points) * width
-    // Simulate LFO value over time (simplified sine wave for visualization)
-    const value = lfo.getValue() * Math.sin((i / points) * Math.PI * 2 + phase * (index + 1))
+    // Create smooth animation using phase and index offset
+    const animPhase = phase * (indexInPair + 1) * 0.5
+    const t = (i / points) * Math.PI * 2 + animPhase
+    // Use current LFO value as amplitude multiplier
+    const value = currentValue * Math.sin(t)
     const y = centerY + value * amplitude
 
     if (i === 0) {
@@ -206,34 +225,40 @@ function drawLFO(
 }
 
 /**
- * Draw combined signal
+ * Draw combined pair signal
  */
-function drawCombinedSignal(
+function drawPairCombined(
   ctx: CanvasRenderingContext2D,
   lfoEngine: LFOEngine,
+  pairNumber: 1 | 2,
   width: number,
-  height: number,
+  sectionHeight: number,
   phase: number,
-  color: string
+  yOffset: number
 ): void {
-  const centerY = height / 2
-  const amplitude = height / 2 - 40
+  const centerY = sectionHeight / 2 + yOffset
+  const amplitude = sectionHeight / 2 - 30
 
-  ctx.strokeStyle = color
+  ctx.strokeStyle = COMBINED_COLOR
   ctx.lineWidth = 3
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 
   // Add glow
   ctx.shadowBlur = 10
-  ctx.shadowColor = color
+  ctx.shadowColor = COMBINED_COLOR
 
   ctx.beginPath()
 
   const points = 200
+  const currentValue = pairNumber === 1 ? lfoEngine.getPair1Value() : lfoEngine.getPair2Value()
+
   for (let i = 0; i < points; i++) {
     const x = (i / points) * width
-    const value = lfoEngine.getCombinedValue() * Math.sin((i / points) * Math.PI * 2 + phase)
+    // Create smooth animation for combined signal
+    const t = (i / points) * Math.PI * 2 + phase
+    // Use current pair value as amplitude multiplier
+    const value = currentValue * Math.sin(t)
     const y = centerY + value * amplitude
 
     if (i === 0) {
@@ -250,37 +275,16 @@ function drawCombinedSignal(
 }
 
 /**
- * Draw phase indicators for each LFO
+ * Draw pair label
  */
-function drawPhaseIndicators(
+function drawPairLabel(
   ctx: CanvasRenderingContext2D,
-  lfoEngine: LFOEngine,
-  width: number,
-  height: number
+  label: string,
+  _width: number,
+  y: number
 ): void {
-  const indicatorY = height - 30
-  const spacing = width / 5
-
-  for (let i = 0; i < 4; i++) {
-    const lfo = lfoEngine.getLFO(i as 0 | 1 | 2 | 3)
-    const value = lfo.getValue()
-    const x = spacing * (i + 1)
-    const color = LFO_COLORS[i] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
-
-    // Draw indicator circle
-    ctx.fillStyle = color
-    ctx.beginPath()
-    ctx.arc(x, indicatorY, 8, 0, Math.PI * 2)
-    ctx.fill()
-
-    // Draw value bar
-    const barHeight = value * 15 // -15 to +15
-    ctx.fillRect(x - 2, indicatorY - barHeight, 4, barHeight)
-
-    // Draw label
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
-    ctx.font = '10px monospace'
-    ctx.textAlign = 'center'
-    ctx.fillText(`LFO${String(i + 1)}`, x, height - 10)
-  }
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+  ctx.font = 'bold 12px monospace'
+  ctx.textAlign = 'left'
+  ctx.fillText(label, 10, y)
 }

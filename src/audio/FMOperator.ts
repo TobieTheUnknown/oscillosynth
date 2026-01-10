@@ -83,6 +83,14 @@ export class FMOperator {
   }
 
   /**
+   * Apply amplitude modulation (tremolo) as multiplier
+   */
+  applyAmplitudeModulation(multiplier: number): void {
+    const baseGain = (this.params.level / 100)
+    this.gain.gain.value = baseGain * multiplier
+  }
+
+  /**
    * Mise à jour des paramètres en temps réel
    */
   updateParams(params: Partial<OperatorParams>): void {

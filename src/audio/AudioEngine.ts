@@ -85,12 +85,20 @@ export class AudioEngine {
     // Trigger note
     fmEngine.noteOn(frequency, velocity)
 
-    // Setup LFO modulation (pitch vibrato)
-    // Poll LFO value every 10ms and apply to pitch
+    // Setup LFO modulation
+    // Paire 1 (LFO 1+2) → Pitch modulation
+    // Paire 2 (LFO 3+4) → Amplitude modulation
+    // Poll LFO values every 10ms
     const lfoInterval = setInterval(() => {
-      const lfoValue = lfoEngine.getCombinedValue() // -1 to 1
-      const cents = lfoValue * 50 // ±50 cents max modulation
+      // Paire 1: Pitch modulation (vibrato)
+      const pitchValue = lfoEngine.getPair1Value() // -1 to 1
+      const cents = pitchValue * 50 // ±50 cents max modulation
       fmEngine.applyPitchModulation(cents)
+
+      // Paire 2: Amplitude modulation (tremolo)
+      const ampValue = lfoEngine.getPair2Value() // -1 to 1
+      const ampMod = 1 + ampValue * 0.3 // 0.7 to 1.3 (±30% amplitude)
+      fmEngine.applyAmplitudeModulation(ampMod)
     }, 10)
 
     // Stocker voix active
