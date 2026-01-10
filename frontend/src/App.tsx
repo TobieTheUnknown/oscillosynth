@@ -73,9 +73,9 @@ function App() {
       style={{
         minHeight: '100vh',
         padding: 'var(--space-4)',
-        onKeyDown: handleKeyDown,
-        onKeyUp: handleKeyUp,
       }}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
       tabIndex={0}
     >
       {/* Header */}
