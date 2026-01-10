@@ -6,6 +6,7 @@
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
+import { LFOVisualizer } from './LFOVisualizer'
 
 export function AudioTestV2() {
   const {
@@ -121,6 +122,17 @@ export function AudioTestV2() {
               glowIntensity={0.6}
             />
           </div>
+
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
+              <LFOVisualizer
+                lfoParams={currentPreset.lfos}
+                combineMode={currentPreset.lfoCombineMode}
+                width={Math.min(800, window.innerWidth - 64)}
+                height={400}
+              />
+            </div>
+          )}
 
           <div style={{ marginBottom: 'var(--spacing-6)' }}>
             <h2
