@@ -5,6 +5,7 @@
 
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
+import { Oscilloscope } from './Oscilloscope'
 
 export function AudioTestV2() {
   const {
@@ -110,6 +111,15 @@ export function AudioTestV2() {
                 {activeVoices} / {maxVoices}
               </span>
             </div>
+          </div>
+
+          <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
+            <Oscilloscope
+              width={Math.min(800, window.innerWidth - 64)}
+              height={300}
+              lineWidth={2}
+              glowIntensity={0.6}
+            />
           </div>
 
           <div style={{ marginBottom: 'var(--spacing-6)' }}>

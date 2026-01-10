@@ -43,24 +43,26 @@ export function useAudioEngine() {
   // Keyboard event handlers
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase()
-      const midiNote = keyboardMap[key as keyof typeof keyboardMap]
+      if (event.repeat || !audioStore.isStarted) return
 
-      if (midiNote !== undefined && !event.repeat && audioStore.isStarted) {
-        audioStore.noteOn(midiNote, 100)
-      }
+      const key = event.key.toLowerCase()
+      if (!(key in keyboardMap)) return
+
+      const midiNote = keyboardMap[key as keyof typeof keyboardMap]
+      audioStore.noteOn(midiNote, 100)
     },
     [audioStore, keyboardMap]
   )
 
   const handleKeyUp = useCallback(
     (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase()
-      const midiNote = keyboardMap[key as keyof typeof keyboardMap]
+      if (!audioStore.isStarted) return
 
-      if (midiNote !== undefined && audioStore.isStarted) {
-        audioStore.noteOff(midiNote)
-      }
+      const key = event.key.toLowerCase()
+      if (!(key in keyboardMap)) return
+
+      const midiNote = keyboardMap[key as keyof typeof keyboardMap]
+      audioStore.noteOff(midiNote)
     },
     [audioStore, keyboardMap]
   )

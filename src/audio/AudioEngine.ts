@@ -36,7 +36,7 @@ export class AudioEngine {
     this.pipeline = new AudioPipeline()
 
     // Routing: masterGain → pipeline → destination
-    this.masterGain.connect(this.pipeline.connect as unknown as Tone.InputNode)
+    this.pipeline.connect(this.masterGain)
     this.pipeline.toDestination()
 
     console.log('✅ AudioEngine initialized with audio pipeline')
