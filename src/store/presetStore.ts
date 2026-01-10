@@ -21,7 +21,7 @@ interface PresetStore {
   saveUserPreset: (preset: Preset) => void
   deleteUserPreset: (presetId: string) => void
   initPresets: () => void
-  updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => void
+  updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -85,7 +85,7 @@ export const usePresetStore = create<PresetStore>()(
         set({ currentPresetId: preset.id, isInitialized: true })
       },
 
-      updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => {
+      updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => {
         const currentPreset = get().getCurrentPreset()
         if (!currentPreset) {
           console.warn('No current preset to update')
@@ -97,9 +97,13 @@ export const usePresetStore = create<PresetStore>()(
           LFOParams,
           LFOParams,
           LFOParams,
+          LFOParams,
+          LFOParams,
+          LFOParams,
+          LFOParams,
           LFOParams
         ]
-        updatedLFOs[index] = { ...updatedLFOs[index], ...params }
+        updatedLFOs[index] = { ...updatedLFOs[index]!, ...params }
 
         // Create updated preset
         const updatedPreset: Preset = {

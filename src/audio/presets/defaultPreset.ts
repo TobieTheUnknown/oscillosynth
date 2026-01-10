@@ -8,8 +8,10 @@ import {
   AlgorithmType,
   WaveformType,
   LFOCombineMode,
+  LFODestination,
   OperatorParams,
   LFOParams,
+  FilterParams,
 } from '../types'
 
 /**
@@ -56,42 +58,102 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
 ]
 
 /**
- * LFOs pour vibrato et mouvement
+ * LFOs pour vibrato et mouvement (8 LFOs en 4 paires)
  */
-const defaultLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
-  // LFO 1: Vibrato lent
+type LFOArray = [
+  LFOParams,
+  LFOParams,
+  LFOParams,
+  LFOParams,
+  LFOParams,
+  LFOParams,
+  LFOParams,
+  LFOParams
+]
+
+const defaultLFOs: LFOArray = [
+  // Paire 1: Pitch (LFO 1+2)
   {
     waveform: WaveformType.SINE,
     rate: 4.0,
     depth: 10,
     phase: 0,
     sync: false,
+    destination: LFODestination.PITCH,
   },
-  // LFO 2: Tremolo
   {
     waveform: WaveformType.SINE,
     rate: 6.0,
     depth: 5,
     phase: 90,
     sync: false,
+    destination: LFODestination.PITCH,
   },
-  // LFO 3: Modulation timbre
+
+  // Paire 2: Amplitude (LFO 3+4)
   {
     waveform: WaveformType.TRIANGLE,
     rate: 0.5,
     depth: 15,
     phase: 0,
     sync: false,
+    destination: LFODestination.AMPLITUDE,
   },
-  // LFO 4: Sawtooth texture (random not supported by Tone.js)
   {
     waveform: WaveformType.SAWTOOTH,
     rate: 0.2,
     depth: 3,
     phase: 0,
     sync: false,
+    destination: LFODestination.AMPLITUDE,
+  },
+
+  // Paire 3: Filter Cutoff (LFO 5+6)
+  {
+    waveform: WaveformType.SINE,
+    rate: 1.5,
+    depth: 20,
+    phase: 0,
+    sync: false,
+    destination: LFODestination.FILTER_CUTOFF,
+  },
+  {
+    waveform: WaveformType.TRIANGLE,
+    rate: 0.8,
+    depth: 12,
+    phase: 180,
+    sync: false,
+    destination: LFODestination.FILTER_CUTOFF,
+  },
+
+  // Paire 4: Operator 1 Level (LFO 7+8)
+  {
+    waveform: WaveformType.SINE,
+    rate: 0.3,
+    depth: 8,
+    phase: 0,
+    sync: false,
+    destination: LFODestination.OP1_LEVEL,
+  },
+  {
+    waveform: WaveformType.SQUARE,
+    rate: 0.1,
+    depth: 5,
+    phase: 90,
+    sync: false,
+    destination: LFODestination.OP1_LEVEL,
   },
 ]
+
+/**
+ * Filtre par défaut
+ */
+const defaultFilter: FilterParams = {
+  type: 'lowpass',
+  cutoff: 2000,
+  resonance: 2,
+  envelope: 50,
+}
 
 /**
  * Preset complet: Electric Piano
@@ -103,6 +165,7 @@ export const defaultPreset: Preset = {
   operators: defaultOperators,
   lfos: defaultLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
+  filter: defaultFilter,
   masterVolume: 0.7,
 }
 
@@ -145,13 +208,15 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
   },
 ]
 
-const bassLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
+const bassLFOs: LFOArray = [
+  // Paire 1: Pitch
   {
     waveform: WaveformType.SINE,
     rate: 2.0,
     depth: 8,
     phase: 0,
     sync: false,
+    destination: LFODestination.PITCH,
   },
   {
     waveform: WaveformType.SQUARE,
@@ -159,13 +224,17 @@ const bassLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
     depth: 5,
     phase: 0,
     sync: false,
+    destination: LFODestination.PITCH,
   },
+
+  // Paire 2: Amplitude
   {
     waveform: WaveformType.SAWTOOTH,
     rate: 0.3,
     depth: 12,
     phase: 0,
     sync: false,
+    destination: LFODestination.AMPLITUDE,
   },
   {
     waveform: WaveformType.SINE,
@@ -173,8 +242,52 @@ const bassLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
     depth: 2,
     phase: 0,
     sync: false,
+    destination: LFODestination.AMPLITUDE,
+  },
+
+  // Paire 3: Filter Cutoff
+  {
+    waveform: WaveformType.SQUARE,
+    rate: 2.0,
+    depth: 30,
+    phase: 0,
+    sync: false,
+    destination: LFODestination.FILTER_CUTOFF,
+  },
+  {
+    waveform: WaveformType.SAWTOOTH,
+    rate: 1.5,
+    depth: 25,
+    phase: 90,
+    sync: false,
+    destination: LFODestination.FILTER_CUTOFF,
+  },
+
+  // Paire 4: Operator 2 Level
+  {
+    waveform: WaveformType.SINE,
+    rate: 0.5,
+    depth: 10,
+    phase: 0,
+    sync: false,
+    destination: LFODestination.OP2_LEVEL,
+  },
+  {
+    waveform: WaveformType.TRIANGLE,
+    rate: 0.2,
+    depth: 5,
+    phase: 120,
+    sync: false,
+    destination: LFODestination.OP2_LEVEL,
   },
 ]
+
+const bassFilter: FilterParams = {
+  type: 'lowpass',
+  cutoff: 1000,
+  resonance: 4,
+  envelope: 70,
+}
 
 export const bassPreset: Preset = {
   id: 'bass-1',
@@ -183,6 +296,7 @@ export const bassPreset: Preset = {
   operators: bassOperators,
   lfos: bassLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
+  filter: bassFilter,
   masterVolume: 0.8,
 }
 
@@ -225,13 +339,15 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
   },
 ]
 
-const padLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
+const padLFOs: LFOArray = [
+  // Paire 1: Pitch
   {
     waveform: WaveformType.SINE,
     rate: 0.3,
     depth: 15,
     phase: 0,
     sync: false,
+    destination: LFODestination.PITCH,
   },
   {
     waveform: WaveformType.SINE,
@@ -239,13 +355,17 @@ const padLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
     depth: 12,
     phase: 120,
     sync: false,
+    destination: LFODestination.PITCH,
   },
+
+  // Paire 2: Amplitude
   {
     waveform: WaveformType.TRIANGLE,
     rate: 0.2,
     depth: 20,
     phase: 240,
     sync: false,
+    destination: LFODestination.AMPLITUDE,
   },
   {
     waveform: WaveformType.SAWTOOTH,
@@ -253,8 +373,52 @@ const padLFOs: [LFOParams, LFOParams, LFOParams, LFOParams] = [
     depth: 8,
     phase: 0,
     sync: false,
+    destination: LFODestination.AMPLITUDE,
+  },
+
+  // Paire 3: Filter Cutoff
+  {
+    waveform: WaveformType.SINE,
+    rate: 0.4,
+    depth: 35,
+    phase: 0,
+    sync: false,
+    destination: LFODestination.FILTER_CUTOFF,
+  },
+  {
+    waveform: WaveformType.TRIANGLE,
+    rate: 0.6,
+    depth: 28,
+    phase: 180,
+    sync: false,
+    destination: LFODestination.FILTER_CUTOFF,
+  },
+
+  // Paire 4: Filter Resonance
+  {
+    waveform: WaveformType.SINE,
+    rate: 0.15,
+    depth: 15,
+    phase: 0,
+    sync: false,
+    destination: LFODestination.FILTER_RESONANCE,
+  },
+  {
+    waveform: WaveformType.SINE,
+    rate: 0.25,
+    depth: 10,
+    phase: 90,
+    sync: false,
+    destination: LFODestination.FILTER_RESONANCE,
   },
 ]
+
+const padFilter: FilterParams = {
+  type: 'lowpass',
+  cutoff: 3000,
+  resonance: 6,
+  envelope: 40,
+}
 
 export const padPreset: Preset = {
   id: 'pad-1',
@@ -263,6 +427,7 @@ export const padPreset: Preset = {
   operators: padOperators,
   lfos: padLFOs,
   lfoCombineMode: LFOCombineMode.MULTIPLY,
+  filter: padFilter,
   masterVolume: 0.6,
 }
 

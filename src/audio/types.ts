@@ -33,10 +33,28 @@ export enum WaveformType {
  * Mode de combinaison LFO
  */
 export enum LFOCombineMode {
-  ADD = 'add', // lfo1 + lfo2 + lfo3 + lfo4
-  MULTIPLY = 'multiply', // lfo1 * lfo2 * lfo3 * lfo4
-  MIN = 'min', // min(lfo1, lfo2, lfo3, lfo4)
-  MAX = 'max', // max(lfo1, lfo2, lfo3, lfo4)
+  ADD = 'add', // lfo1 + lfo2
+  MULTIPLY = 'multiply', // lfo1 * lfo2
+  MIN = 'min', // min(lfo1, lfo2)
+  MAX = 'max', // max(lfo1, lfo2)
+}
+
+/**
+ * Destinations de modulation LFO
+ */
+export enum LFODestination {
+  PITCH = 'pitch', // Pitch vibrato (detune)
+  AMPLITUDE = 'amplitude', // Amplitude tremolo
+  FILTER_CUTOFF = 'filter_cutoff', // Filter cutoff frequency
+  FILTER_RESONANCE = 'filter_resonance', // Filter resonance (Q)
+  OP1_LEVEL = 'op1_level', // Operator 1 level
+  OP2_LEVEL = 'op2_level', // Operator 2 level
+  OP3_LEVEL = 'op3_level', // Operator 3 level
+  OP4_LEVEL = 'op4_level', // Operator 4 level
+  OP1_RATIO = 'op1_ratio', // Operator 1 ratio
+  OP2_RATIO = 'op2_ratio', // Operator 2 ratio
+  OP3_RATIO = 'op3_ratio', // Operator 3 ratio
+  OP4_RATIO = 'op4_ratio', // Operator 4 ratio
 }
 
 /**
@@ -62,6 +80,17 @@ export interface LFOParams {
   phase: number // 0 - 360 degrés
   sync: boolean // Sync tempo vs free-running
   syncValue?: string // '1/16', '1/8', '1/4', '1/2', '1', '2', '4', '8' bars
+  destination: LFODestination // Where this LFO pair modulates
+}
+
+/**
+ * Paramètres du filtre
+ */
+export interface FilterParams {
+  type: 'lowpass' | 'highpass' | 'bandpass' | 'notch'
+  cutoff: number // 20 - 20000 Hz
+  resonance: number // 0 - 20 (Q factor)
+  envelope: number // -100 to 100 (envelope amount on cutoff)
 }
 
 /**
@@ -72,8 +101,18 @@ export interface Preset {
   name: string
   algorithm: AlgorithmType
   operators: [OperatorParams, OperatorParams, OperatorParams, OperatorParams]
-  lfos: [LFOParams, LFOParams, LFOParams, LFOParams]
+  lfos: [
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams,
+    LFOParams
+  ] // 8 LFOs in 4 pairs
   lfoCombineMode: LFOCombineMode
+  filter: FilterParams
   masterVolume: number // 0 - 1.0
 }
 
