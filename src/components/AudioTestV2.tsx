@@ -3,7 +3,7 @@
  * Version avec Zustand stores et hooks
  */
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
@@ -19,7 +19,7 @@ import { PresetManager } from './PresetManager'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
-import { CollapsibleSection } from './CollapsibleSection'
+import { TabBar } from './TabBar'
 
 export function AudioTestV2() {
   const {
@@ -42,6 +42,9 @@ export function AudioTestV2() {
     updateCurrentPresetEnvelopeFollower,
     updateCurrentPresetStepSequencer,
   } = useAudioEngine()
+
+  const [activeTab, setActiveTab] = useState('PLAY')
+  const tabs = ['PLAY', 'SOUND', 'MODULATION', 'EFFECTS', 'VISUALIZE']
 
   // Load preset from URL on mount
   useEffect(() => {
@@ -71,6 +74,17 @@ export function AudioTestV2() {
     }
   }, [saveUserPreset, loadPreset])
 
+  const LFO_COLORS = [
+    '#00FF41',
+    '#00FFFF',
+    '#FFFF00',
+    '#FF64FF',
+    '#64C8FF',
+    '#FF9664',
+    '#96FF96',
+    '#FF6496',
+  ]
+
   return (
     <div
       style={{
@@ -80,6 +94,7 @@ export function AudioTestV2() {
         overflow: 'hidden',
       }}
     >
+      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -109,7 +124,7 @@ export function AudioTestV2() {
           </p>
         </div>
 
-        {/* Status info - compact */}
+        {/* Status info */}
         {isStarted && (
           <div
             style={{
@@ -161,236 +176,365 @@ export function AudioTestV2() {
           Start Audio Engine
         </button>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'auto 1fr',
-            gap: 'var(--spacing-4)',
-            height: 'calc(100vh - 120px)',
-          }}
-        >
-          {/* LEFT COLUMN: Main XY Oscilloscope */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 'var(--font-size-sm)',
-                color: 'var(--color-trace-primary)',
-                fontFamily: 'var(--font-family-mono)',
-                fontWeight: 'bold',
-                marginBottom: 'var(--spacing-2)',
-                textShadow: '0 0 8px var(--color-trace-glow)',
-              }}
-            >
-              LISSAJOUS (XY)
-            </div>
-            <OscilloscopeXY width={600} height={600} />
-          </div>
+        <div>
+          {/* Tab Navigation */}
+          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* RIGHT COLUMN: All controls and collapsible sections */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--spacing-3)',
-              overflowY: 'auto',
-              maxHeight: '100%',
-            }}
-          >
-            {/* Keyboard */}
-            <InteractiveKeyboard onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
+          {/* Tab Content */}
+          <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+            {/* PLAY TAB */}
+            {activeTab === 'PLAY' && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1fr',
+                  gap: 'var(--spacing-4)',
+                  alignItems: 'start',
+                }}
+              >
+                {/* Left: XY Oscilloscope */}
+                <div>
+                  <div
+                    style={{
+                      fontSize: 'var(--font-size-sm)',
+                      color: 'var(--color-trace-primary)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                      marginBottom: 'var(--spacing-2)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    LISSAJOUS (XY)
+                  </div>
+                  <OscilloscopeXY width={500} height={500} />
+                </div>
 
-            {/* Preset Manager */}
-            <PresetManager
-              currentPreset={currentPreset}
-              allPresets={allPresets}
-              onLoadPreset={loadPreset}
-              onSavePreset={saveUserPreset}
-              onDeletePreset={deleteUserPreset}
-            />
-
-            {/* Other Visualizations - Collapsible */}
-            <CollapsibleSection title="OTHER VISUALIZATIONS" defaultExpanded={false}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
-                <SpectrumAnalyzer width={500} height={200} />
-                <Oscilloscope width={500} height={150} lineWidth={2} glowIntensity={0.6} />
-                {currentPreset && (
-                  <ADSRVisualizer operators={currentPreset.operators} width={500} height={150} />
-                )}
-              </div>
-            </CollapsibleSection>
-
-            {/* FM Algorithm & Routing */}
-            {currentPreset && (
-              <CollapsibleSection title="FM ALGORITHM" defaultExpanded={false}>
+                {/* Right: Keyboard + Preset Manager */}
                 <div
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(6, 1fr)',
-                    gap: 'var(--spacing-2)',
-                    marginBottom: 'var(--spacing-3)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--spacing-4)',
                   }}
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((algo) => (
-                    <button
-                      key={algo}
-                      onClick={() => {
-                        setAlgorithm(algo as AlgorithmType)
-                      }}
-                      style={{
-                        padding: 'var(--spacing-2)',
-                        backgroundColor:
-                          currentPreset?.algorithm === (algo as AlgorithmType)
-                            ? 'var(--color-active)'
-                            : 'transparent',
-                        color: 'var(--color-trace-primary)',
-                        border: '1px solid var(--color-border-primary)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: 'var(--font-size-sm)',
-                        cursor: 'pointer',
-                        fontFamily: 'var(--font-family-mono)',
-                      }}
-                    >
-                      {algo}
-                    </button>
-                  ))}
+                  <InteractiveKeyboard onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
+                  <PresetManager
+                    currentPreset={currentPreset}
+                    allPresets={allPresets}
+                    onLoadPreset={loadPreset}
+                    onSavePreset={saveUserPreset}
+                    onDeletePreset={deleteUserPreset}
+                  />
                 </div>
-                <FMRoutingVisualizer algorithm={currentPreset.algorithm} width={500} height={250} />
-              </CollapsibleSection>
+              </div>
             )}
 
-            {/* Master Effects */}
-            {currentPreset && (
-              <CollapsibleSection title="MASTER EFFECTS" defaultExpanded={false}>
+            {/* SOUND TAB */}
+            {activeTab === 'SOUND' && currentPreset && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--spacing-4)',
+                }}
+              >
+                {/* Algorithm Selector */}
+                <div>
+                  <h2
+                    style={{
+                      fontSize: 'var(--font-size-lg)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-3)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    FM ALGORITHM
+                  </h2>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(6, 1fr)',
+                      gap: 'var(--spacing-2)',
+                      marginBottom: 'var(--spacing-3)',
+                    }}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((algo) => (
+                      <button
+                        key={algo}
+                        onClick={() => {
+                          setAlgorithm(algo as AlgorithmType)
+                        }}
+                        style={{
+                          padding: 'var(--spacing-2)',
+                          backgroundColor:
+                            currentPreset?.algorithm === (algo as AlgorithmType)
+                              ? 'var(--color-active)'
+                              : 'transparent',
+                          color: 'var(--color-trace-primary)',
+                          border: '1px solid var(--color-border-primary)',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: 'var(--font-size-sm)',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-family-mono)',
+                        }}
+                      >
+                        {algo}
+                      </button>
+                    ))}
+                  </div>
+                  <FMRoutingVisualizer algorithm={currentPreset.algorithm} width={700} height={300} />
+                </div>
+
+                {/* Operators in 2x2 grid */}
+                <div>
+                  <h2
+                    style={{
+                      fontSize: 'var(--font-size-lg)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-3)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    FM OPERATORS
+                  </h2>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 'var(--spacing-3)',
+                    }}
+                  >
+                    {[1, 2, 3, 4].map((opNum) => {
+                      const opIndex = (opNum - 1) as 0 | 1 | 2 | 3
+                      return (
+                        <OperatorControls
+                          key={opNum}
+                          operatorNumber={opNum as 1 | 2 | 3 | 4}
+                          params={currentPreset.operators[opIndex]}
+                          onChange={(params) => {
+                            updateCurrentPresetOperator(opIndex, params)
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Filter */}
+                <div>
+                  <h2
+                    style={{
+                      fontSize: 'var(--font-size-lg)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-3)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    FILTER
+                  </h2>
+                  <FilterControls
+                    params={currentPreset.filter}
+                    onChange={(params) => {
+                      updateCurrentPresetFilter(params)
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* MODULATION TAB */}
+            {activeTab === 'MODULATION' && currentPreset && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--spacing-4)',
+                }}
+              >
+                {/* LFOs */}
+                <div>
+                  <h2
+                    style={{
+                      fontSize: 'var(--font-size-lg)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-3)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    LFOs (8 x 2 PAIRS)
+                  </h2>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 'var(--spacing-3)',
+                    }}
+                  >
+                    {[1, 2, 3, 4].map((pairNum) => {
+                      const pairNumber = pairNum as 1 | 2 | 3 | 4
+                      const lfo1Index = ((pairNum - 1) * 2) as 0 | 2 | 4 | 6
+                      const lfo2Index = ((pairNum - 1) * 2 + 1) as 1 | 3 | 5 | 7
+
+                      return (
+                        <LFOPairPanel
+                          key={pairNumber}
+                          pairNumber={pairNumber}
+                          lfo1Params={currentPreset.lfos[lfo1Index]}
+                          lfo2Params={currentPreset.lfos[lfo2Index]}
+                          lfo1Index={lfo1Index}
+                          lfo2Index={lfo2Index}
+                          destination={currentPreset.lfos[lfo1Index].destination}
+                          color1={LFO_COLORS[lfo1Index] ?? '#00FF41'}
+                          color2={LFO_COLORS[lfo2Index] ?? '#00FFFF'}
+                          onLFO1Change={(params) => {
+                            updateCurrentPresetLFO(lfo1Index, params)
+                          }}
+                          onLFO2Change={(params) => {
+                            updateCurrentPresetLFO(lfo2Index, params)
+                          }}
+                          onDestinationChange={(destination) => {
+                            updateCurrentPresetLFO(lfo1Index, { destination })
+                            updateCurrentPresetLFO(lfo2Index, { destination })
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Envelope Follower */}
+                <div>
+                  <h2
+                    style={{
+                      fontSize: 'var(--font-size-lg)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-3)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    ENVELOPE FOLLOWER
+                  </h2>
+                  <EnvelopeFollowerControl
+                    params={currentPreset.envelopeFollower}
+                    onChange={(params) => {
+                      updateCurrentPresetEnvelopeFollower(params)
+                    }}
+                  />
+                </div>
+
+                {/* Step Sequencer */}
+                <div>
+                  <h2
+                    style={{
+                      fontSize: 'var(--font-size-lg)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-3)',
+                      fontFamily: 'var(--font-family-mono)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    STEP SEQUENCER
+                  </h2>
+                  <StepSequencerControl
+                    params={currentPreset.stepSequencer}
+                    onChange={(params) => {
+                      updateCurrentPresetStepSequencer(params)
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* EFFECTS TAB */}
+            {activeTab === 'EFFECTS' && currentPreset && (
+              <div>
+                <h2
+                  style={{
+                    fontSize: 'var(--font-size-lg)',
+                    color: 'var(--color-trace-primary)',
+                    marginBottom: 'var(--spacing-3)',
+                    fontFamily: 'var(--font-family-mono)',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  MASTER EFFECTS
+                </h2>
                 <MasterEffects
                   params={currentPreset.masterEffects}
                   onChange={(params) => {
                     updateCurrentPresetMasterEffects(params)
                   }}
                 />
-              </CollapsibleSection>
+              </div>
             )}
 
-            {/* LFOs */}
-            {currentPreset && (
-              <CollapsibleSection title="LFOs (8 x 2 PAIRS)" defaultExpanded={false}>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--spacing-3)',
-                  }}
-                >
-                  {[1, 2, 3, 4].map((pairNum) => {
-                    const pairNumber = pairNum as 1 | 2 | 3 | 4
-                    const lfo1Index = ((pairNum - 1) * 2) as 0 | 2 | 4 | 6
-                    const lfo2Index = ((pairNum - 1) * 2 + 1) as 1 | 3 | 5 | 7
-
-                    const LFO_COLORS = [
-                      '#00FF41',
-                      '#00FFFF',
-                      '#FFFF00',
-                      '#FF64FF',
-                      '#64C8FF',
-                      '#FF9664',
-                      '#96FF96',
-                      '#FF6496',
-                    ]
-
-                    return (
-                      <LFOPairPanel
-                        key={pairNumber}
-                        pairNumber={pairNumber}
-                        lfo1Params={currentPreset.lfos[lfo1Index]}
-                        lfo2Params={currentPreset.lfos[lfo2Index]}
-                        lfo1Index={lfo1Index}
-                        lfo2Index={lfo2Index}
-                        destination={currentPreset.lfos[lfo1Index].destination}
-                        color1={LFO_COLORS[lfo1Index] ?? '#00FF41'}
-                        color2={LFO_COLORS[lfo2Index] ?? '#00FFFF'}
-                        onLFO1Change={(params) => {
-                          updateCurrentPresetLFO(lfo1Index, params)
-                        }}
-                        onLFO2Change={(params) => {
-                          updateCurrentPresetLFO(lfo2Index, params)
-                        }}
-                        onDestinationChange={(destination) => {
-                          updateCurrentPresetLFO(lfo1Index, { destination })
-                          updateCurrentPresetLFO(lfo2Index, { destination })
-                        }}
-                      />
-                    )
-                  })}
+            {/* VISUALIZE TAB */}
+            {activeTab === 'VISUALIZE' && currentPreset && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 'var(--spacing-4)',
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      fontSize: 'var(--font-size-md)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-2)',
+                      fontFamily: 'var(--font-family-mono)',
+                    }}
+                  >
+                    SPECTRUM ANALYZER
+                  </h3>
+                  <SpectrumAnalyzer width={550} height={300} />
                 </div>
-              </CollapsibleSection>
-            )}
-
-            {/* Envelope Follower */}
-            {currentPreset && (
-              <CollapsibleSection title="ENVELOPE FOLLOWER" defaultExpanded={false}>
-                <EnvelopeFollowerControl
-                  params={currentPreset.envelopeFollower}
-                  onChange={(params) => {
-                    updateCurrentPresetEnvelopeFollower(params)
-                  }}
-                />
-              </CollapsibleSection>
-            )}
-
-            {/* Step Sequencer */}
-            {currentPreset && (
-              <CollapsibleSection title="STEP SEQUENCER" defaultExpanded={false}>
-                <StepSequencerControl
-                  params={currentPreset.stepSequencer}
-                  onChange={(params) => {
-                    updateCurrentPresetStepSequencer(params)
-                  }}
-                />
-              </CollapsibleSection>
-            )}
-
-            {/* FM Operators */}
-            {currentPreset && (
-              <CollapsibleSection title="FM OPERATORS (1-4)" defaultExpanded={false}>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--spacing-3)',
-                  }}
-                >
-                  {[1, 2, 3, 4].map((opNum) => {
-                    const opIndex = (opNum - 1) as 0 | 1 | 2 | 3
-                    return (
-                      <OperatorControls
-                        key={opNum}
-                        operatorNumber={opNum as 1 | 2 | 3 | 4}
-                        params={currentPreset.operators[opIndex]}
-                        onChange={(params) => {
-                          updateCurrentPresetOperator(opIndex, params)
-                        }}
-                      />
-                    )
-                  })}
+                <div>
+                  <h3
+                    style={{
+                      fontSize: 'var(--font-size-md)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-2)',
+                      fontFamily: 'var(--font-family-mono)',
+                    }}
+                  >
+                    OSCILLOSCOPE
+                  </h3>
+                  <Oscilloscope width={550} height={300} lineWidth={2} glowIntensity={0.6} />
                 </div>
-              </CollapsibleSection>
-            )}
-
-            {/* Filter */}
-            {currentPreset && (
-              <CollapsibleSection title="FILTER" defaultExpanded={false}>
-                <FilterControls
-                  params={currentPreset.filter}
-                  onChange={(params) => {
-                    updateCurrentPresetFilter(params)
-                  }}
-                />
-              </CollapsibleSection>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: 'var(--font-size-md)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-2)',
+                      fontFamily: 'var(--font-family-mono)',
+                    }}
+                  >
+                    LISSAJOUS (XY)
+                  </h3>
+                  <OscilloscopeXY width={550} height={550} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: 'var(--font-size-md)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-2)',
+                      fontFamily: 'var(--font-family-mono)',
+                    }}
+                  >
+                    ADSR ENVELOPES
+                  </h3>
+                  <ADSRVisualizer operators={currentPreset.operators} width={550} height={300} />
+                </div>
+              </div>
             )}
           </div>
         </div>
