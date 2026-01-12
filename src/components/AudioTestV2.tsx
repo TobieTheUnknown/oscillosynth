@@ -14,6 +14,7 @@ import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
 import { StepSequencerControl } from './StepSequencerControl'
 import { FMRoutingVisualizer } from './FMRoutingVisualizer'
 import { InteractiveKeyboard } from './InteractiveKeyboard'
+import { PresetManager } from './PresetManager'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
@@ -27,6 +28,8 @@ export function AudioTestV2() {
     allPresets,
     startAudio,
     loadPreset,
+    saveUserPreset,
+    deleteUserPreset,
     setAlgorithm,
     noteOn,
     noteOff,
@@ -136,6 +139,17 @@ export function AudioTestV2() {
               onNoteOn={noteOn}
               onNoteOff={noteOff}
               isEnabled={isStarted}
+            />
+          </div>
+
+          {/* Preset Manager */}
+          <div style={{ marginBottom: 'var(--spacing-6)' }}>
+            <PresetManager
+              currentPreset={currentPreset}
+              allPresets={allPresets}
+              onLoadPreset={loadPreset}
+              onSavePreset={saveUserPreset}
+              onDeletePreset={deleteUserPreset}
             />
           </div>
 
