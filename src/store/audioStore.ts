@@ -65,13 +65,8 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
   setAlgorithm: (algorithm: AlgorithmType) => {
     audioEngine.setAlgorithm(algorithm)
-    if (get().currentPreset) {
-      set((state) => ({
-        currentPreset: state.currentPreset
-          ? { ...state.currentPreset, algorithm }
-          : null,
-      }))
-    }
+    // Force immediate state update to reflect algorithm change
+    get().updateState()
   },
 
   noteOn: (note: number, velocity = 100) => {
@@ -93,7 +88,8 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       newState.isStarted !== currentState.isStarted ||
       newState.activeVoices !== currentState.activeVoices ||
       newState.isMuted !== currentState.isMuted ||
-      newState.currentPreset?.id !== currentState.currentPreset?.id
+      newState.currentPreset?.id !== currentState.currentPreset?.id ||
+      newState.currentPreset?.algorithm !== currentState.currentPreset?.algorithm
     ) {
       set(newState)
     }
