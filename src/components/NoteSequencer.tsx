@@ -27,29 +27,44 @@ export function NoteSequencer({ onNoteOn, onNoteOff, isEnabled }: NoteSequencerP
   const [currentStep, setCurrentStep] = useState<number>(-1)
   const [isPlaying, setIsPlaying] = useState(false)
   const [bpm, setBpm] = useState(120)
+  const [gateLength, setGateLength] = useState(50) // 0-100% gate length
 
-  const sequenceRef = useRef<number | null>(null)
+  const sequenceRef = useRef<Tone.Sequence<number> | null>(null)
   const activeNoteRef = useRef<number | null>(null)
 
+  // Cleanup sequence on unmount or when stopping
+  useEffect(() => {
+    return () => {
+      if (sequenceRef.current) {
+        sequenceRef.current.dispose()
+        sequenceRef.current = null
+      }
+      if (activeNoteRef.current !== null) {
+        onNoteOff(activeNoteRef.current)
+        activeNoteRef.current = null
+      }
+    }
+  }, [onNoteOff])
+
+  // Setup sequence when parameters change
   useEffect(() => {
     if (!isEnabled) {
       if (isPlaying) {
-        setIsPlaying(false)
-        Tone.Transport.stop()
-        if (activeNoteRef.current !== null) {
-          onNoteOff(activeNoteRef.current)
-          activeNoteRef.current = null
-        }
+        handlePlayStop()
       }
       return
     }
 
-    Tone.Transport.bpm.value = bpm
-
-    if (sequenceRef.current !== null) {
-      Tone.Transport.clear(sequenceRef.current)
+    // Dispose old sequence
+    if (sequenceRef.current) {
+      sequenceRef.current.dispose()
+      sequenceRef.current = null
     }
 
+    // Set BPM
+    Tone.Transport.bpm.value = bpm
+
+    // Create new sequence
     const sequence = new Tone.Sequence(
       (time, step: number) => {
         // Schedule UI update
@@ -59,9 +74,10 @@ export function NoteSequencer({ onNoteOn, onNoteOff, isEnabled }: NoteSequencerP
 
         const currentStepData = steps[step]
         if (currentStepData && currentStepData.enabled) {
-          // Stop previous note
+          // Stop previous note immediately
           if (activeNoteRef.current !== null) {
             onNoteOff(activeNoteRef.current)
+            activeNoteRef.current = null
           }
 
           // Play new note
@@ -69,13 +85,27 @@ export function NoteSequencer({ onNoteOn, onNoteOff, isEnabled }: NoteSequencerP
           onNoteOn(note, 100)
           activeNoteRef.current = note
 
+          // Calculate note duration based on gate length
+          const stepDuration = 60 / bpm / 4 // Duration of 16th note in seconds
+          const noteDuration = stepDuration * (gateLength / 100)
+
           // Schedule note off
           Tone.Transport.scheduleOnce(() => {
             if (activeNoteRef.current === note) {
               onNoteOff(note)
               activeNoteRef.current = null
             }
-          }, time + 0.1) // Note duration
+          }, time + noteDuration)
+        } else {
+          // Step is disabled, stop any playing note
+          if (activeNoteRef.current !== null) {
+            Tone.Draw.schedule(() => {
+              if (activeNoteRef.current !== null) {
+                onNoteOff(activeNoteRef.current)
+                activeNoteRef.current = null
+              }
+            }, time)
+          }
         }
       },
       Array.from({ length: 16 }, (_, i) => i),
@@ -83,16 +113,8 @@ export function NoteSequencer({ onNoteOn, onNoteOff, isEnabled }: NoteSequencerP
     )
 
     sequence.start(0)
-    // Store reference to the sequence (Tone.js doesn't expose id directly)
-    sequenceRef.current = 0
-
-    return () => {
-      if (sequenceRef.current !== null) {
-        Tone.Transport.clear(sequenceRef.current)
-        sequenceRef.current = null
-      }
-    }
-  }, [steps, bpm, isEnabled, onNoteOn, onNoteOff])
+    sequenceRef.current = sequence
+  }, [steps, bpm, gateLength, isEnabled, onNoteOn, onNoteOff, isPlaying])
 
   const handlePlayStop = () => {
     if (!isPlaying) {
@@ -100,6 +122,7 @@ export function NoteSequencer({ onNoteOn, onNoteOff, isEnabled }: NoteSequencerP
       setIsPlaying(true)
     } else {
       Tone.Transport.stop()
+      Tone.Transport.position = 0 // Reset position
       setIsPlaying(false)
       setCurrentStep(-1)
       if (activeNoteRef.current !== null) {
@@ -219,6 +242,40 @@ export function NoteSequencer({ onNoteOn, onNoteOff, isEnabled }: NoteSequencerP
                 fontFamily: 'var(--font-family-mono)',
               }}
             />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+            <label
+              style={{
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--color-text-secondary)',
+                fontFamily: 'var(--font-family-mono)',
+              }}
+            >
+              Gate:
+            </label>
+            <input
+              type="range"
+              value={gateLength}
+              onChange={(e) => {
+                setGateLength(Number(e.target.value))
+              }}
+              min={10}
+              max={95}
+              style={{
+                width: '80px',
+              }}
+            />
+            <span
+              style={{
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--color-text-secondary)',
+                fontFamily: 'var(--font-family-mono)',
+                width: '35px',
+              }}
+            >
+              {gateLength}%
+            </span>
           </div>
 
           <button

@@ -3,7 +3,7 @@
  * Version avec Zustand stores et hooks
  */
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
@@ -44,34 +44,6 @@ export function AudioTestV2() {
 
   const [activeTab, setActiveTab] = useState('PLAY')
   const tabs = ['PLAY', 'SOUND', 'MODULATION', 'EFFECTS', 'VISUALIZE']
-
-  // Load preset from URL on mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const presetParam = urlParams.get('preset')
-
-    if (presetParam) {
-      try {
-        const json = atob(presetParam)
-        const preset = JSON.parse(json)
-
-        // Validate preset structure
-        if (preset.id && preset.name && preset.operators && preset.lfos) {
-          // Generate new ID
-          preset.id = `shared-${Date.now()}`
-          saveUserPreset(preset)
-          loadPreset(preset.id)
-
-          // Clean URL
-          window.history.replaceState({}, '', window.location.pathname)
-
-          alert(`Shared preset "${preset.name}" loaded successfully!`)
-        }
-      } catch (error) {
-        console.error('Failed to load preset from URL:', error)
-      }
-    }
-  }, [saveUserPreset, loadPreset])
 
   const LFO_COLORS = [
     '#00FF41',
