@@ -98,6 +98,30 @@ export interface FilterParams {
 }
 
 /**
+ * Paramètres des effets master
+ */
+export interface MasterEffectsParams {
+  // Reverb
+  reverbWet: number // 0 - 1
+  reverbDecay: number // 0.1 - 10 seconds
+  reverbPreDelay: number // 0 - 1 seconds
+
+  // Delay
+  delayWet: number // 0 - 1
+  delayTime: number // 0 - 2 seconds
+  delayFeedback: number // 0 - 0.95
+
+  // Chorus
+  chorusWet: number // 0 - 1
+  chorusFrequency: number // 0.1 - 10 Hz
+  chorusDepth: number // 0 - 1
+
+  // Distortion
+  distortionWet: number // 0 - 1
+  distortionAmount: number // 0 - 1
+}
+
+/**
  * Preset complet
  */
 export interface Preset {
@@ -117,6 +141,7 @@ export interface Preset {
   ] // 8 LFOs in 4 pairs
   lfoCombineMode: LFOCombineMode
   filter: FilterParams
+  masterEffects: MasterEffectsParams
   masterVolume: number // 0 - 1.0
 }
 

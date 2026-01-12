@@ -256,6 +256,19 @@ export class AudioEngine {
     this.pipeline.setFilterCutoff(preset.filter.cutoff)
     this.pipeline.setFilterResonance(preset.filter.resonance)
 
+    // Configure master effects
+    this.pipeline.setReverbWet(preset.masterEffects.reverbWet)
+    this.pipeline.setReverbDecay(preset.masterEffects.reverbDecay)
+    this.pipeline.setReverbPreDelay(preset.masterEffects.reverbPreDelay)
+    this.pipeline.setDelayWet(preset.masterEffects.delayWet)
+    this.pipeline.setDelayTime(preset.masterEffects.delayTime)
+    this.pipeline.setDelayFeedback(preset.masterEffects.delayFeedback)
+    this.pipeline.setChorusWet(preset.masterEffects.chorusWet)
+    this.pipeline.setChorusFrequency(preset.masterEffects.chorusFrequency)
+    this.pipeline.setChorusDepth(preset.masterEffects.chorusDepth)
+    this.pipeline.setDistortionWet(preset.masterEffects.distortionWet)
+    this.pipeline.setDistortionAmount(preset.masterEffects.distortionAmount)
+
     // Create global LFO engine for visualization
     if (this.globalLFOEngine) {
       this.globalLFOEngine.dispose()

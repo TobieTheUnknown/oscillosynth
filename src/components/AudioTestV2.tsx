@@ -9,6 +9,7 @@ import { Oscilloscope } from './Oscilloscope'
 import { LFOPairPanel } from './LFOPairPanel'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
+import { MasterEffects } from './MasterEffects'
 
 export function AudioTestV2() {
   const {
@@ -25,6 +26,7 @@ export function AudioTestV2() {
     updateCurrentPresetLFO,
     updateCurrentPresetOperator,
     updateCurrentPresetFilter,
+    updateCurrentPresetMasterEffects,
   } = useAudioEngine()
 
   const playNote = (midiNote: number) => {
@@ -127,6 +129,18 @@ export function AudioTestV2() {
               glowIntensity={0.6}
             />
           </div>
+
+          {/* Master Effects with visualizer */}
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)' }}>
+              <MasterEffects
+                params={currentPreset.masterEffects}
+                onChange={(params) => {
+                  updateCurrentPresetMasterEffects(params)
+                }}
+              />
+            </div>
+          )}
 
           {/* LFO Pair Panels - Integrated visualizer and controls */}
           {currentPreset && (

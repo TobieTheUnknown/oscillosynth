@@ -12,6 +12,7 @@ import {
   OperatorParams,
   LFOParams,
   FilterParams,
+  MasterEffectsParams,
 } from '../types'
 
 /**
@@ -156,6 +157,23 @@ const defaultFilter: FilterParams = {
 }
 
 /**
+ * Effets master par défaut (tous off)
+ */
+const defaultMasterEffects: MasterEffectsParams = {
+  reverbWet: 0,
+  reverbDecay: 2.5,
+  reverbPreDelay: 0.01,
+  delayWet: 0,
+  delayTime: 0.25,
+  delayFeedback: 0.3,
+  chorusWet: 0,
+  chorusFrequency: 1.5,
+  chorusDepth: 0.7,
+  distortionWet: 0,
+  distortionAmount: 0.4,
+}
+
+/**
  * Preset complet: Electric Piano
  */
 export const defaultPreset: Preset = {
@@ -166,6 +184,7 @@ export const defaultPreset: Preset = {
   lfos: defaultLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
   filter: defaultFilter,
+  masterEffects: defaultMasterEffects,
   masterVolume: 0.7,
 }
 
@@ -297,6 +316,7 @@ export const bassPreset: Preset = {
   lfos: bassLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
   filter: bassFilter,
+  masterEffects: defaultMasterEffects,
   masterVolume: 0.8,
 }
 
@@ -428,6 +448,7 @@ export const padPreset: Preset = {
   lfos: padLFOs,
   lfoCombineMode: LFOCombineMode.MULTIPLY,
   filter: padFilter,
+  masterEffects: defaultMasterEffects,
   masterVolume: 0.6,
 }
 

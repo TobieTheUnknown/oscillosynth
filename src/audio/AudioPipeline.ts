@@ -7,6 +7,10 @@ import * as Tone from 'tone'
 
 export class AudioPipeline {
   private filter: Tone.Filter
+  private reverb: Tone.Reverb
+  private delay: Tone.FeedbackDelay
+  private chorus: Tone.Chorus
+  private distortion: Tone.Distortion
   private limiter: Tone.Limiter
   private analyser: Tone.Analyser
   private output: Tone.Gain
@@ -18,6 +22,30 @@ export class AudioPipeline {
       frequency: 20000, // Full range par défaut
       rolloff: -24, // 24dB/octave
       Q: 1,
+    })
+
+    // Reverb
+    this.reverb = new Tone.Reverb({
+      decay: 2.5,
+      preDelay: 0.01,
+    })
+
+    // Delay
+    this.delay = new Tone.FeedbackDelay({
+      delayTime: 0.25,
+      feedback: 0.3,
+    })
+
+    // Chorus
+    this.chorus = new Tone.Chorus({
+      frequency: 1.5,
+      delayTime: 3.5,
+      depth: 0.7,
+    }).start()
+
+    // Distortion
+    this.distortion = new Tone.Distortion({
+      distortion: 0.4,
     })
 
     // Limiter anti-clipping
@@ -32,10 +60,21 @@ export class AudioPipeline {
     // Output gain
     this.output = new Tone.Gain(1.0)
 
-    // Routing: filter → limiter → analyser → output
-    this.filter.connect(this.limiter)
+    // Routing: filter → distortion → chorus → delay → reverb → limiter → analyser → output
+    // Each effect uses Tone.js built-in wet parameter for simplicity
+    this.filter.connect(this.distortion)
+    this.distortion.connect(this.chorus)
+    this.chorus.connect(this.delay)
+    this.delay.connect(this.reverb)
+    this.reverb.connect(this.limiter)
     this.limiter.connect(this.analyser)
     this.analyser.connect(this.output)
+
+    // Set initial wet values to 0 (bypass all effects)
+    this.distortion.wet.value = 0
+    this.chorus.wet.value = 0
+    this.delay.wet.value = 0
+    this.reverb.wet.value = 0
   }
 
   /**
@@ -129,10 +168,70 @@ export class AudioPipeline {
   }
 
   /**
+   * Reverb controls
+   */
+  setReverbWet(wet: number): void {
+    this.reverb.wet.value = Math.max(0, Math.min(1, wet))
+  }
+
+  setReverbDecay(decay: number): void {
+    this.reverb.decay = Math.max(0.1, Math.min(10, decay))
+  }
+
+  setReverbPreDelay(preDelay: number): void {
+    this.reverb.preDelay = Math.max(0, Math.min(1, preDelay))
+  }
+
+  /**
+   * Delay controls
+   */
+  setDelayWet(wet: number): void {
+    this.delay.wet.value = Math.max(0, Math.min(1, wet))
+  }
+
+  setDelayTime(time: number): void {
+    this.delay.delayTime.value = Math.max(0, Math.min(2, time))
+  }
+
+  setDelayFeedback(feedback: number): void {
+    this.delay.feedback.value = Math.max(0, Math.min(0.95, feedback))
+  }
+
+  /**
+   * Chorus controls
+   */
+  setChorusWet(wet: number): void {
+    this.chorus.wet.value = Math.max(0, Math.min(1, wet))
+  }
+
+  setChorusFrequency(freq: number): void {
+    this.chorus.frequency.value = Math.max(0.1, Math.min(10, freq))
+  }
+
+  setChorusDepth(depth: number): void {
+    this.chorus.depth = Math.max(0, Math.min(1, depth))
+  }
+
+  /**
+   * Distortion controls
+   */
+  setDistortionWet(wet: number): void {
+    this.distortion.wet.value = Math.max(0, Math.min(1, wet))
+  }
+
+  setDistortionAmount(amount: number): void {
+    this.distortion.distortion = Math.max(0, Math.min(1, amount))
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
     this.filter.dispose()
+    this.reverb.dispose()
+    this.delay.dispose()
+    this.chorus.dispose()
+    this.distortion.dispose()
     this.limiter.dispose()
     this.analyser.dispose()
     this.output.dispose()
