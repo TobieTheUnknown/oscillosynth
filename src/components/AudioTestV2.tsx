@@ -12,6 +12,7 @@ import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
 import { StepSequencerControl } from './StepSequencerControl'
+import { FMRoutingVisualizer } from './FMRoutingVisualizer'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
@@ -412,6 +413,17 @@ export function AudioTestV2() {
                 </button>
               ))}
             </div>
+
+            {/* FM Routing Visualization */}
+            {currentPreset && (
+              <div style={{ marginTop: 'var(--spacing-4)' }}>
+                <FMRoutingVisualizer
+                  algorithm={currentPreset.algorithm}
+                  width={Math.min(600, window.innerWidth - 64)}
+                  height={300}
+                />
+              </div>
+            )}
           </div>
 
           <div>
