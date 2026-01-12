@@ -14,6 +14,7 @@ interface EnvelopeFollowerControlProps {
 const DESTINATION_LABELS: Record<LFODestination, string> = {
   [LFODestination.PITCH]: 'PITCH',
   [LFODestination.AMPLITUDE]: 'AMPLITUDE',
+  [LFODestination.PAN]: 'PAN',
   [LFODestination.FILTER_CUTOFF]: 'FILTER CUTOFF',
   [LFODestination.FILTER_RESONANCE]: 'FILTER RESONANCE',
   [LFODestination.OP1_LEVEL]: 'OP1 LEVEL',

@@ -180,6 +180,15 @@ export class FMEngine {
   }
 
   /**
+   * Apply pan modulation to all operators (auto-pan)
+   */
+  applyPanModulation(panValue: number): void {
+    this.operators.forEach((op) => {
+      op.applyPanModulation(panValue)
+    })
+  }
+
+  /**
    * Mise à jour paramètres opérateur
    */
   updateOperator(index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>): void {

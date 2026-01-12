@@ -314,6 +314,13 @@ export class AudioEngine {
         }
         break
 
+      case LFODestination.PAN:
+        // Auto-pan: modulate stereo position (-1 to 1)
+        if (fmEngine) {
+          fmEngine.applyPanModulation(value)
+        }
+        break
+
       default:
         console.warn(`Unknown LFO destination: ${String(destination)}`)
     }

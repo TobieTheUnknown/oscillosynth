@@ -22,6 +22,7 @@ interface LFOPairControlProps {
 const DESTINATION_LABELS: Record<LFODestination, string> = {
   [LFODestination.PITCH]: 'PITCH',
   [LFODestination.AMPLITUDE]: 'AMP',
+  [LFODestination.PAN]: 'PAN',
   [LFODestination.FILTER_CUTOFF]: 'FILTER CUTOFF',
   [LFODestination.FILTER_RESONANCE]: 'FILTER RES',
   [LFODestination.OP1_LEVEL]: 'OP1 LEVEL',

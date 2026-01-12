@@ -41,6 +41,7 @@ export enum LFOCombineMode {
 export enum LFODestination {
   PITCH = 'pitch', // Pitch vibrato (detune)
   AMPLITUDE = 'amplitude', // Amplitude tremolo
+  PAN = 'pan', // Auto-pan (stereo position)
   FILTER_CUTOFF = 'filter_cutoff', // Filter cutoff frequency
   FILTER_RESONANCE = 'filter_resonance', // Filter resonance (Q)
   OP1_LEVEL = 'op1_level', // Operator 1 level
