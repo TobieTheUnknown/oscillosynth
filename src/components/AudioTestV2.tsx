@@ -10,6 +10,7 @@ import { SpectrumAnalyzer } from './SpectrumAnalyzer'
 import { OscilloscopeXY } from './OscilloscopeXY'
 import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
+import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
@@ -30,6 +31,7 @@ export function AudioTestV2() {
     updateCurrentPresetOperator,
     updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects,
+    updateCurrentPresetEnvelopeFollower,
   } = useAudioEngine()
 
   const playNote = (midiNote: number) => {
@@ -232,6 +234,28 @@ export function AudioTestV2() {
                   />
                 )
               })}
+            </div>
+          )}
+
+          {/* Envelope Follower */}
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)' }}>
+              <h2
+                style={{
+                  fontSize: 'var(--font-size-xl)',
+                  marginBottom: 'var(--spacing-4)',
+                  color: 'var(--color-trace-primary)',
+                  textShadow: '0 0 8px var(--color-trace-glow)',
+                }}
+              >
+                ENVELOPE FOLLOWER
+              </h2>
+              <EnvelopeFollowerControl
+                params={currentPreset.envelopeFollower}
+                onChange={(params) => {
+                  updateCurrentPresetEnvelopeFollower(params)
+                }}
+              />
             </div>
           )}
 

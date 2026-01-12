@@ -5,7 +5,14 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Preset, LFOParams, OperatorParams, FilterParams, MasterEffectsParams } from '../audio/types'
+import {
+  Preset,
+  LFOParams,
+  OperatorParams,
+  FilterParams,
+  MasterEffectsParams,
+  EnvelopeFollowerParams,
+} from '../audio/types'
 import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
 
@@ -25,6 +32,7 @@ interface PresetStore {
   updateCurrentPresetOperator: (index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>) => void
   updateCurrentPresetFilter: (params: Partial<FilterParams>) => void
   updateCurrentPresetMasterEffects: (params: Partial<MasterEffectsParams>) => void
+  updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -222,6 +230,39 @@ export const usePresetStore = create<PresetStore>()(
         const updatedPreset: Preset = {
           ...currentPreset,
           masterEffects: { ...currentPreset.masterEffects, ...params },
+        }
+
+        // Reload preset in audio engine
+        audioEngine.loadPreset(updatedPreset)
+
+        // Update store
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+      },
+
+      updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          envelopeFollower: { ...currentPreset.envelopeFollower, ...params },
         }
 
         // Reload preset in audio engine

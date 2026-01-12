@@ -94,6 +94,16 @@ export interface LFOParams {
 }
 
 /**
+ * Paramètres Envelope Follower
+ */
+export interface EnvelopeFollowerParams {
+  enabled: boolean // Envelope follower on/off
+  smoothing: number // 0 - 1 (attack/release time)
+  depth: number // 0 - 200% (modulation depth)
+  destination: LFODestination // Where the envelope follower modulates (reuses LFO destinations)
+}
+
+/**
  * Paramètres du filtre
  */
 export interface FilterParams {
@@ -146,6 +156,7 @@ export interface Preset {
     LFOParams
   ] // 8 LFOs in 4 pairs
   lfoCombineMode: LFOCombineMode
+  envelopeFollower: EnvelopeFollowerParams
   filter: FilterParams
   masterEffects: MasterEffectsParams
   masterVolume: number // 0 - 1.0

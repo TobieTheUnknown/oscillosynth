@@ -100,5 +100,6 @@ export function useAudioEngine() {
     updateCurrentPresetOperator: presetStore.updateCurrentPresetOperator,
     updateCurrentPresetFilter: presetStore.updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects: presetStore.updateCurrentPresetMasterEffects,
+    updateCurrentPresetEnvelopeFollower: presetStore.updateCurrentPresetEnvelopeFollower,
   }
 }

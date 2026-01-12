@@ -11,6 +11,7 @@ import {
   LFODestination,
   OperatorParams,
   LFOParams,
+  EnvelopeFollowerParams,
   FilterParams,
   MasterEffectsParams,
 } from '../types'
@@ -147,6 +148,16 @@ const defaultLFOs: LFOArray = [
 ]
 
 /**
+ * Envelope Follower par défaut (off)
+ */
+const defaultEnvelopeFollower: EnvelopeFollowerParams = {
+  enabled: false,
+  smoothing: 0.05,
+  depth: 50,
+  destination: LFODestination.FILTER_CUTOFF,
+}
+
+/**
  * Filtre par défaut
  */
 const defaultFilter: FilterParams = {
@@ -183,6 +194,7 @@ export const defaultPreset: Preset = {
   operators: defaultOperators,
   lfos: defaultLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
+  envelopeFollower: defaultEnvelopeFollower,
   filter: defaultFilter,
   masterEffects: defaultMasterEffects,
   masterVolume: 0.7,
@@ -315,6 +327,7 @@ export const bassPreset: Preset = {
   operators: bassOperators,
   lfos: bassLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
+  envelopeFollower: defaultEnvelopeFollower,
   filter: bassFilter,
   masterEffects: defaultMasterEffects,
   masterVolume: 0.8,
@@ -447,6 +460,7 @@ export const padPreset: Preset = {
   operators: padOperators,
   lfos: padLFOs,
   lfoCombineMode: LFOCombineMode.MULTIPLY,
+  envelopeFollower: defaultEnvelopeFollower,
   filter: padFilter,
   masterEffects: defaultMasterEffects,
   masterVolume: 0.6,

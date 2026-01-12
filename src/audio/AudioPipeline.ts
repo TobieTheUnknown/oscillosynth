@@ -13,6 +13,8 @@ export class AudioPipeline {
   private distortion: Tone.Distortion
   private limiter: Tone.Limiter
   private analyser: Tone.Analyser
+  private follower: Tone.Follower
+  private meter: Tone.Meter
   private output: Tone.Gain
 
   constructor() {
@@ -57,10 +59,20 @@ export class AudioPipeline {
       size: 2048,
     })
 
+    // Envelope follower for amplitude tracking
+    this.follower = new Tone.Follower({
+      smoothing: 0.05, // Default smoothing (attack/release)
+    })
+
+    // Meter for reading follower output value
+    this.meter = new Tone.Meter()
+
     // Output gain
     this.output = new Tone.Gain(1.0)
 
     // Routing: filter → distortion → chorus → delay → reverb → limiter → analyser → output
+    // Follower taps after limiter (same point as analyser) for amplitude tracking
+    // Follower → Meter for reading smoothed amplitude
     // Each effect uses Tone.js built-in wet parameter for simplicity
     this.filter.connect(this.distortion)
     this.distortion.connect(this.chorus)
@@ -68,6 +80,8 @@ export class AudioPipeline {
     this.delay.connect(this.reverb)
     this.reverb.connect(this.limiter)
     this.limiter.connect(this.analyser)
+    this.limiter.connect(this.follower)
+    this.follower.connect(this.meter)
     this.analyser.connect(this.output)
 
     // Set initial wet values to 0 (bypass all effects)
@@ -224,6 +238,20 @@ export class AudioPipeline {
   }
 
   /**
+   * Envelope follower controls
+   */
+  setFollowerSmoothing(smoothing: number): void {
+    this.follower.smoothing = Math.max(0, Math.min(1, smoothing))
+  }
+
+  getFollowerValue(): number {
+    // Returns amplitude from meter (reads follower output)
+    const value = this.meter.getValue()
+    // Meter returns value in range, normalize to 0-1
+    return Math.max(0, Math.min(1, typeof value === 'number' ? value : 0))
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
@@ -234,6 +262,8 @@ export class AudioPipeline {
     this.distortion.dispose()
     this.limiter.dispose()
     this.analyser.dispose()
+    this.follower.dispose()
+    this.meter.dispose()
     this.output.dispose()
   }
 }

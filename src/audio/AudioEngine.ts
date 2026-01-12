@@ -27,6 +27,7 @@ export class AudioEngine {
   private currentPreset: Preset | null = null
   private isMuted = false
   private globalLFOEngine: LFOEngine | null = null // For visualization
+  private envelopeFollowerInterval: ReturnType<typeof setInterval> | null = null // Envelope follower polling
 
   private constructor() {
     this.voicePool = new VoicePool(8) // Max 8 voix
@@ -316,6 +317,9 @@ export class AudioEngine {
     }
     this.globalLFOEngine = new LFOEngine(preset.lfos, preset.lfoCombineMode)
 
+    // Setup envelope follower
+    this.setupEnvelopeFollower(preset.envelopeFollower)
+
     console.log(`✅ Preset loaded: ${preset.name} (Algorithm ${String(preset.algorithm)})`)
     console.log(
       `   Filter: ${preset.filter.type} @ ${String(preset.filter.cutoff)}Hz, Q=${String(preset.filter.resonance)}`
@@ -399,10 +403,50 @@ export class AudioEngine {
   }
 
   /**
+   * Setup envelope follower
+   */
+  private setupEnvelopeFollower(params: import('./types').EnvelopeFollowerParams): void {
+    // Stop existing envelope follower interval
+    if (this.envelopeFollowerInterval) {
+      clearInterval(this.envelopeFollowerInterval)
+      this.envelopeFollowerInterval = null
+    }
+
+    if (!params.enabled) {
+      return
+    }
+
+    // Configure follower smoothing
+    this.pipeline.setFollowerSmoothing(params.smoothing)
+
+    // Poll envelope follower value every 10ms and apply modulation
+    this.envelopeFollowerInterval = setInterval(() => {
+      if (!this.currentPreset) return
+
+      // Get current amplitude from follower (0-1)
+      const amplitude = this.pipeline.getFollowerValue()
+
+      // Scale by depth (-1 to 1 range)
+      const modulationValue = (amplitude - 0.5) * 2 * (params.depth / 100)
+
+      // Apply modulation to all active voices
+      this.activeVoices.forEach((activeVoice) => {
+        this.applyLFOModulation(params.destination, modulationValue, activeVoice.fmEngine)
+      })
+
+      // Also apply to global effects (filter, master FX)
+      this.applyLFOModulation(params.destination, modulationValue, null as any)
+    }, 10)
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
     this.stopAll()
+    if (this.envelopeFollowerInterval) {
+      clearInterval(this.envelopeFollowerInterval)
+    }
     this.masterGain.dispose()
     this.pipeline.dispose()
     this.voicePool.dispose()
