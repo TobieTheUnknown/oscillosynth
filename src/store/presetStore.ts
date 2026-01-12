@@ -105,6 +105,9 @@ export const usePresetStore = create<PresetStore>()(
           return
         }
 
+        // Update live without stopping notes
+        audioEngine.updateLFOParams(index, params)
+
         // Create updated LFOs array
         const updatedLFOs = [...currentPreset.lfos] as [
           LFOParams,
@@ -123,9 +126,6 @@ export const usePresetStore = create<PresetStore>()(
           ...currentPreset,
           lfos: updatedLFOs,
         }
-
-        // Reload preset in audio engine
-        audioEngine.loadPreset(updatedPreset)
 
         // Update store (factory presets update won't persist, which is correct)
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -153,6 +153,9 @@ export const usePresetStore = create<PresetStore>()(
           return
         }
 
+        // Update live without stopping notes
+        audioEngine.updateOperatorParams(index, params)
+
         // Create updated operators array
         const updatedOperators = [...currentPreset.operators] as [
           OperatorParams,
@@ -167,9 +170,6 @@ export const usePresetStore = create<PresetStore>()(
           ...currentPreset,
           operators: updatedOperators,
         }
-
-        // Reload preset in audio engine
-        audioEngine.loadPreset(updatedPreset)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -195,14 +195,14 @@ export const usePresetStore = create<PresetStore>()(
           return
         }
 
+        // Update live without stopping notes
+        audioEngine.updateFilterParams(params)
+
         // Create updated preset
         const updatedPreset: Preset = {
           ...currentPreset,
           filter: { ...currentPreset.filter, ...params },
         }
-
-        // Reload preset in audio engine
-        audioEngine.loadPreset(updatedPreset)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -228,14 +228,14 @@ export const usePresetStore = create<PresetStore>()(
           return
         }
 
+        // Update live without stopping notes
+        audioEngine.updateMasterEffectsParams(params)
+
         // Create updated preset
         const updatedPreset: Preset = {
           ...currentPreset,
           masterEffects: { ...currentPreset.masterEffects, ...params },
         }
-
-        // Reload preset in audio engine
-        audioEngine.loadPreset(updatedPreset)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -261,14 +261,14 @@ export const usePresetStore = create<PresetStore>()(
           return
         }
 
+        // Update live without stopping notes
+        audioEngine.updateEnvelopeFollowerParams(params)
+
         // Create updated preset
         const updatedPreset: Preset = {
           ...currentPreset,
           envelopeFollower: { ...currentPreset.envelopeFollower, ...params },
         }
-
-        // Reload preset in audio engine
-        audioEngine.loadPreset(updatedPreset)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)

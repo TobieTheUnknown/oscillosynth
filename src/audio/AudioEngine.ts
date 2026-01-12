@@ -488,6 +488,122 @@ export class AudioEngine {
   }
 
   /**
+   * Update operator parameters live (without stopping notes)
+   */
+  updateOperatorParams(index: 0 | 1 | 2 | 3, params: Partial<import('./types').OperatorParams>): void {
+    if (!this.currentPreset) return
+
+    // Update current preset
+    this.currentPreset.operators[index] = { ...this.currentPreset.operators[index]!, ...params }
+
+    // Update all active voices
+    this.activeVoices.forEach((activeVoice) => {
+      activeVoice.fmEngine.updateOperator(index, params)
+    })
+  }
+
+  /**
+   * Update LFO parameters live (without stopping notes)
+   */
+  updateLFOParams(index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<import('./types').LFOParams>): void {
+    if (!this.currentPreset) return
+
+    // Update current preset
+    this.currentPreset.lfos[index] = { ...this.currentPreset.lfos[index]!, ...params }
+
+    // Update global LFO engine
+    if (this.globalLFOEngine) {
+      this.globalLFOEngine.dispose()
+      this.globalLFOEngine = new LFOEngine(this.currentPreset.lfos, this.currentPreset.lfoCombineMode)
+    }
+
+    // Update all active voice LFO engines
+    this.activeVoices.forEach((activeVoice) => {
+      activeVoice.lfoEngine.dispose()
+      activeVoice.lfoEngine = new LFOEngine(this.currentPreset!.lfos, this.currentPreset!.lfoCombineMode)
+    })
+  }
+
+  /**
+   * Update filter parameters live (without stopping notes)
+   */
+  updateFilterParams(params: Partial<import('./types').FilterParams>): void {
+    if (!this.currentPreset) return
+
+    // Update current preset
+    this.currentPreset.filter = { ...this.currentPreset.filter, ...params }
+
+    // Apply to pipeline
+    if (params.type !== undefined) {
+      this.pipeline.setFilterType(params.type)
+    }
+    if (params.cutoff !== undefined) {
+      this.pipeline.setFilterCutoff(params.cutoff)
+    }
+    if (params.resonance !== undefined) {
+      this.pipeline.setFilterResonance(params.resonance)
+    }
+  }
+
+  /**
+   * Update master effects parameters live (without stopping notes)
+   */
+  updateMasterEffectsParams(params: Partial<import('./types').MasterEffectsParams>): void {
+    if (!this.currentPreset) return
+
+    // Update current preset
+    this.currentPreset.masterEffects = { ...this.currentPreset.masterEffects, ...params }
+
+    // Apply to pipeline
+    if (params.reverbWet !== undefined) {
+      this.pipeline.setReverbWet(params.reverbWet)
+    }
+    if (params.reverbDecay !== undefined) {
+      this.pipeline.setReverbDecay(params.reverbDecay)
+    }
+    if (params.reverbPreDelay !== undefined) {
+      this.pipeline.setReverbPreDelay(params.reverbPreDelay)
+    }
+    if (params.delayWet !== undefined) {
+      this.pipeline.setDelayWet(params.delayWet)
+    }
+    if (params.delayTime !== undefined) {
+      this.pipeline.setDelayTime(params.delayTime)
+    }
+    if (params.delayFeedback !== undefined) {
+      this.pipeline.setDelayFeedback(params.delayFeedback)
+    }
+    if (params.chorusWet !== undefined) {
+      this.pipeline.setChorusWet(params.chorusWet)
+    }
+    if (params.chorusFrequency !== undefined) {
+      this.pipeline.setChorusFrequency(params.chorusFrequency)
+    }
+    if (params.chorusDepth !== undefined) {
+      this.pipeline.setChorusDepth(params.chorusDepth)
+    }
+    if (params.distortionWet !== undefined) {
+      this.pipeline.setDistortionWet(params.distortionWet)
+    }
+    if (params.distortionAmount !== undefined) {
+      this.pipeline.setDistortionAmount(params.distortionAmount)
+    }
+  }
+
+  /**
+   * Update envelope follower parameters live (without stopping notes)
+   */
+  updateEnvelopeFollowerParams(params: Partial<import('./types').EnvelopeFollowerParams>): void {
+    if (!this.currentPreset) return
+
+    // Update current preset
+    this.currentPreset.envelopeFollower = { ...this.currentPreset.envelopeFollower, ...params }
+
+    // Reconfigure envelope follower
+    this.setupEnvelopeFollower(this.currentPreset.envelopeFollower)
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
