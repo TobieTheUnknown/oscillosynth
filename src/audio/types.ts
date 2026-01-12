@@ -3,22 +3,14 @@
  */
 
 /**
- * Algorithm FM (DX7-style + extras)
- * 12 algorithmes avec différentes configurations de routage
+ * Algorithm FM - 5 distinct algorithms with unique tonal characteristics
  */
 export enum AlgorithmType {
-  ALGO_1 = 1, // 4→3→2→1→OUT (Serial complet)
-  ALGO_2 = 2, // (4→3→2)+(4→1)→OUT (Mixed)
-  ALGO_3 = 3, // (4→3)+(2→1)→OUT (Dual serial)
-  ALGO_4 = 4, // 4+3+2+1→OUT (Parallel complet)
-  ALGO_5 = 5, // (4→3)+(2)+(1)→OUT (Semi-parallel)
-  ALGO_6 = 6, // (4→3→2→1)→OUT (Serial avec feedback)
-  ALGO_7 = 7, // (4→3)+(4→2)+(4→1)→OUT (Fan-out)
-  ALGO_8 = 8, // (4+3)→2→1→OUT (Parallel input)
-  ALGO_9 = 9, // (4→3→2)+(1)→OUT (Serial trio + carrier)
-  ALGO_10 = 10, // (4→3)+(2→1)+(4→2)→OUT (Dual serial cross)
-  ALGO_11 = 11, // 4→(3+2)→1→OUT (Split modulator)
-  ALGO_12 = 12, // (4→2)+(3→1)→OUT (Dual parallel)
+  SERIAL = 1, // 4→3→2→1→OUT - Pure serial FM, metallic/bell tones
+  PARALLEL = 2, // 4+3+2+1→OUT - All parallel, warm/organ tones
+  DUAL_SERIAL = 3, // (4→3)+(2→1)→OUT - Two serial chains, complex harmonics
+  FAN_OUT = 4, // 4→(3+2+1)→OUT - One master modulator, rich modulation
+  SPLIT = 5, // (4+3)→2→1→OUT - Dual modulators to carrier, thick textures
 }
 
 /**

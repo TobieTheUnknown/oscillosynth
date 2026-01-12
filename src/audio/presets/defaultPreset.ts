@@ -202,7 +202,7 @@ const defaultMasterEffects: MasterEffectsParams = {
 export const defaultPreset: Preset = {
   id: 'default-ep',
   name: 'Electric Piano',
-  algorithm: AlgorithmType.ALGO_2,
+  algorithm: AlgorithmType.FAN_OUT,
   operators: defaultOperators,
   lfos: defaultLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
@@ -336,7 +336,7 @@ const bassFilter: FilterParams = {
 export const bassPreset: Preset = {
   id: 'bass-1',
   name: 'FM Bass',
-  algorithm: AlgorithmType.ALGO_1,
+  algorithm: AlgorithmType.SERIAL,
   operators: bassOperators,
   lfos: bassLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
@@ -470,7 +470,7 @@ const padFilter: FilterParams = {
 export const padPreset: Preset = {
   id: 'pad-1',
   name: 'Atmosphere Pad',
-  algorithm: AlgorithmType.ALGO_4,
+  algorithm: AlgorithmType.PARALLEL,
   operators: padOperators,
   lfos: padLFOs,
   lfoCombineMode: LFOCombineMode.MULTIPLY,

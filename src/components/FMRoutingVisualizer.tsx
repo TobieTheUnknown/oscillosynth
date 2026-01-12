@@ -18,44 +18,25 @@ interface Connection {
 
 // Define routing for each algorithm
 const ALGORITHM_ROUTING: Record<AlgorithmType, Connection[]> = {
-  [AlgorithmType.ALGO_1]: [
+  [AlgorithmType.SERIAL]: [
     { from: 4, to: 3 },
     { from: 3, to: 2 },
     { from: 2, to: 1 },
     { from: 1, to: 0 },
   ],
-  [AlgorithmType.ALGO_2]: [
-    { from: 4, to: 3 },
-    { from: 3, to: 2 },
-    { from: 4, to: 1 },
-    { from: 2, to: 0 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_3]: [
-    { from: 4, to: 3 },
-    { from: 2, to: 1 },
-    { from: 3, to: 0 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_4]: [
+  [AlgorithmType.PARALLEL]: [
     { from: 4, to: 0 },
     { from: 3, to: 0 },
     { from: 2, to: 0 },
     { from: 1, to: 0 },
   ],
-  [AlgorithmType.ALGO_5]: [
+  [AlgorithmType.DUAL_SERIAL]: [
     { from: 4, to: 3 },
-    { from: 3, to: 0 },
-    { from: 2, to: 0 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_6]: [
-    { from: 4, to: 3 },
-    { from: 3, to: 2 },
     { from: 2, to: 1 },
+    { from: 3, to: 0 },
     { from: 1, to: 0 },
   ],
-  [AlgorithmType.ALGO_7]: [
+  [AlgorithmType.FAN_OUT]: [
     { from: 4, to: 3 },
     { from: 4, to: 2 },
     { from: 4, to: 1 },
@@ -63,53 +44,20 @@ const ALGORITHM_ROUTING: Record<AlgorithmType, Connection[]> = {
     { from: 2, to: 0 },
     { from: 1, to: 0 },
   ],
-  [AlgorithmType.ALGO_8]: [
+  [AlgorithmType.SPLIT]: [
     { from: 4, to: 2 },
     { from: 3, to: 2 },
     { from: 2, to: 1 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_9]: [
-    { from: 4, to: 3 },
-    { from: 3, to: 2 },
-    { from: 2, to: 0 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_10]: [
-    { from: 4, to: 3 },
-    { from: 2, to: 1 },
-    { from: 4, to: 2 },
-    { from: 3, to: 0 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_11]: [
-    { from: 4, to: 3 },
-    { from: 4, to: 2 },
-    { from: 3, to: 1 },
-    { from: 2, to: 1 },
-    { from: 1, to: 0 },
-  ],
-  [AlgorithmType.ALGO_12]: [
-    { from: 4, to: 2 },
-    { from: 3, to: 1 },
-    { from: 2, to: 0 },
     { from: 1, to: 0 },
   ],
 }
 
 const ALGORITHM_DESCRIPTIONS: Record<AlgorithmType, string> = {
-  [AlgorithmType.ALGO_1]: '4→3→2→1→OUT (Serial)',
-  [AlgorithmType.ALGO_2]: '(4→3→2)+(4→1)→OUT (Mixed)',
-  [AlgorithmType.ALGO_3]: '(4→3)+(2→1)→OUT (Dual Serial)',
-  [AlgorithmType.ALGO_4]: '4+3+2+1→OUT (Parallel)',
-  [AlgorithmType.ALGO_5]: '(4→3)+(2)+(1)→OUT (Semi-Parallel)',
-  [AlgorithmType.ALGO_6]: '4→3→2→1→OUT (Serial + FB)',
-  [AlgorithmType.ALGO_7]: '(4→3)+(4→2)+(4→1)→OUT (Fan-Out)',
-  [AlgorithmType.ALGO_8]: '(4+3)→2→1→OUT (Parallel Input)',
-  [AlgorithmType.ALGO_9]: '(4→3→2)+(1)→OUT (Trio + Carrier)',
-  [AlgorithmType.ALGO_10]: '(4→3)+(2→1)+(4→2)→OUT (Cross)',
-  [AlgorithmType.ALGO_11]: '4→(3+2)→1→OUT (Split)',
-  [AlgorithmType.ALGO_12]: '(4→2)+(3→1)→OUT (Dual Parallel)',
+  [AlgorithmType.SERIAL]: 'Metallic & Bell Tones',
+  [AlgorithmType.PARALLEL]: 'Warm & Organ Tones',
+  [AlgorithmType.DUAL_SERIAL]: 'Complex Harmonics',
+  [AlgorithmType.FAN_OUT]: 'Rich Modulation',
+  [AlgorithmType.SPLIT]: 'Thick Textures',
 }
 
 export function FMRoutingVisualizer({ algorithm, width = 600, height = 300 }: FMRoutingVisualizerProps) {

@@ -33,10 +33,16 @@ export class AudioContextManager {
 
     try {
       await Tone.start()
-      this.isStarted = true
+
+      // Optimize latency settings
       const ctx = Tone.getContext()
+      ctx.lookAhead = 0.01 // Reduce look-ahead to 10ms (default: 100ms)
+      ctx.latencyHint = 'interactive' // Prioritize low latency
+
+      this.isStarted = true
       this.notifyListeners(ctx.state)
       console.log('✅ AudioContext started:', ctx.state)
+      console.log('⚡ Latency optimized: lookAhead =', ctx.lookAhead, 's')
     } catch (error: unknown) {
       console.error('❌ Failed to start AudioContext:', error instanceof Error ? error.message : String(error))
       throw new Error('Failed to start audio. Please try again.')

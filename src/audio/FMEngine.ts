@@ -15,7 +15,7 @@ export class FMEngine {
 
   constructor(
     operatorParams: [OperatorParams, OperatorParams, OperatorParams, OperatorParams],
-    algorithm: AlgorithmType = AlgorithmType.ALGO_1
+    algorithm: AlgorithmType = AlgorithmType.SERIAL
   ) {
     this.algorithm = algorithm
 
@@ -51,61 +51,32 @@ export class FMEngine {
     const [op1, op2, op3, op4] = this.operators
 
     switch (this.algorithm) {
-      case AlgorithmType.ALGO_1:
-        // Serial complet: 4→3→2→1→OUT
+      case AlgorithmType.SERIAL:
+        // SERIAL: 4→3→2→1→OUT (Pure serial FM, metallic/bell tones)
         op4.connect(op3.frequencyParam)
         op3.connect(op2.frequencyParam)
         op2.connect(op1.frequencyParam)
         op1.connect(this.output)
         break
 
-      case AlgorithmType.ALGO_2:
-        // Mixed: (4→3→2)+(4→1)→OUT
-        op4.connect(op3.frequencyParam)
-        op4.connect(op1.frequencyParam)
-        op3.connect(op2.frequencyParam)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_3:
-        // Dual serial: (4→3)+(2→1)→OUT
-        op4.connect(op3.frequencyParam)
-        op3.connect(this.output)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_4:
-        // Parallel complet: 4+3+2+1→OUT
+      case AlgorithmType.PARALLEL:
+        // PARALLEL: 4+3+2+1→OUT (All parallel, warm/organ tones)
         op1.connect(this.output)
         op2.connect(this.output)
         op3.connect(this.output)
         op4.connect(this.output)
         break
 
-      case AlgorithmType.ALGO_5:
-        // Semi-parallel: (4→3)+(2)+(1)→OUT
+      case AlgorithmType.DUAL_SERIAL:
+        // DUAL_SERIAL: (4→3)+(2→1)→OUT (Two serial chains, complex harmonics)
         op4.connect(op3.frequencyParam)
         op3.connect(this.output)
-        op2.connect(this.output)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_6:
-        // Serial optimisé: (4→3→2→1)→OUT
-        // Similaire à ALGO_1 mais avec feedback sur operator 4
-        this.feedbackGain = new Tone.Gain(0.5)
-        op4.connect(this.feedbackGain)
-        this.feedbackGain.connect(op4.frequencyParam)
-        op4.connect(op3.frequencyParam)
-        op3.connect(op2.frequencyParam)
         op2.connect(op1.frequencyParam)
         op1.connect(this.output)
         break
 
-      case AlgorithmType.ALGO_7:
-        // Fan-out: (4→3)+(4→2)+(4→1)→OUT
+      case AlgorithmType.FAN_OUT:
+        // FAN_OUT: 4→(3+2+1)→OUT (One master modulator, rich modulation)
         op4.connect(op3.frequencyParam)
         op4.connect(op2.frequencyParam)
         op4.connect(op1.frequencyParam)
@@ -114,51 +85,17 @@ export class FMEngine {
         op1.connect(this.output)
         break
 
-      case AlgorithmType.ALGO_8:
-        // Parallel input: (4+3)→2→1→OUT
+      case AlgorithmType.SPLIT:
+        // SPLIT: (4+3)→2→1→OUT (Dual modulators to carrier, thick textures)
         op4.connect(op2.frequencyParam)
         op3.connect(op2.frequencyParam)
         op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_9:
-        // Serial trio + carrier: (4→3→2)+(1)→OUT
-        op4.connect(op3.frequencyParam)
-        op3.connect(op2.frequencyParam)
-        op2.connect(this.output)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_10:
-        // Dual serial cross: (4→3)+(2→1)+(4→2)→OUT
-        op4.connect(op3.frequencyParam)
-        op4.connect(op2.frequencyParam)
-        op3.connect(this.output)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_11:
-        // Split modulator: 4→(3+2)→1→OUT
-        op4.connect(op3.frequencyParam)
-        op4.connect(op2.frequencyParam)
-        op3.connect(op1.frequencyParam)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.ALGO_12:
-        // Dual parallel: (4→2)+(3→1)→OUT
-        op4.connect(op2.frequencyParam)
-        op3.connect(op1.frequencyParam)
-        op2.connect(this.output)
         op1.connect(this.output)
         break
 
       default:
-        console.warn(`Unknown algorithm: ${String(this.algorithm)}, using ALGO_1`)
-        this.algorithm = AlgorithmType.ALGO_1
+        console.warn(`Unknown algorithm: ${String(this.algorithm)}, using SERIAL`)
+        this.algorithm = AlgorithmType.SERIAL
         this.setupRouting()
     }
 

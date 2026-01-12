@@ -12,7 +12,7 @@ import { AlgorithmType } from '../audio/types'
 export function AudioTest() {
   const [isStarted, setIsStarted] = useState(false)
   const [currentPreset, setCurrentPreset] = useState('default')
-  const [currentAlgorithm, setCurrentAlgorithm] = useState(AlgorithmType.ALGO_2)
+  const [currentAlgorithm, setCurrentAlgorithm] = useState(AlgorithmType.FAN_OUT)
   const [activeVoices, setActiveVoices] = useState(0)
 
   useEffect(() => {

@@ -12,7 +12,7 @@ import { OscilloscopeXY } from './OscilloscopeXY'
 import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
-import { StepSequencerControl } from './StepSequencerControl'
+import { NoteSequencer } from './NoteSequencer'
 import { FMRoutingVisualizer } from './FMRoutingVisualizer'
 import { InteractiveKeyboard } from './InteractiveKeyboard'
 import { PresetManager } from './PresetManager'
@@ -40,7 +40,6 @@ export function AudioTestV2() {
     updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects,
     updateCurrentPresetEnvelopeFollower,
-    updateCurrentPresetStepSequencer,
   } = useAudioEngine()
 
   const [activeTab, setActiveTab] = useState('PLAY')
@@ -209,7 +208,7 @@ export function AudioTestV2() {
                   <OscilloscopeXY width={500} height={500} />
                 </div>
 
-                {/* Right: Keyboard + Preset Manager */}
+                {/* Right: Keyboard + Sequencer + Preset Manager */}
                 <div
                   style={{
                     display: 'flex',
@@ -218,6 +217,7 @@ export function AudioTestV2() {
                   }}
                 >
                   <InteractiveKeyboard onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
+                  <NoteSequencer onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
                   <PresetManager
                     currentPreset={currentPreset}
                     allPresets={allPresets}
@@ -254,32 +254,47 @@ export function AudioTestV2() {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(6, 1fr)',
-                      gap: 'var(--spacing-2)',
-                      marginBottom: 'var(--spacing-3)',
+                      gridTemplateColumns: 'repeat(5, 1fr)',
+                      gap: 'var(--spacing-3)',
+                      marginBottom: 'var(--spacing-4)',
                     }}
                   >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((algo) => (
+                    {[
+                      { value: AlgorithmType.SERIAL, name: 'SERIAL', color: '#FF6464' },
+                      { value: AlgorithmType.PARALLEL, name: 'PARALLEL', color: '#64C8FF' },
+                      { value: AlgorithmType.DUAL_SERIAL, name: 'DUAL SERIAL', color: '#FFFF64' },
+                      { value: AlgorithmType.FAN_OUT, name: 'FAN OUT', color: '#96FF96' },
+                      { value: AlgorithmType.SPLIT, name: 'SPLIT', color: '#FF64FF' },
+                    ].map((algo) => (
                       <button
-                        key={algo}
+                        key={algo.value}
                         onClick={() => {
-                          setAlgorithm(algo as AlgorithmType)
+                          setAlgorithm(algo.value)
                         }}
                         style={{
-                          padding: 'var(--spacing-2)',
+                          padding: 'var(--spacing-3)',
                           backgroundColor:
-                            currentPreset?.algorithm === (algo as AlgorithmType)
-                              ? 'var(--color-active)'
-                              : 'transparent',
-                          color: 'var(--color-trace-primary)',
-                          border: '1px solid var(--color-border-primary)',
+                            currentPreset?.algorithm === algo.value
+                              ? algo.color
+                              : 'var(--color-bg-primary)',
+                          color:
+                            currentPreset?.algorithm === algo.value
+                              ? '#000'
+                              : 'var(--color-text-primary)',
+                          border: `2px solid ${algo.color}`,
                           borderRadius: 'var(--radius-sm)',
                           fontSize: 'var(--font-size-sm)',
                           cursor: 'pointer',
                           fontFamily: 'var(--font-family-mono)',
+                          fontWeight: 'bold',
+                          transition: 'all 0.2s',
+                          boxShadow:
+                            currentPreset?.algorithm === algo.value
+                              ? `0 0 15px ${algo.color}`
+                              : 'none',
                         }}
                       >
-                        {algo}
+                        {algo.name}
                       </button>
                     ))}
                   </div>
@@ -423,27 +438,6 @@ export function AudioTestV2() {
                     params={currentPreset.envelopeFollower}
                     onChange={(params) => {
                       updateCurrentPresetEnvelopeFollower(params)
-                    }}
-                  />
-                </div>
-
-                {/* Step Sequencer */}
-                <div>
-                  <h2
-                    style={{
-                      fontSize: 'var(--font-size-lg)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-3)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    STEP SEQUENCER
-                  </h2>
-                  <StepSequencerControl
-                    params={currentPreset.stepSequencer}
-                    onChange={(params) => {
-                      updateCurrentPresetStepSequencer(params)
                     }}
                   />
                 </div>
