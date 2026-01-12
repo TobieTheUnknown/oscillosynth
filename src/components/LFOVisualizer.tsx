@@ -41,6 +41,11 @@ const DESTINATION_LABELS: Record<LFODestination, string> = {
   [LFODestination.OP2_RATIO]: 'OP2 RATIO',
   [LFODestination.OP3_RATIO]: 'OP3 RATIO',
   [LFODestination.OP4_RATIO]: 'OP4 RATIO',
+  [LFODestination.FX_REVERB_WET]: 'REVERB MIX',
+  [LFODestination.FX_DELAY_WET]: 'DELAY MIX',
+  [LFODestination.FX_DELAY_TIME]: 'DELAY TIME',
+  [LFODestination.FX_CHORUS_WET]: 'CHORUS MIX',
+  [LFODestination.FX_DISTORTION_WET]: 'DISTORTION MIX',
 }
 
 export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps) {

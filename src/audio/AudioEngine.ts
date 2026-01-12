@@ -219,6 +219,47 @@ export class AudioEngine {
         fmEngine.applyOperatorRatioModulation(3, this.currentPreset.operators[3].ratio, value)
         break
 
+      // Master Effects modulation
+      case LFODestination.FX_REVERB_WET:
+        {
+          const baseWet = this.currentPreset.masterEffects.reverbWet
+          const modulatedWet = baseWet + value * 0.3 // ±30%
+          this.pipeline.setReverbWet(Math.max(0, Math.min(1, modulatedWet)))
+        }
+        break
+
+      case LFODestination.FX_DELAY_WET:
+        {
+          const baseWet = this.currentPreset.masterEffects.delayWet
+          const modulatedWet = baseWet + value * 0.3
+          this.pipeline.setDelayWet(Math.max(0, Math.min(1, modulatedWet)))
+        }
+        break
+
+      case LFODestination.FX_DELAY_TIME:
+        {
+          const baseTime = this.currentPreset.masterEffects.delayTime
+          const modulatedTime = baseTime * (1 + value * 0.5) // ±50%
+          this.pipeline.setDelayTime(Math.max(0, Math.min(2, modulatedTime)))
+        }
+        break
+
+      case LFODestination.FX_CHORUS_WET:
+        {
+          const baseWet = this.currentPreset.masterEffects.chorusWet
+          const modulatedWet = baseWet + value * 0.3
+          this.pipeline.setChorusWet(Math.max(0, Math.min(1, modulatedWet)))
+        }
+        break
+
+      case LFODestination.FX_DISTORTION_WET:
+        {
+          const baseWet = this.currentPreset.masterEffects.distortionWet
+          const modulatedWet = baseWet + value * 0.3
+          this.pipeline.setDistortionWet(Math.max(0, Math.min(1, modulatedWet)))
+        }
+        break
+
       default:
         console.warn(`Unknown LFO destination: ${String(destination)}`)
     }

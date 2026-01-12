@@ -59,6 +59,12 @@ export enum LFODestination {
   OP2_RATIO = 'op2_ratio', // Operator 2 ratio
   OP3_RATIO = 'op3_ratio', // Operator 3 ratio
   OP4_RATIO = 'op4_ratio', // Operator 4 ratio
+  // Master effects
+  FX_REVERB_WET = 'fx_reverb_wet',
+  FX_DELAY_WET = 'fx_delay_wet',
+  FX_DELAY_TIME = 'fx_delay_time',
+  FX_CHORUS_WET = 'fx_chorus_wet',
+  FX_DISTORTION_WET = 'fx_distortion_wet',
 }
 
 /**
