@@ -37,8 +37,8 @@ export function StereoGoniometer({ width = 400, height = 400 }: StereoGoniometer
       // Get stereo waveform data
       const [leftChannel, rightChannel] = pipeline.getStereoWaveform()
 
-      // Fade out previous frame for trail effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'
+      // Fade out previous frame for trail effect (slower fade for better visibility)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'
       ctx.fillRect(0, 0, width, height)
 
       // Draw grid
@@ -76,12 +76,12 @@ export function StereoGoniometer({ width = 400, height = 400 }: StereoGoniometer
 
       // Main trace
       ctx.strokeStyle = '#00FF41'
-      ctx.lineWidth = 2
-      ctx.shadowBlur = 8
+      ctx.lineWidth = 3 // Thicker line for better visibility
+      ctx.shadowBlur = 12
       ctx.shadowColor = '#00FF41'
 
       ctx.beginPath()
-      const maxSamples = Math.min(leftChannel.length, rightChannel.length, 1024)
+      const maxSamples = Math.min(leftChannel.length, rightChannel.length, 2048) // More samples for smoother display
 
       for (let i = 0; i < maxSamples; i++) {
         // L on X axis, R on Y axis (inverted for proper display)

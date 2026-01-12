@@ -74,8 +74,11 @@ export function SpectrumAnalyzer({ width = 800, height = 300 }: SpectrumAnalyzer
 
       for (let i = 0; i < barCount; i++) {
         const value = fftData[i] ?? -100 // dB value
-        const normalizedValue = (value + 100) / 100 // Normalize from -100dB to 0dB
-        const barHeight = Math.max(0, normalizedValue * height)
+        // More aggressive scaling: -60dB to 0dB range (instead of -100dB)
+        // Also apply exponential curve for better visibility of lower levels
+        const normalizedValue = Math.max(0, (value + 60) / 60)
+        const expValue = Math.pow(normalizedValue, 0.5) // Square root for better visual scaling
+        const barHeight = Math.max(0, expValue * height)
 
         // Color gradient based on frequency
         const hue = (i / barCount) * 120 // Green to cyan

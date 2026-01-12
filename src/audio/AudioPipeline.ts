@@ -52,8 +52,10 @@ export class AudioPipeline {
       distortion: 0.4,
     })
 
-    // Stereo Widener (width: 0=mono, 1=normal stereo, >1=wide)
-    this.stereoWidener = new Tone.StereoWidener(0) // Start with normal stereo (no widening)
+    // Stereo Widener with more aggressive settings
+    this.stereoWidener = new Tone.StereoWidener({
+      width: 0, // Start with normal stereo (no widening)
+    })
 
     // Limiter anti-clipping
     this.limiter = new Tone.Limiter(-0.3) // -0.3dB ceiling
@@ -277,11 +279,21 @@ export class AudioPipeline {
    */
   setStereoWidth(width: number): void {
     // width: 0-200% where 100% = normal stereo (no effect)
-    // For Tone.StereoWidener: 0 = normal stereo, 1 = wide stereo
-    // Map: 100% → 0 (no effect), 200% → 1 (wide)
-    // For 0-100%: we just reduce the effect (0 = barely any effect)
-    const normalizedWidth = Math.max(0, Math.min(1, (width - 100) / 100))
-    this.stereoWidener.width.value = normalizedWidth
+    // Use exponential curve for more dramatic effect at higher values
+    // Map: 0-100% → negative values (narrower), 100% → 0, 100-200% → 0-1 (wider)
+
+    if (width < 100) {
+      // Below 100%: reduce stereo (move toward mono)
+      // Use negative values which Tone.StereoWidener interprets as narrowing
+      const narrowAmount = (100 - width) / 100 // 0 to 1
+      this.stereoWidener.width.value = -narrowAmount * 0.5 // -0.5 to 0
+    } else {
+      // Above 100%: widen stereo aggressively
+      const wideAmount = (width - 100) / 100 // 0 to 1
+      // Apply exponential curve for more dramatic effect
+      const expCurve = Math.pow(wideAmount, 0.7) // Softer curve for smoother control
+      this.stereoWidener.width.value = expCurve
+    }
   }
 
   /**
