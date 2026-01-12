@@ -693,6 +693,19 @@ export function AudioTestV2() {
                       fontFamily: 'var(--font-family-mono)',
                     }}
                   >
+                    LISSAJOUS (XY)
+                  </h3>
+                  <OscilloscopeXY width={550} height={550} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: 'var(--font-size-md)',
+                      color: 'var(--color-trace-primary)',
+                      marginBottom: 'var(--spacing-2)',
+                      fontFamily: 'var(--font-family-mono)',
+                    }}
+                  >
                     ADSR ENVELOPES
                   </h3>
                   <ADSRVisualizer operators={currentPreset.operators} width={550} height={300} />

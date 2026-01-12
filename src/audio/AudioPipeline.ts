@@ -276,11 +276,12 @@ export class AudioPipeline {
    * Stereo Width controls
    */
   setStereoWidth(width: number): void {
-    // width: 0-200% mapped to 0-1 for Tone.StereoWidener
-    // 0% = mono (0), 100% = normal stereo (0), 200% = wide stereo (1)
-    const normalizedWidth = (width / 100) - 1 // Map 0-200% to -1 to 1
-    const clampedWidth = Math.max(0, Math.min(1, (normalizedWidth + 1) / 2)) // Then to 0-1
-    this.stereoWidener.width.value = clampedWidth
+    // width: 0-200% where 100% = normal stereo (no effect)
+    // For Tone.StereoWidener: 0 = normal stereo, 1 = wide stereo
+    // Map: 100% → 0 (no effect), 200% → 1 (wide)
+    // For 0-100%: we just reduce the effect (0 = barely any effect)
+    const normalizedWidth = Math.max(0, Math.min(1, (width - 100) / 100))
+    this.stereoWidener.width.value = normalizedWidth
   }
 
   /**
