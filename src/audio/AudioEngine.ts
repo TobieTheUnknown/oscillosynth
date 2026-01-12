@@ -28,6 +28,8 @@ export class AudioEngine {
   private isMuted = false
   private globalLFOEngine: LFOEngine | null = null // For visualization
   private envelopeFollowerInterval: ReturnType<typeof setInterval> | null = null // Envelope follower polling
+  private stepSequencerInterval: ReturnType<typeof setInterval> | null = null // Step sequencer polling
+  private stepSequencerCurrentStep = 0 // Current step index
 
   private constructor() {
     this.voicePool = new VoicePool(8) // Max 8 voix
@@ -320,6 +322,9 @@ export class AudioEngine {
     // Setup envelope follower
     this.setupEnvelopeFollower(preset.envelopeFollower)
 
+    // Setup step sequencer
+    this.setupStepSequencer(preset.stepSequencer)
+
     console.log(`✅ Preset loaded: ${preset.name} (Algorithm ${String(preset.algorithm)})`)
     console.log(
       `   Filter: ${preset.filter.type} @ ${String(preset.filter.cutoff)}Hz, Q=${String(preset.filter.resonance)}`
@@ -440,12 +445,58 @@ export class AudioEngine {
   }
 
   /**
+   * Setup step sequencer
+   */
+  private setupStepSequencer(params: import('./types').StepSequencerParams): void {
+    // Stop existing step sequencer interval
+    if (this.stepSequencerInterval) {
+      clearInterval(this.stepSequencerInterval)
+      this.stepSequencerInterval = null
+    }
+
+    if (!params.enabled || params.steps.length === 0) {
+      return
+    }
+
+    // Reset step index
+    this.stepSequencerCurrentStep = 0
+
+    // Calculate interval time based on rate (Hz)
+    const intervalMs = 1000 / params.rate
+
+    // Poll step sequencer and apply modulation
+    this.stepSequencerInterval = setInterval(() => {
+      if (!this.currentPreset) return
+
+      // Get current step value (0-100)
+      const stepValue = params.steps[this.stepSequencerCurrentStep] ?? 50
+
+      // Normalize to -1 to 1 range and scale by depth
+      const modulationValue = ((stepValue / 100) - 0.5) * 2 * (params.depth / 100)
+
+      // Apply modulation to all active voices
+      this.activeVoices.forEach((activeVoice) => {
+        this.applyLFOModulation(params.destination, modulationValue, activeVoice.fmEngine)
+      })
+
+      // Also apply to global effects (filter, master FX)
+      this.applyLFOModulation(params.destination, modulationValue, null as any)
+
+      // Advance to next step
+      this.stepSequencerCurrentStep = (this.stepSequencerCurrentStep + 1) % params.steps.length
+    }, intervalMs)
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
     this.stopAll()
     if (this.envelopeFollowerInterval) {
       clearInterval(this.envelopeFollowerInterval)
+    }
+    if (this.stepSequencerInterval) {
+      clearInterval(this.stepSequencerInterval)
     }
     this.masterGain.dispose()
     this.pipeline.dispose()

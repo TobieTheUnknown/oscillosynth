@@ -12,6 +12,7 @@ import {
   FilterParams,
   MasterEffectsParams,
   EnvelopeFollowerParams,
+  StepSequencerParams,
 } from '../audio/types'
 import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
@@ -33,6 +34,7 @@ interface PresetStore {
   updateCurrentPresetFilter: (params: Partial<FilterParams>) => void
   updateCurrentPresetMasterEffects: (params: Partial<MasterEffectsParams>) => void
   updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => void
+  updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -263,6 +265,39 @@ export const usePresetStore = create<PresetStore>()(
         const updatedPreset: Preset = {
           ...currentPreset,
           envelopeFollower: { ...currentPreset.envelopeFollower, ...params },
+        }
+
+        // Reload preset in audio engine
+        audioEngine.loadPreset(updatedPreset)
+
+        // Update store
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+      },
+
+      updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          stepSequencer: { ...currentPreset.stepSequencer, ...params },
         }
 
         // Reload preset in audio engine

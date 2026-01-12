@@ -12,6 +12,7 @@ import {
   OperatorParams,
   LFOParams,
   EnvelopeFollowerParams,
+  StepSequencerParams,
   FilterParams,
   MasterEffectsParams,
 } from '../types'
@@ -158,6 +159,17 @@ const defaultEnvelopeFollower: EnvelopeFollowerParams = {
 }
 
 /**
+ * Step Sequencer par défaut (off)
+ */
+const defaultStepSequencer: StepSequencerParams = {
+  enabled: false,
+  steps: [50, 60, 40, 70, 30, 80, 20, 90, 10, 100, 0, 75, 25, 85, 15, 95], // 16 steps with interesting pattern
+  rate: 4.0, // 4 Hz (quarter note at 120 BPM)
+  depth: 50,
+  destination: LFODestination.FILTER_CUTOFF,
+}
+
+/**
  * Filtre par défaut
  */
 const defaultFilter: FilterParams = {
@@ -195,6 +207,7 @@ export const defaultPreset: Preset = {
   lfos: defaultLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
   envelopeFollower: defaultEnvelopeFollower,
+  stepSequencer: defaultStepSequencer,
   filter: defaultFilter,
   masterEffects: defaultMasterEffects,
   masterVolume: 0.7,
@@ -328,6 +341,7 @@ export const bassPreset: Preset = {
   lfos: bassLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
   envelopeFollower: defaultEnvelopeFollower,
+  stepSequencer: defaultStepSequencer,
   filter: bassFilter,
   masterEffects: defaultMasterEffects,
   masterVolume: 0.8,
@@ -461,6 +475,7 @@ export const padPreset: Preset = {
   lfos: padLFOs,
   lfoCombineMode: LFOCombineMode.MULTIPLY,
   envelopeFollower: defaultEnvelopeFollower,
+  stepSequencer: defaultStepSequencer,
   filter: padFilter,
   masterEffects: defaultMasterEffects,
   masterVolume: 0.6,

@@ -104,6 +104,17 @@ export interface EnvelopeFollowerParams {
 }
 
 /**
+ * Paramètres Step Sequencer
+ */
+export interface StepSequencerParams {
+  enabled: boolean // Step sequencer on/off
+  steps: number[] // Array of 16 step values (0-100)
+  rate: number // 0.1 - 20 Hz (step rate)
+  depth: number // 0 - 200% (modulation depth)
+  destination: LFODestination // Where the step sequencer modulates
+}
+
+/**
  * Paramètres du filtre
  */
 export interface FilterParams {
@@ -157,6 +168,7 @@ export interface Preset {
   ] // 8 LFOs in 4 pairs
   lfoCombineMode: LFOCombineMode
   envelopeFollower: EnvelopeFollowerParams
+  stepSequencer: StepSequencerParams
   filter: FilterParams
   masterEffects: MasterEffectsParams
   masterVolume: number // 0 - 1.0

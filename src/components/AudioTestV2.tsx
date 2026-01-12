@@ -11,6 +11,7 @@ import { OscilloscopeXY } from './OscilloscopeXY'
 import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
+import { StepSequencerControl } from './StepSequencerControl'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
@@ -32,6 +33,7 @@ export function AudioTestV2() {
     updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects,
     updateCurrentPresetEnvelopeFollower,
+    updateCurrentPresetStepSequencer,
   } = useAudioEngine()
 
   const playNote = (midiNote: number) => {
@@ -254,6 +256,28 @@ export function AudioTestV2() {
                 params={currentPreset.envelopeFollower}
                 onChange={(params) => {
                   updateCurrentPresetEnvelopeFollower(params)
+                }}
+              />
+            </div>
+          )}
+
+          {/* Step Sequencer */}
+          {currentPreset && (
+            <div style={{ marginBottom: 'var(--spacing-6)' }}>
+              <h2
+                style={{
+                  fontSize: 'var(--font-size-xl)',
+                  marginBottom: 'var(--spacing-4)',
+                  color: 'var(--color-trace-primary)',
+                  textShadow: '0 0 8px var(--color-trace-glow)',
+                }}
+              >
+                STEP SEQUENCER
+              </h2>
+              <StepSequencerControl
+                params={currentPreset.stepSequencer}
+                onChange={(params) => {
+                  updateCurrentPresetStepSequencer(params)
                 }}
               />
             </div>
