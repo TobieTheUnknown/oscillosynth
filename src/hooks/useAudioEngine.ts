@@ -103,5 +103,6 @@ export function useAudioEngine() {
     updateCurrentPresetEnvelopeFollower: presetStore.updateCurrentPresetEnvelopeFollower,
     updateCurrentPresetStepSequencer: presetStore.updateCurrentPresetStepSequencer,
     updateCurrentPresetPortamento: presetStore.updateCurrentPresetPortamento,
+    updateCurrentPresetStereoWidth: presetStore.updateCurrentPresetStereoWidth,
   }
 }

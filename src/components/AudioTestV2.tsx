@@ -19,6 +19,7 @@ import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
 import { PortamentoControls } from './PortamentoControls'
+import { PanControls } from './PanControls'
 import { TabBar } from './TabBar'
 import { SequencerUI } from './SequencerUI'
 import * as Tone from 'tone'
@@ -48,6 +49,7 @@ export function AudioTestV2() {
     updateCurrentPresetMasterEffects,
     updateCurrentPresetEnvelopeFollower,
     updateCurrentPresetPortamento,
+    updateCurrentPresetStereoWidth,
   } = useAudioEngine()
 
   const [activeTab, setActiveTab] = useState('PLAY')
@@ -496,6 +498,30 @@ export function AudioTestV2() {
                     params={currentPreset.filter}
                     onChange={(params) => {
                       updateCurrentPresetFilter(params)
+                    }}
+                  />
+                </div>
+
+                {/* Pan Spread */}
+                <div>
+                  <PanControls
+                    stereoWidth={currentPreset.stereoWidth}
+                    operators={currentPreset.operators}
+                    onStereoWidthChange={(params) => {
+                      updateCurrentPresetStereoWidth(params)
+                    }}
+                    onOperatorPanChange={(index, pan) => {
+                      updateCurrentPresetOperator(index, { pan })
+                    }}
+                  />
+                </div>
+
+                {/* Portamento */}
+                <div>
+                  <PortamentoControls
+                    params={currentPreset.portamento}
+                    onChange={(params) => {
+                      updateCurrentPresetPortamento(params)
                     }}
                   />
                 </div>

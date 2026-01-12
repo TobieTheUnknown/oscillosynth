@@ -16,6 +16,7 @@ import {
   FilterParams,
   MasterEffectsParams,
   PortamentoParams,
+  StereoWidthParams,
 } from '../types'
 
 /**
@@ -31,6 +32,7 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.5,
     sustain: 0.3,
     release: 0.8,
+    pan: 0, // Center
   },
   // Operator 2: Modulator harmonique
   {
@@ -40,6 +42,7 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.3,
     sustain: 0.2,
     release: 0.5,
+    pan: 0, // Center
   },
   // Operator 3: Modulator brillance
   {
@@ -49,6 +52,7 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.2,
     sustain: 0.1,
     release: 0.3,
+    pan: 0, // Center
   },
   // Operator 4: Modulator texture
   {
@@ -58,6 +62,7 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.15,
     sustain: 0.05,
     release: 0.2,
+    pan: 0, // Center
   },
 ]
 
@@ -207,6 +212,16 @@ const defaultPortamento: PortamentoParams = {
 }
 
 /**
+ * Stereo Width settings
+ */
+const defaultStereoWidth: StereoWidthParams = {
+  enabled: false,
+  width: 100, // 100% = normal stereo
+  noteSpread: false,
+  noteSpreadAmount: 50,
+}
+
+/**
  * Preset complet: Electric Piano
  */
 export const defaultPreset: Preset = {
@@ -221,6 +236,7 @@ export const defaultPreset: Preset = {
   filter: defaultFilter,
   masterEffects: defaultMasterEffects,
   portamento: defaultPortamento,
+  stereoWidth: defaultStereoWidth,
   masterVolume: 0.7,
 }
 
@@ -236,6 +252,7 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.3,
     sustain: 0.7,
     release: 0.4,
+    pan: 0, // Center
   },
   {
     ratio: 2.0,
@@ -244,6 +261,7 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.2,
     sustain: 0.5,
     release: 0.3,
+    pan: 0, // Center
   },
   {
     ratio: 1.5,
@@ -252,6 +270,7 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.15,
     sustain: 0.3,
     release: 0.2,
+    pan: 0, // Center
   },
   {
     ratio: 0.5,
@@ -260,6 +279,7 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.1,
     sustain: 0.2,
     release: 0.15,
+    pan: 0, // Center
   },
 ]
 
@@ -356,6 +376,7 @@ export const bassPreset: Preset = {
   filter: bassFilter,
   masterEffects: defaultMasterEffects,
   portamento: { ...defaultPortamento, enabled: false, time: 50 }, // Faster glide for bass
+  stereoWidth: defaultStereoWidth,
   masterVolume: 0.8,
 }
 
@@ -371,6 +392,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.5,
     sustain: 0.8,
     release: 2.0,
+    pan: -0.3, // Slightly left for width
   },
   {
     ratio: 1.5,
@@ -379,6 +401,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.6,
     sustain: 0.75,
     release: 2.2,
+    pan: 0.3, // Slightly right for width
   },
   {
     ratio: 2.0,
@@ -387,6 +410,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.4,
     sustain: 0.7,
     release: 1.8,
+    pan: -0.2, // Slightly left
   },
   {
     ratio: 3.0,
@@ -395,6 +419,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.7,
     sustain: 0.65,
     release: 2.5,
+    pan: 0.2, // Slightly right
   },
 ]
 
@@ -491,6 +516,7 @@ export const padPreset: Preset = {
   filter: padFilter,
   masterEffects: defaultMasterEffects,
   portamento: { ...defaultPortamento, enabled: false, time: 200 }, // Slower glide for pads
+  stereoWidth: { ...defaultStereoWidth, enabled: true, width: 150 }, // Wide stereo for pads
   masterVolume: 0.6,
 }
 

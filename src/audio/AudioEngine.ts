@@ -364,6 +364,13 @@ export class AudioEngine {
     this.pipeline.setDistortionWet(preset.masterEffects.distortionWet)
     this.pipeline.setDistortionAmount(preset.masterEffects.distortionAmount)
 
+    // Configure stereo width
+    if (preset.stereoWidth.enabled) {
+      this.pipeline.setStereoWidth(preset.stereoWidth.width)
+    } else {
+      this.pipeline.setStereoWidth(100) // Normal stereo when disabled
+    }
+
     // Create global LFO engine for visualization
     if (this.globalLFOEngine) {
       this.globalLFOEngine.dispose()
@@ -638,6 +645,25 @@ export class AudioEngine {
     }
     if (params.distortionAmount !== undefined) {
       this.pipeline.setDistortionAmount(params.distortionAmount)
+    }
+  }
+
+  /**
+   * Update stereo width parameters live (without stopping notes)
+   */
+  updateStereoWidthParams(params: Partial<import('./types').StereoWidthParams>): void {
+    if (!this.currentPreset) return
+
+    // Update current preset
+    this.currentPreset.stereoWidth = { ...this.currentPreset.stereoWidth, ...params }
+
+    // Apply to pipeline
+    if (params.enabled !== undefined || params.width !== undefined) {
+      if (this.currentPreset.stereoWidth.enabled) {
+        this.pipeline.setStereoWidth(this.currentPreset.stereoWidth.width)
+      } else {
+        this.pipeline.setStereoWidth(100) // Normal stereo when disabled
+      }
     }
   }
 

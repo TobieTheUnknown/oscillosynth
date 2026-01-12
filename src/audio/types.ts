@@ -70,6 +70,7 @@ export interface OperatorParams {
   sustain: number // 0 - 1.0
   release: number // 0.001 - 10.0 secondes
   feedback?: number // 0 - 1.0 (operator 4 only)
+  pan: number // -1.0 to 1.0 (-1=left, 0=center, 1=right)
 }
 
 /**
@@ -126,6 +127,16 @@ export interface PortamentoParams {
 }
 
 /**
+ * Paramètres Stereo Width
+ */
+export interface StereoWidthParams {
+  enabled: boolean // Stereo width on/off
+  width: number // 0 - 200% (0=mono, 100=normal stereo, 200=wide stereo)
+  noteSpread: boolean // Spread notes across stereo field based on pitch
+  noteSpreadAmount: number // 0 - 100% (amount of note-based panning)
+}
+
+/**
  * Paramètres des effets master
  */
 export interface MasterEffectsParams {
@@ -173,6 +184,7 @@ export interface Preset {
   filter: FilterParams
   masterEffects: MasterEffectsParams
   portamento: PortamentoParams
+  stereoWidth: StereoWidthParams
   masterVolume: number // 0 - 1.0
 }
 

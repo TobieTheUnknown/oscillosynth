@@ -14,6 +14,7 @@ import {
   EnvelopeFollowerParams,
   StepSequencerParams,
   PortamentoParams,
+  StereoWidthParams,
 } from '../audio/types'
 import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
@@ -37,6 +38,7 @@ interface PresetStore {
   updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => void
   updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => void
   updateCurrentPresetPortamento: (params: Partial<PortamentoParams>) => void
+  updateCurrentPresetStereoWidth: (params: Partial<StereoWidthParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -338,6 +340,39 @@ export const usePresetStore = create<PresetStore>()(
         // Portamento doesn't need engine reload - just update preset
         // It only affects the behavior of future noteOn calls
         audioEngine.loadPreset(updatedPreset)
+
+        // Update store
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+      },
+
+      updateCurrentPresetStereoWidth: (params: Partial<StereoWidthParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          stereoWidth: { ...currentPreset.stereoWidth, ...params },
+        }
+
+        // Update stereo width in audio engine (live update)
+        audioEngine.updateStereoWidthParams(updatedPreset.stereoWidth)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)

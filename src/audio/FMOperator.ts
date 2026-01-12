@@ -10,6 +10,7 @@ export class FMOperator {
   private oscillator: Tone.Oscillator
   private envelope: Tone.AmplitudeEnvelope
   private gain: Tone.Gain
+  private panner: Tone.Panner
   private baseFrequency: number
   private params: OperatorParams
 
@@ -34,9 +35,13 @@ export class FMOperator {
     // Gain pour level control
     this.gain = new Tone.Gain(params.level / 100)
 
-    // Routing: oscillator → envelope → gain
+    // Panner pour stereo positioning (-1 = left, 0 = center, 1 = right)
+    this.panner = new Tone.Panner(params.pan)
+
+    // Routing: oscillator → envelope → gain → panner
     this.oscillator.connect(this.envelope)
     this.envelope.connect(this.gain)
+    this.gain.connect(this.panner)
   }
 
   /**
@@ -85,14 +90,14 @@ export class FMOperator {
    * Connecte la sortie de cet opérateur à une destination
    */
   connect(destination: Tone.ToneAudioNode | AudioParam): void {
-    this.gain.connect(destination as Tone.InputNode)
+    this.panner.connect(destination as Tone.InputNode)
   }
 
   /**
    * Déconnecte cet opérateur
    */
   disconnect(): void {
-    this.gain.disconnect()
+    this.panner.disconnect()
   }
 
   /**
@@ -137,6 +142,16 @@ export class FMOperator {
   }
 
   /**
+   * Apply pan modulation (stereo positioning)
+   */
+  applyPanModulation(panValue: number): void {
+    // panValue should be -1 to 1 (-1 = left, 0 = center, 1 = right)
+    const clampedPan = Math.max(-1, Math.min(1, panValue))
+    // Smooth pan changes to avoid clicks (5ms ramp)
+    this.panner.pan.rampTo(clampedPan, 0.005)
+  }
+
+  /**
    * Mise à jour des paramètres en temps réel
    */
   updateParams(params: Partial<OperatorParams>): void {
@@ -169,13 +184,18 @@ export class FMOperator {
       this.params.release = params.release
       this.envelope.release = params.release
     }
+
+    if (params.pan !== undefined) {
+      this.params.pan = params.pan
+      this.panner.pan.value = params.pan
+    }
   }
 
   /**
    * Récupère le signal audio de sortie
    */
-  get output(): Tone.Gain {
-    return this.gain
+  get output(): Tone.Panner {
+    return this.panner
   }
 
   /**
@@ -192,5 +212,6 @@ export class FMOperator {
     this.oscillator.dispose()
     this.envelope.dispose()
     this.gain.dispose()
+    this.panner.dispose()
   }
 }

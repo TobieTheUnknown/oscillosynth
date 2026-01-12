@@ -11,6 +11,7 @@ export class AudioPipeline {
   private delay: Tone.FeedbackDelay
   private chorus: Tone.Chorus
   private distortion: Tone.Distortion
+  private stereoWidener: Tone.StereoWidener
   private limiter: Tone.Limiter
   private analyser: Tone.Analyser
   private follower: Tone.Follower
@@ -50,6 +51,9 @@ export class AudioPipeline {
       distortion: 0.4,
     })
 
+    // Stereo Widener (width: 0=mono, 1=normal stereo, >1=wide)
+    this.stereoWidener = new Tone.StereoWidener(0) // Start with normal stereo (no widening)
+
     // Limiter anti-clipping
     this.limiter = new Tone.Limiter(-0.3) // -0.3dB ceiling
 
@@ -70,7 +74,7 @@ export class AudioPipeline {
     // Output gain
     this.output = new Tone.Gain(1.0)
 
-    // Routing: filter → distortion → chorus → delay → reverb → limiter → analyser → output
+    // Routing: filter → distortion → chorus → delay → reverb → stereoWidener → limiter → analyser → output
     // Follower taps after limiter (same point as analyser) for amplitude tracking
     // Follower → Meter for reading smoothed amplitude
     // Each effect uses Tone.js built-in wet parameter for simplicity
@@ -78,7 +82,8 @@ export class AudioPipeline {
     this.distortion.connect(this.chorus)
     this.chorus.connect(this.delay)
     this.delay.connect(this.reverb)
-    this.reverb.connect(this.limiter)
+    this.reverb.connect(this.stereoWidener)
+    this.stereoWidener.connect(this.limiter)
     this.limiter.connect(this.analyser)
     this.limiter.connect(this.follower)
     this.follower.connect(this.meter)
@@ -242,6 +247,17 @@ export class AudioPipeline {
   }
 
   /**
+   * Stereo Width controls
+   */
+  setStereoWidth(width: number): void {
+    // width: 0-200% mapped to 0-1 for Tone.StereoWidener
+    // 0% = mono (0), 100% = normal stereo (0), 200% = wide stereo (1)
+    const normalizedWidth = (width / 100) - 1 // Map 0-200% to -1 to 1
+    const clampedWidth = Math.max(0, Math.min(1, (normalizedWidth + 1) / 2)) // Then to 0-1
+    this.stereoWidener.width.value = clampedWidth
+  }
+
+  /**
    * Envelope follower controls
    */
   setFollowerSmoothing(smoothing: number): void {
@@ -264,6 +280,7 @@ export class AudioPipeline {
     this.delay.dispose()
     this.chorus.dispose()
     this.distortion.dispose()
+    this.stereoWidener.dispose()
     this.limiter.dispose()
     this.analyser.dispose()
     this.follower.dispose()
