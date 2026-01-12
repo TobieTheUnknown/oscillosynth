@@ -195,62 +195,82 @@ export class AudioEngine {
   private applyLFOModulation(
     destination: LFODestination,
     value: number,
-    fmEngine: FMEngine
+    fmEngine: FMEngine | null
   ): void {
     if (!this.currentPreset) return
 
     switch (destination) {
       case LFODestination.PITCH:
-        // Pitch vibrato: ±50 cents
-        fmEngine.applyPitchModulation(value * 50)
+        // Pitch vibrato: ±50 cents (requires fmEngine)
+        if (fmEngine) {
+          fmEngine.applyPitchModulation(value * 50)
+        }
         break
 
       case LFODestination.AMPLITUDE:
-        // Amplitude tremolo: 0.1 to 1.9 (±90% with clamp at 0.1 to prevent silence)
-        const ampMod = 1 + value * 0.9
-        fmEngine.applyAmplitudeModulation(Math.max(0.1, ampMod))
+        // Amplitude tremolo: 0.1 to 1.9 (±90% with clamp at 0.1 to prevent silence) (requires fmEngine)
+        if (fmEngine) {
+          const ampMod = 1 + value * 0.9
+          fmEngine.applyAmplitudeModulation(Math.max(0.1, ampMod))
+        }
         break
 
       case LFODestination.FILTER_CUTOFF:
-        // Filter cutoff modulation
+        // Filter cutoff modulation (global - no fmEngine needed)
         this.pipeline.applyFilterCutoffModulation(this.currentPreset.filter.cutoff, value)
         break
 
       case LFODestination.FILTER_RESONANCE:
-        // Filter resonance modulation
+        // Filter resonance modulation (global - no fmEngine needed)
         this.pipeline.applyFilterResonanceModulation(this.currentPreset.filter.resonance, value)
         break
 
       case LFODestination.OP1_LEVEL:
-        fmEngine.applyOperatorLevelModulation(0, this.currentPreset.operators[0].level, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorLevelModulation(0, this.currentPreset.operators[0].level, value)
+        }
         break
 
       case LFODestination.OP2_LEVEL:
-        fmEngine.applyOperatorLevelModulation(1, this.currentPreset.operators[1].level, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorLevelModulation(1, this.currentPreset.operators[1].level, value)
+        }
         break
 
       case LFODestination.OP3_LEVEL:
-        fmEngine.applyOperatorLevelModulation(2, this.currentPreset.operators[2].level, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorLevelModulation(2, this.currentPreset.operators[2].level, value)
+        }
         break
 
       case LFODestination.OP4_LEVEL:
-        fmEngine.applyOperatorLevelModulation(3, this.currentPreset.operators[3].level, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorLevelModulation(3, this.currentPreset.operators[3].level, value)
+        }
         break
 
       case LFODestination.OP1_RATIO:
-        fmEngine.applyOperatorRatioModulation(0, this.currentPreset.operators[0].ratio, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorRatioModulation(0, this.currentPreset.operators[0].ratio, value)
+        }
         break
 
       case LFODestination.OP2_RATIO:
-        fmEngine.applyOperatorRatioModulation(1, this.currentPreset.operators[1].ratio, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorRatioModulation(1, this.currentPreset.operators[1].ratio, value)
+        }
         break
 
       case LFODestination.OP3_RATIO:
-        fmEngine.applyOperatorRatioModulation(2, this.currentPreset.operators[2].ratio, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorRatioModulation(2, this.currentPreset.operators[2].ratio, value)
+        }
         break
 
       case LFODestination.OP4_RATIO:
-        fmEngine.applyOperatorRatioModulation(3, this.currentPreset.operators[3].ratio, value)
+        if (fmEngine) {
+          fmEngine.applyOperatorRatioModulation(3, this.currentPreset.operators[3].ratio, value)
+        }
         break
 
       // Master Effects modulation
