@@ -32,12 +32,13 @@ export class AudioContextManager {
     }
 
     try {
+      // Tone.start() uses existing context or creates one
+      // We need to set latency before Tone.start() is called
       await Tone.start()
 
       // Optimize latency settings
       const ctx = Tone.getContext()
       ctx.lookAhead = 0.01 // Reduce look-ahead to 10ms (default: 100ms)
-      ctx.latencyHint = 'interactive' // Prioritize low latency
 
       this.isStarted = true
       this.notifyListeners(ctx.state)
