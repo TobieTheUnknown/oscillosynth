@@ -117,14 +117,18 @@ export class AudioPipeline {
    * Set filter cutoff frequency
    */
   setFilterCutoff(frequency: number): void {
-    this.filter.frequency.value = Math.max(20, Math.min(20000, frequency))
+    const clampedFreq = Math.max(20, Math.min(20000, frequency))
+    // Smooth filter changes to avoid zipper noise (5ms ramp)
+    this.filter.frequency.rampTo(clampedFreq, 0.005)
   }
 
   /**
    * Set filter resonance (Q)
    */
   setFilterResonance(q: number): void {
-    this.filter.Q.value = Math.max(0.1, Math.min(30, q))
+    const clampedQ = Math.max(0.1, Math.min(30, q))
+    // Smooth resonance changes to avoid artifacts (5ms ramp)
+    this.filter.Q.rampTo(clampedQ, 0.005)
   }
 
   /**

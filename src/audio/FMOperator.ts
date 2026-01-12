@@ -79,7 +79,8 @@ export class FMOperator {
    * Apply pitch modulation (vibrato) in cents
    */
   applyPitchModulation(cents: number): void {
-    this.oscillator.detune.value = cents
+    // Smooth pitch changes to avoid zipper noise (5ms ramp)
+    this.oscillator.detune.rampTo(cents, 0.005)
   }
 
   /**
@@ -87,7 +88,8 @@ export class FMOperator {
    */
   applyAmplitudeModulation(multiplier: number): void {
     const baseGain = (this.params.level / 100)
-    this.gain.gain.value = baseGain * multiplier
+    // Smooth amplitude changes to avoid clicks (5ms ramp)
+    this.gain.gain.rampTo(baseGain * multiplier, 0.005)
   }
 
   /**
@@ -98,7 +100,8 @@ export class FMOperator {
     // Map to ±50% of base level
     const modulatedLevel = baseLevel * (1 + modulationValue * 0.5)
     const clampedLevel = Math.max(0, Math.min(100, modulatedLevel))
-    this.gain.gain.value = clampedLevel / 100
+    // Smooth level changes to avoid clicks (5ms ramp)
+    this.gain.gain.rampTo(clampedLevel / 100, 0.005)
   }
 
   /**
@@ -109,7 +112,8 @@ export class FMOperator {
     // Map to ±20% of base ratio
     const modulatedRatio = baseRatio * (1 + modulationValue * 0.2)
     const clampedRatio = Math.max(0.5, Math.min(16, modulatedRatio))
-    this.oscillator.frequency.value = this.baseFrequency * clampedRatio
+    // Smooth frequency changes to avoid clicks (5ms ramp)
+    this.oscillator.frequency.rampTo(this.baseFrequency * clampedRatio, 0.005)
   }
 
   /**

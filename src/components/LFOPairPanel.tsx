@@ -238,7 +238,7 @@ export function LFOPairPanel({
           label="Rate"
           value={lfo1Params.rate}
           min={0.1}
-          max={20}
+          max={10}
           step={0.1}
           unit="Hz"
           color={color1}
@@ -250,7 +250,7 @@ export function LFOPairPanel({
           label="Depth"
           value={lfo1Params.depth}
           min={0}
-          max={200}
+          max={100}
           step={1}
           unit="%"
           color={color1}
@@ -369,7 +369,7 @@ export function LFOPairPanel({
           label="Rate"
           value={lfo2Params.rate}
           min={0.1}
-          max={20}
+          max={10}
           step={0.1}
           unit="Hz"
           color={color2}
@@ -381,7 +381,7 @@ export function LFOPairPanel({
           label="Depth"
           value={lfo2Params.depth}
           min={0}
-          max={200}
+          max={100}
           step={1}
           unit="%"
           color={color2}
