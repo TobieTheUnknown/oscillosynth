@@ -96,6 +96,32 @@ export function PresetManager({
     alert(`Preset "${name}" saved successfully!`)
   }
 
+  const handleShareURL = () => {
+    if (!currentPreset) {
+      alert('No preset to share')
+      return
+    }
+
+    try {
+      const json = JSON.stringify(currentPreset)
+      const encoded = btoa(json)
+      const url = `${window.location.origin}${window.location.pathname}?preset=${encoded}`
+
+      // Copy to clipboard
+      navigator.clipboard.writeText(url).then(
+        () => {
+          alert('Share URL copied to clipboard!')
+        },
+        () => {
+          // Fallback: show URL in prompt
+          prompt('Share URL (copy this):', url)
+        }
+      )
+    } catch (error) {
+      alert(`Failed to generate share URL: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
   return (
     <div
       style={{
@@ -210,6 +236,24 @@ export function PresetManager({
           }}
         >
           💾 Save As New
+        </button>
+
+        <button
+          onClick={handleShareURL}
+          disabled={!currentPreset}
+          style={{
+            padding: 'var(--spacing-2) var(--spacing-3)',
+            backgroundColor: 'var(--color-bg-primary)',
+            color: 'var(--color-trace-primary)',
+            border: '1px solid var(--color-border-primary)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 'var(--font-size-sm)',
+            cursor: currentPreset ? 'pointer' : 'not-allowed',
+            fontFamily: 'var(--font-family-mono)',
+            opacity: currentPreset ? 1 : 0.5,
+          }}
+        >
+          🔗 Share URL
         </button>
       </div>
 
