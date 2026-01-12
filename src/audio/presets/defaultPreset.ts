@@ -392,7 +392,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.5,
     sustain: 0.8,
     release: 2.0,
-    pan: -0.6, // More pronounced left for clear stereo width
+    pan: -0.3, // Slightly left for width
   },
   {
     ratio: 1.5,
@@ -401,7 +401,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.6,
     sustain: 0.75,
     release: 2.2,
-    pan: 0.6, // More pronounced right for clear stereo width
+    pan: 0.3, // Slightly right for width
   },
   {
     ratio: 2.0,
@@ -410,7 +410,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.4,
     sustain: 0.7,
     release: 1.8,
-    pan: -0.4, // Left
+    pan: -0.2, // Slightly left
   },
   {
     ratio: 3.0,
@@ -419,7 +419,7 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.7,
     sustain: 0.65,
     release: 2.5,
-    pan: 0.4, // Right
+    pan: 0.2, // Slightly right
   },
 ]
 
@@ -516,7 +516,7 @@ export const padPreset: Preset = {
   filter: padFilter,
   masterEffects: defaultMasterEffects,
   portamento: { ...defaultPortamento, enabled: false, time: 200 }, // Slower glide for pads
-  stereoWidth: { ...defaultStereoWidth, enabled: true, width: 180 }, // Very wide stereo for pads
+  stereoWidth: { ...defaultStereoWidth, enabled: true, width: 150 }, // Wide stereo for pads
   masterVolume: 0.6,
 }
 
