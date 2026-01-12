@@ -9,6 +9,7 @@ import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
 import { SpectrumAnalyzer } from './SpectrumAnalyzer'
 import { OscilloscopeXY } from './OscilloscopeXY'
+import { StereoGoniometer } from './StereoGoniometer'
 import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
@@ -679,9 +680,9 @@ export function AudioTestV2() {
                       fontFamily: 'var(--font-family-mono)',
                     }}
                   >
-                    LISSAJOUS (XY)
+                    STEREO GONIOMETER
                   </h3>
-                  <OscilloscopeXY width={550} height={550} />
+                  <StereoGoniometer width={550} height={550} />
                 </div>
                 <div>
                   <h3

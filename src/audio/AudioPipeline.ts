@@ -14,6 +14,7 @@ export class AudioPipeline {
   private stereoWidener: Tone.StereoWidener
   private limiter: Tone.Limiter
   private analyser: Tone.Analyser
+  private stereoAnalyser: Tone.Analyser
   private follower: Tone.Follower
   private meter: Tone.Meter
   private output: Tone.Gain
@@ -57,10 +58,17 @@ export class AudioPipeline {
     // Limiter anti-clipping
     this.limiter = new Tone.Limiter(-0.3) // -0.3dB ceiling
 
-    // Analyser pour visualisation (FFT + waveform)
+    // Analyser pour visualisation (FFT + waveform) - mono
     this.analyser = new Tone.Analyser({
       type: 'waveform',
       size: 2048,
+    })
+
+    // Stereo analyser for L/R visualization
+    this.stereoAnalyser = new Tone.Analyser({
+      type: 'waveform',
+      size: 2048,
+      channels: 2, // Stereo analysis
     })
 
     // Envelope follower for amplitude tracking
@@ -74,9 +82,10 @@ export class AudioPipeline {
     // Output gain
     this.output = new Tone.Gain(1.0)
 
-    // Routing: filter → distortion → chorus → delay → reverb → stereoWidener → limiter → analyser → output
+    // Routing: filter → distortion → chorus → delay → reverb → stereoWidener → limiter → analysers → output
     // Follower taps after limiter (same point as analyser) for amplitude tracking
     // Follower → Meter for reading smoothed amplitude
+    // Both mono and stereo analysers tap after limiter for visualization
     // Each effect uses Tone.js built-in wet parameter for simplicity
     this.filter.connect(this.distortion)
     this.distortion.connect(this.chorus)
@@ -85,6 +94,7 @@ export class AudioPipeline {
     this.reverb.connect(this.stereoWidener)
     this.stereoWidener.connect(this.limiter)
     this.limiter.connect(this.analyser)
+    this.limiter.connect(this.stereoAnalyser)
     this.limiter.connect(this.follower)
     this.follower.connect(this.meter)
     this.analyser.connect(this.output)
@@ -191,6 +201,22 @@ export class AudioPipeline {
   }
 
   /**
+   * Get stereo waveform data (for goniometer/L-R visualization)
+   * Returns [L_channel, R_channel]
+   */
+  getStereoWaveform(): [Float32Array, Float32Array] {
+    const stereoData = this.stereoAnalyser.getValue()
+
+    if (Array.isArray(stereoData) && stereoData.length === 2) {
+      return [stereoData[0] as Float32Array, stereoData[1] as Float32Array]
+    }
+
+    // Fallback to mono (both channels same)
+    const monoData = stereoData as Float32Array
+    return [monoData, monoData]
+  }
+
+  /**
    * Reverb controls
    */
   setReverbWet(wet: number): void {
@@ -283,6 +309,7 @@ export class AudioPipeline {
     this.stereoWidener.dispose()
     this.limiter.dispose()
     this.analyser.dispose()
+    this.stereoAnalyser.dispose()
     this.follower.dispose()
     this.meter.dispose()
     this.output.dispose()
