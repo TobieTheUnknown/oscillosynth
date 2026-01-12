@@ -11,6 +11,9 @@ export class FMOperator {
   private envelope: Tone.AmplitudeEnvelope
   private gain: Tone.Gain
   private panner: Tone.Panner
+  private fmGain: Tone.Gain // Gain dédié pour connexions FM
+  private fmConnections: Set<AudioParam> = new Set() // Tracking des cibles FM
+  private static readonly FM_INDEX_MULTIPLIER = 50 // Intensité de modulation
   private baseFrequency: number
   private params: OperatorParams
 
@@ -42,6 +45,12 @@ export class FMOperator {
     this.oscillator.connect(this.envelope)
     this.envelope.connect(this.gain)
     this.gain.connect(this.panner)
+
+    // FM-specific gain node (separate from audio gain)
+    this.fmGain = new Tone.Gain(0) // Initial value, updated dynamically
+
+    // Parallel FM signal chain: oscillator → envelope → fmGain
+    this.envelope.connect(this.fmGain)
   }
 
   /**
@@ -98,6 +107,49 @@ export class FMOperator {
    */
   disconnect(): void {
     this.panner.disconnect()
+  }
+
+  /**
+   * Calcule la profondeur de modulation FM en Hz basée sur la fréquence porteuse
+   * Formule: carrierFreq × (level/100) × FM_INDEX_MULTIPLIER
+   */
+  private calculateFMDepth(carrierFrequency: number): number {
+    const levelRatio = this.params.level / 100
+    const fmDepth = carrierFrequency * levelRatio * FMOperator.FM_INDEX_MULTIPLIER
+    return fmDepth
+  }
+
+  /**
+   * Connecte la sortie de cet opérateur au paramètre de fréquence d'un autre (modulation FM)
+   * Calcule et applique le scaling FM approprié basé sur la fréquence porteuse
+   * @param frequencyParam The frequency AudioParam to modulate
+   * @param carrierFrequency The base frequency of the operator being modulated
+   */
+  connectToFrequency(frequencyParam: AudioParam, carrierFrequency: number): void {
+    // Calculer la profondeur FM pour cette fréquence porteuse
+    const fmDepth = this.calculateFMDepth(carrierFrequency)
+
+    // Définir le gain FM pour scaler la modulation correctement
+    this.fmGain.gain.value = fmDepth
+
+    // Connecter la chaîne de signal FM au paramètre de fréquence cible
+    this.fmGain.connect(frequencyParam)
+
+    // Tracker cette connexion pour mises à jour ultérieures
+    this.fmConnections.add(frequencyParam)
+
+    console.log(
+      `🔗 Connexion FM: OP ratio=${this.params.ratio} level=${this.params.level} → ` +
+        `porteuse=${carrierFrequency.toFixed(2)}Hz, profondeur=${fmDepth.toFixed(2)}Hz`
+    )
+  }
+
+  /**
+   * Déconnecte toutes les connexions FM (appelé lors des changements de routing)
+   */
+  disconnectFM(): void {
+    this.fmGain.disconnect()
+    this.fmConnections.clear()
   }
 
   /**
@@ -206,12 +258,27 @@ export class FMOperator {
   }
 
   /**
+   * Récupère les paramètres de l'opérateur (lecture seule)
+   */
+  getParams(): Readonly<OperatorParams> {
+    return this.params
+  }
+
+  /**
+   * Récupère la fréquence de base actuelle
+   */
+  getBaseFrequency(): number {
+    return this.baseFrequency
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {
     this.oscillator.dispose()
     this.envelope.dispose()
     this.gain.dispose()
+    this.fmGain.dispose()
     this.panner.dispose()
   }
 }

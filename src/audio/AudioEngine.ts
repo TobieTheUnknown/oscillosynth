@@ -108,6 +108,10 @@ export class AudioEngine {
       }
     }
 
+    // Mettre à jour le routing FM avec la fréquence réelle de la note
+    // Ceci assure que le scaling FM est correct pour chaque note
+    fmEngine.updateRoutingForFrequency(frequency)
+
     // Trigger note (with portamento if applicable)
     if (usePortamento && startFrequency !== frequency) {
       const glideTime = portamento.time / 1000 // Convert ms to seconds

@@ -38,68 +38,8 @@ export class FMEngine {
    * Configure le routing des opérateurs selon l'algorithm
    */
   private setupRouting(): void {
-    // Déconnecter tout d'abord
-    this.operators.forEach((op) => { op.disconnect(); })
-    this.output.disconnect()
-
-    // Feedback gain si nécessaire (operator 4)
-    if (this.feedbackGain) {
-      this.feedbackGain.dispose()
-      this.feedbackGain = null
-    }
-
-    const [op1, op2, op3, op4] = this.operators
-
-    switch (this.algorithm) {
-      case AlgorithmType.SERIAL:
-        // SERIAL: 4→3→2→1→OUT (Pure serial FM, metallic/bell tones)
-        op4.connect(op3.frequencyParam)
-        op3.connect(op2.frequencyParam)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.PARALLEL:
-        // PARALLEL: 4+3+2+1→OUT (All parallel, warm/organ tones)
-        op1.connect(this.output)
-        op2.connect(this.output)
-        op3.connect(this.output)
-        op4.connect(this.output)
-        break
-
-      case AlgorithmType.DUAL_SERIAL:
-        // DUAL_SERIAL: (4→3)+(2→1)→OUT (Two serial chains, complex harmonics)
-        op4.connect(op3.frequencyParam)
-        op3.connect(this.output)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.FAN_OUT:
-        // FAN_OUT: 4→(3+2+1)→OUT (One master modulator, rich modulation)
-        op4.connect(op3.frequencyParam)
-        op4.connect(op2.frequencyParam)
-        op4.connect(op1.frequencyParam)
-        op3.connect(this.output)
-        op2.connect(this.output)
-        op1.connect(this.output)
-        break
-
-      case AlgorithmType.SPLIT:
-        // SPLIT: (4+3)→2→1→OUT (Dual modulators to carrier, thick textures)
-        op4.connect(op2.frequencyParam)
-        op3.connect(op2.frequencyParam)
-        op2.connect(op1.frequencyParam)
-        op1.connect(this.output)
-        break
-
-      default:
-        console.warn(`Unknown algorithm: ${String(this.algorithm)}, using SERIAL`)
-        this.algorithm = AlgorithmType.SERIAL
-        this.setupRouting()
-    }
-
-    console.log(`✅ FM Engine routing set to Algorithm ${String(this.algorithm)}`)
+    // Utiliser 440 Hz par défaut pour l'initialisation
+    this.setupRoutingWithFrequency(440)
   }
 
   /**
@@ -110,6 +50,98 @@ export class FMEngine {
       this.algorithm = algorithm
       this.setupRouting()
     }
+  }
+
+  /**
+   * Met à jour le routing FM pour une fréquence de note spécifique
+   * Permet le scaling FM correct - doit être appelé avec la fréquence réelle de la note
+   * @param noteFrequency La fréquence de la note en Hz
+   */
+  updateRoutingForFrequency(noteFrequency: number): void {
+    this.setupRoutingWithFrequency(noteFrequency)
+  }
+
+  /**
+   * Configure le routing avec une fréquence de note spécifique
+   * Permet le scaling FM correct basé sur la fréquence réelle
+   */
+  private setupRoutingWithFrequency(noteFrequency: number): void {
+    // Déconnecter tout d'abord
+    this.operators.forEach((op) => {
+      op.disconnect()
+      op.disconnectFM()
+    })
+    this.output.disconnect()
+
+    const [op1, op2, op3, op4] = this.operators
+
+    switch (this.algorithm) {
+      case AlgorithmType.SERIAL: {
+        // SERIAL: 4→3→2→1→OUT (Pure serial FM, metallic/bell tones)
+        const freq1 = noteFrequency * op1.getParams().ratio
+        const freq2 = noteFrequency * op2.getParams().ratio
+        const freq3 = noteFrequency * op3.getParams().ratio
+        op4.connectToFrequency(op3.frequencyParam, freq3)
+        op3.connectToFrequency(op2.frequencyParam, freq2)
+        op2.connectToFrequency(op1.frequencyParam, freq1)
+        op1.connect(this.output)
+        break
+      }
+
+      case AlgorithmType.PARALLEL:
+        // PARALLEL: 4+3+2+1→OUT (All parallel, warm/organ tones)
+        // No FM connections - all operators output to audio
+        op1.connect(this.output)
+        op2.connect(this.output)
+        op3.connect(this.output)
+        op4.connect(this.output)
+        break
+
+      case AlgorithmType.DUAL_SERIAL: {
+        // DUAL_SERIAL: (4→3)+(2→1)→OUT (Two serial chains, complex harmonics)
+        const freq1 = noteFrequency * op1.getParams().ratio
+        const freq3 = noteFrequency * op3.getParams().ratio
+        op4.connectToFrequency(op3.frequencyParam, freq3)
+        op3.connect(this.output)
+        op2.connectToFrequency(op1.frequencyParam, freq1)
+        op1.connect(this.output)
+        break
+      }
+
+      case AlgorithmType.FAN_OUT: {
+        // FAN_OUT: 4→(3+2+1)→OUT (One master modulator, rich modulation)
+        const freq1 = noteFrequency * op1.getParams().ratio
+        const freq2 = noteFrequency * op2.getParams().ratio
+        const freq3 = noteFrequency * op3.getParams().ratio
+        op4.connectToFrequency(op3.frequencyParam, freq3)
+        op4.connectToFrequency(op2.frequencyParam, freq2)
+        op4.connectToFrequency(op1.frequencyParam, freq1)
+        op3.connect(this.output)
+        op2.connect(this.output)
+        op1.connect(this.output)
+        break
+      }
+
+      case AlgorithmType.SPLIT: {
+        // SPLIT: (4+3)→2→1→OUT (Dual modulators to carrier, thick textures)
+        const freq1 = noteFrequency * op1.getParams().ratio
+        const freq2 = noteFrequency * op2.getParams().ratio
+        op4.connectToFrequency(op2.frequencyParam, freq2)
+        op3.connectToFrequency(op2.frequencyParam, freq2) // LE FIX CRITIQUE!
+        op2.connectToFrequency(op1.frequencyParam, freq1)
+        op1.connect(this.output)
+        break
+      }
+
+      default:
+        console.warn(`Unknown algorithm: ${String(this.algorithm)}, using SERIAL`)
+        this.algorithm = AlgorithmType.SERIAL
+        this.setupRoutingWithFrequency(noteFrequency)
+    }
+
+    console.log(
+      `✅ FM routing établi pour ${noteFrequency.toFixed(2)} Hz (Algorithm ${String(this.algorithm)})`
+    )
   }
 
   /**
