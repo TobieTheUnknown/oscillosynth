@@ -53,6 +53,19 @@ const KEYS: Key[] = [
 export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: InteractiveKeyboardProps) {
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set())
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(new Set())
+  const [latchMode, setLatchMode] = useState(false)
+  const [latchedNotes, setLatchedNotes] = useState<Set<number>>(new Set())
+
+  // Clear latched notes when latch mode is disabled
+  useEffect(() => {
+    if (!latchMode && latchedNotes.size > 0) {
+      latchedNotes.forEach((note) => {
+        onNoteOff(note)
+      })
+      setLatchedNotes(new Set())
+      setActiveNotes(new Set())
+    }
+  }, [latchMode, latchedNotes, onNoteOff])
 
   useEffect(() => {
     if (!isEnabled) return
@@ -98,16 +111,55 @@ export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: Interact
 
   const handleMouseDown = (midiNote: number) => {
     if (!isEnabled) return
-    setActiveNotes(new Set(activeNotes).add(midiNote))
-    onNoteOn(midiNote, 100)
+
+    if (latchMode) {
+      // Latch mode: toggle note on/off
+      if (latchedNotes.has(midiNote)) {
+        // Note is latched, turn it off
+        const newLatchedNotes = new Set(latchedNotes)
+        newLatchedNotes.delete(midiNote)
+        setLatchedNotes(newLatchedNotes)
+
+        const newActiveNotes = new Set(activeNotes)
+        newActiveNotes.delete(midiNote)
+        setActiveNotes(newActiveNotes)
+
+        onNoteOff(midiNote)
+      } else {
+        // Note is not latched, turn it on
+        const newLatchedNotes = new Set(latchedNotes)
+        newLatchedNotes.add(midiNote)
+        setLatchedNotes(newLatchedNotes)
+
+        const newActiveNotes = new Set(activeNotes)
+        newActiveNotes.add(midiNote)
+        setActiveNotes(newActiveNotes)
+
+        onNoteOn(midiNote, 100)
+      }
+    } else {
+      // Normal mode: note on
+      setActiveNotes(new Set(activeNotes).add(midiNote))
+      onNoteOn(midiNote, 100)
+    }
   }
 
   const handleMouseUp = (midiNote: number) => {
-    if (!isEnabled) return
+    if (!isEnabled || latchMode) return // In latch mode, don't release on mouse up
+
     const newActiveNotes = new Set(activeNotes)
     newActiveNotes.delete(midiNote)
     setActiveNotes(newActiveNotes)
     onNoteOff(midiNote)
+  }
+
+  const handleClearLatched = () => {
+    // Turn off all latched notes
+    latchedNotes.forEach((note) => {
+      onNoteOff(note)
+    })
+    setLatchedNotes(new Set())
+    setActiveNotes(new Set())
   }
 
   const whiteKeys = KEYS.filter((k) => !k.isBlack)
@@ -163,13 +215,61 @@ export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: Interact
           fontSize: 'var(--font-size-xs)',
           color: 'var(--color-text-tertiary)',
           fontFamily: 'var(--font-family-mono)',
-          marginBottom: 'var(--spacing-4)',
+          marginBottom: 'var(--spacing-3)',
           textAlign: 'center',
         }}
       >
         {isEnabled
           ? 'Use computer keyboard (A-; keys) or click/tap to play'
           : 'Start audio engine to enable keyboard'}
+      </div>
+
+      {/* Latch controls */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'var(--spacing-2)',
+          marginBottom: 'var(--spacing-4)',
+        }}
+      >
+        <button
+          onClick={() => setLatchMode(!latchMode)}
+          disabled={!isEnabled}
+          style={{
+            padding: 'var(--spacing-2) var(--spacing-3)',
+            backgroundColor: latchMode ? 'var(--color-active)' : 'var(--color-bg-primary)',
+            color: latchMode ? '#000' : 'var(--color-text-primary)',
+            border: `2px solid ${latchMode ? 'var(--color-active)' : 'var(--color-border-primary)'}`,
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 'var(--font-size-sm)',
+            fontFamily: 'var(--font-family-mono)',
+            fontWeight: 'bold',
+            cursor: isEnabled ? 'pointer' : 'not-allowed',
+            opacity: isEnabled ? 1 : 0.5,
+            transition: 'all 0.2s',
+          }}
+        >
+          {latchMode ? '🔒 LATCH ON' : '🔓 LATCH OFF'}
+        </button>
+        {latchedNotes.size > 0 && (
+          <button
+            onClick={handleClearLatched}
+            style={{
+              padding: 'var(--spacing-2) var(--spacing-3)',
+              backgroundColor: 'transparent',
+              color: 'var(--color-warning)',
+              border: '2px solid var(--color-warning)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--font-size-sm)',
+              fontFamily: 'var(--font-family-mono)',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+            }}
+          >
+            Clear {latchedNotes.size} note{latchedNotes.size > 1 ? 's' : ''}
+          </button>
+        )}
       </div>
 
       <div
@@ -213,7 +313,9 @@ export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: Interact
               backgroundColor: activeNotes.has(key.midiNote)
                 ? 'var(--color-active)'
                 : '#ffffff',
-              border: '1px solid #333',
+              border: latchedNotes.has(key.midiNote)
+                ? '3px solid var(--color-active)'
+                : '1px solid #333',
               borderRadius: '0 0 4px 4px',
               cursor: isEnabled ? 'pointer' : 'default',
               display: 'flex',
@@ -222,6 +324,9 @@ export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: Interact
               alignItems: 'center',
               padding: 'var(--spacing-2)',
               transition: 'background-color 0.05s',
+              boxShadow: latchedNotes.has(key.midiNote)
+                ? '0 0 10px var(--color-active)'
+                : 'none',
             }}
           >
             <div
@@ -288,7 +393,9 @@ export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: Interact
               backgroundColor: activeNotes.has(key.midiNote)
                 ? 'var(--color-active)'
                 : '#222',
-              border: '1px solid #000',
+              border: latchedNotes.has(key.midiNote)
+                ? '3px solid var(--color-active)'
+                : '1px solid #000',
               borderRadius: '0 0 2px 2px',
               cursor: isEnabled ? 'pointer' : 'default',
               zIndex: 10,
@@ -298,6 +405,9 @@ export function InteractiveKeyboard({ onNoteOn, onNoteOff, isEnabled }: Interact
               alignItems: 'center',
               padding: 'var(--spacing-1)',
               transition: 'background-color 0.05s',
+              boxShadow: latchedNotes.has(key.midiNote)
+                ? '0 0 10px var(--color-active)'
+                : 'none',
             }}
           >
             {key.keyboardKey && (
