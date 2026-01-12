@@ -3,7 +3,7 @@
  * Version avec Zustand stores et hooks
  */
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
@@ -12,7 +12,6 @@ import { OscilloscopeXY } from './OscilloscopeXY'
 import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
-import { NoteSequencer } from './NoteSequencer'
 import { FMRoutingVisualizer } from './FMRoutingVisualizer'
 import { InteractiveKeyboard } from './InteractiveKeyboard'
 import { PresetManager } from './PresetManager'
@@ -20,6 +19,13 @@ import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
 import { TabBar } from './TabBar'
+import { SequencerUI } from './SequencerUI'
+import * as Tone from 'tone'
+
+interface Step {
+  enabled: boolean
+  note: number
+}
 
 export function AudioTestV2() {
   const {
@@ -44,6 +50,146 @@ export function AudioTestV2() {
 
   const [activeTab, setActiveTab] = useState('PLAY')
   const tabs = ['PLAY', 'SOUND', 'MODULATION', 'EFFECTS', 'VISUALIZE']
+
+  // Sequencer state
+  const DEFAULT_STEPS: Step[] = Array.from({ length: 16 }, (_, i) => ({
+    enabled: i % 4 === 0,
+    note: 60 + (i % 8),
+  }))
+  const [seqSteps, setSeqSteps] = useState<Step[]>(DEFAULT_STEPS)
+  const [seqCurrentStep, setSeqCurrentStep] = useState<number>(-1)
+  const [seqIsPlaying, setSeqIsPlaying] = useState(false)
+  const [seqBpm, setSeqBpm] = useState(120)
+  const [seqGateLength, setSeqGateLength] = useState(50)
+  const sequenceRef = useRef<Tone.Sequence<number> | null>(null)
+  const activeNoteRef = useRef<number | null>(null)
+
+  // Sequencer cleanup
+  useEffect(() => {
+    return () => {
+      if (sequenceRef.current) {
+        sequenceRef.current.dispose()
+        sequenceRef.current = null
+      }
+      if (activeNoteRef.current !== null) {
+        noteOff(activeNoteRef.current)
+        activeNoteRef.current = null
+      }
+    }
+  }, [noteOff])
+
+  // Sequencer logic
+  useEffect(() => {
+    if (!isStarted) {
+      if (seqIsPlaying) {
+        setSeqIsPlaying(false)
+        Tone.Transport.stop()
+        if (activeNoteRef.current !== null) {
+          noteOff(activeNoteRef.current)
+          activeNoteRef.current = null
+        }
+      }
+      return
+    }
+
+    if (sequenceRef.current) {
+      sequenceRef.current.dispose()
+      sequenceRef.current = null
+    }
+
+    Tone.Transport.bpm.value = seqBpm
+
+    const sequence = new Tone.Sequence(
+      (time, step: number) => {
+        Tone.Draw.schedule(() => {
+          setSeqCurrentStep(step)
+        }, time)
+
+        const currentStepData = seqSteps[step]
+        if (currentStepData && currentStepData.enabled) {
+          if (activeNoteRef.current !== null) {
+            noteOff(activeNoteRef.current)
+            activeNoteRef.current = null
+          }
+
+          const note = currentStepData.note
+          noteOn(note, 100)
+          activeNoteRef.current = note
+
+          const stepDuration = 60 / seqBpm / 4
+          const noteDuration = stepDuration * (seqGateLength / 100)
+
+          Tone.Transport.scheduleOnce(() => {
+            if (activeNoteRef.current === note) {
+              noteOff(note)
+              activeNoteRef.current = null
+            }
+          }, time + noteDuration)
+        } else {
+          if (activeNoteRef.current !== null) {
+            Tone.Draw.schedule(() => {
+              if (activeNoteRef.current !== null) {
+                noteOff(activeNoteRef.current)
+                activeNoteRef.current = null
+              }
+            }, time)
+          }
+        }
+      },
+      Array.from({ length: 16 }, (_, i) => i),
+      '16n'
+    )
+
+    sequence.start(0)
+    sequenceRef.current = sequence
+  }, [seqSteps, seqBpm, seqGateLength, isStarted, noteOn, noteOff, seqIsPlaying])
+
+  const handleSeqPlayStop = () => {
+    if (!seqIsPlaying) {
+      Tone.Transport.start()
+      setSeqIsPlaying(true)
+    } else {
+      Tone.Transport.stop()
+      Tone.Transport.position = 0
+      setSeqIsPlaying(false)
+      setSeqCurrentStep(-1)
+      if (activeNoteRef.current !== null) {
+        noteOff(activeNoteRef.current)
+        activeNoteRef.current = null
+      }
+    }
+  }
+
+  const handleToggleStep = (index: number) => {
+    const newSteps = [...seqSteps]
+    const currentStep = newSteps[index]
+    if (currentStep) {
+      newSteps[index] = { ...currentStep, enabled: !currentStep.enabled }
+      setSeqSteps(newSteps)
+    }
+  }
+
+  const handleSetStepNote = (index: number, note: number) => {
+    const newSteps = [...seqSteps]
+    const currentStep = newSteps[index]
+    if (currentStep) {
+      newSteps[index] = { ...currentStep, note }
+      setSeqSteps(newSteps)
+    }
+  }
+
+  const handleClearPattern = () => {
+    setSeqSteps(seqSteps.map((step) => ({ ...step, enabled: false })))
+  }
+
+  const handleRandomPattern = () => {
+    setSeqSteps(
+      seqSteps.map(() => ({
+        enabled: Math.random() > 0.5,
+        note: 48 + Math.floor(Math.random() * 25),
+      }))
+    )
+  }
 
   const LFO_COLORS = [
     '#00FF41',
@@ -189,7 +335,21 @@ export function AudioTestV2() {
                   }}
                 >
                   <InteractiveKeyboard onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
-                  <NoteSequencer onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
+                  <SequencerUI
+                    steps={seqSteps}
+                    currentStep={seqCurrentStep}
+                    isPlaying={seqIsPlaying}
+                    bpm={seqBpm}
+                    gateLength={seqGateLength}
+                    isEnabled={isStarted}
+                    onPlayStop={handleSeqPlayStop}
+                    onBpmChange={setSeqBpm}
+                    onGateChange={setSeqGateLength}
+                    onToggleStep={handleToggleStep}
+                    onSetStepNote={handleSetStepNote}
+                    onClearPattern={handleClearPattern}
+                    onRandomPattern={handleRandomPattern}
+                  />
                   <PresetManager
                     currentPreset={currentPreset}
                     allPresets={allPresets}
