@@ -102,5 +102,6 @@ export function useAudioEngine() {
     updateCurrentPresetMasterEffects: presetStore.updateCurrentPresetMasterEffects,
     updateCurrentPresetEnvelopeFollower: presetStore.updateCurrentPresetEnvelopeFollower,
     updateCurrentPresetStepSequencer: presetStore.updateCurrentPresetStepSequencer,
+    updateCurrentPresetPortamento: presetStore.updateCurrentPresetPortamento,
   }
 }

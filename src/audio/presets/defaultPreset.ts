@@ -15,6 +15,7 @@ import {
   StepSequencerParams,
   FilterParams,
   MasterEffectsParams,
+  PortamentoParams,
 } from '../types'
 
 /**
@@ -197,6 +198,15 @@ const defaultMasterEffects: MasterEffectsParams = {
 }
 
 /**
+ * Portamento settings
+ */
+const defaultPortamento: PortamentoParams = {
+  enabled: false,
+  time: 100, // 100ms glide time
+  mode: 'always',
+}
+
+/**
  * Preset complet: Electric Piano
  */
 export const defaultPreset: Preset = {
@@ -210,6 +220,7 @@ export const defaultPreset: Preset = {
   stepSequencer: defaultStepSequencer,
   filter: defaultFilter,
   masterEffects: defaultMasterEffects,
+  portamento: defaultPortamento,
   masterVolume: 0.7,
 }
 
@@ -344,6 +355,7 @@ export const bassPreset: Preset = {
   stepSequencer: defaultStepSequencer,
   filter: bassFilter,
   masterEffects: defaultMasterEffects,
+  portamento: { ...defaultPortamento, enabled: false, time: 50 }, // Faster glide for bass
   masterVolume: 0.8,
 }
 
@@ -478,6 +490,7 @@ export const padPreset: Preset = {
   stepSequencer: defaultStepSequencer,
   filter: padFilter,
   masterEffects: defaultMasterEffects,
+  portamento: { ...defaultPortamento, enabled: false, time: 200 }, // Slower glide for pads
   masterVolume: 0.6,
 }
 

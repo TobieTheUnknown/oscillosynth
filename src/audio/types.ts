@@ -117,6 +117,15 @@ export interface FilterParams {
 }
 
 /**
+ * Paramètres Portamento
+ */
+export interface PortamentoParams {
+  enabled: boolean // Portamento on/off
+  time: number // 0 - 1000 ms (glide time between notes)
+  mode: 'always' | 'legato' // always = always glide, legato = only when overlapping notes
+}
+
+/**
  * Paramètres des effets master
  */
 export interface MasterEffectsParams {
@@ -163,6 +172,7 @@ export interface Preset {
   stepSequencer: StepSequencerParams
   filter: FilterParams
   masterEffects: MasterEffectsParams
+  portamento: PortamentoParams
   masterVolume: number // 0 - 1.0
 }
 

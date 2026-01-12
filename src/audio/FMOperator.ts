@@ -55,6 +55,26 @@ export class FMOperator {
   }
 
   /**
+   * Démarre l'opérateur avec portamento (glide from startFreq to endFreq)
+   */
+  triggerWithPortamento(startFreq: number, endFreq: number, glideTime: number, velocity: number): void {
+    this.baseFrequency = endFreq
+
+    // Start at the beginning frequency (with ratio applied)
+    this.oscillator.frequency.value = startFreq * this.params.ratio
+
+    // Glide to the target frequency
+    this.oscillator.frequency.rampTo(endFreq * this.params.ratio, glideTime)
+
+    // Velocity affecte le gain
+    const velocityGain = velocity / 127
+    this.gain.gain.value = (this.params.level / 100) * velocityGain
+
+    // Trigger envelope
+    this.envelope.triggerAttack()
+  }
+
+  /**
    * Relâche l'opérateur
    */
   release(): void {

@@ -13,6 +13,7 @@ import {
   MasterEffectsParams,
   EnvelopeFollowerParams,
   StepSequencerParams,
+  PortamentoParams,
 } from '../audio/types'
 import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
@@ -35,6 +36,7 @@ interface PresetStore {
   updateCurrentPresetMasterEffects: (params: Partial<MasterEffectsParams>) => void
   updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => void
   updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => void
+  updateCurrentPresetPortamento: (params: Partial<PortamentoParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -301,6 +303,40 @@ export const usePresetStore = create<PresetStore>()(
         }
 
         // Reload preset in audio engine
+        audioEngine.loadPreset(updatedPreset)
+
+        // Update store
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+      },
+
+      updateCurrentPresetPortamento: (params: Partial<PortamentoParams>) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          portamento: { ...currentPreset.portamento, ...params },
+        }
+
+        // Portamento doesn't need engine reload - just update preset
+        // It only affects the behavior of future noteOn calls
         audioEngine.loadPreset(updatedPreset)
 
         // Update store

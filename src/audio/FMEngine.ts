@@ -122,6 +122,15 @@ export class FMEngine {
   }
 
   /**
+   * Déclenche une note avec portamento (glide from startFreq to endFreq)
+   */
+  noteOnWithPortamento(startFreq: number, endFreq: number, glideTime: number, velocity = 100): void {
+    this.operators.forEach((op) => {
+      op.triggerWithPortamento(startFreq, endFreq, glideTime, velocity)
+    })
+  }
+
+  /**
    * Relâche la note
    */
   noteOff(): void {

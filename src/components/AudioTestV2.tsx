@@ -18,6 +18,7 @@ import { PresetManager } from './PresetManager'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
+import { PortamentoControls } from './PortamentoControls'
 import { TabBar } from './TabBar'
 import { SequencerUI } from './SequencerUI'
 import * as Tone from 'tone'
@@ -46,6 +47,7 @@ export function AudioTestV2() {
     updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects,
     updateCurrentPresetEnvelopeFollower,
+    updateCurrentPresetPortamento,
   } = useAudioEngine()
 
   const [activeTab, setActiveTab] = useState('PLAY')
@@ -432,6 +434,14 @@ export function AudioTestV2() {
                   </div>
                   <FMRoutingVisualizer algorithm={currentPreset.algorithm} width={700} height={300} />
                 </div>
+
+                {/* Portamento Controls */}
+                <PortamentoControls
+                  params={currentPreset.portamento}
+                  onChange={(params) => {
+                    updateCurrentPresetPortamento(params)
+                  }}
+                />
 
                 {/* Operators in 2x2 grid */}
                 <div>

@@ -30,6 +30,7 @@ export class AudioEngine {
   private envelopeFollowerInterval: ReturnType<typeof setInterval> | null = null // Envelope follower polling
   private stepSequencerInterval: ReturnType<typeof setInterval> | null = null // Step sequencer polling
   private stepSequencerCurrentStep = 0 // Current step index
+  private lastPlayedFrequency: number | null = null // For portamento
 
   private constructor() {
     this.voicePool = new VoicePool(8) // Max 8 voix
@@ -85,8 +86,38 @@ export class AudioEngine {
     // Connecter FM engine au master gain
     fmEngine.connect(this.masterGain)
 
-    // Trigger note
-    fmEngine.noteOn(frequency, velocity)
+    // Check portamento settings
+    const portamento = this.currentPreset.portamento
+    let startFrequency = frequency
+    let usePortamento = false
+
+    if (portamento.enabled) {
+      // Check if we should apply portamento
+      const hasActiveVoices = this.activeVoices.size > 0
+
+      if (portamento.mode === 'always') {
+        // Always glide if we have a previous frequency
+        usePortamento = this.lastPlayedFrequency !== null
+      } else if (portamento.mode === 'legato') {
+        // Only glide if there are active notes (legato playing)
+        usePortamento = hasActiveVoices && this.lastPlayedFrequency !== null
+      }
+
+      if (usePortamento && this.lastPlayedFrequency) {
+        startFrequency = this.lastPlayedFrequency
+      }
+    }
+
+    // Trigger note (with portamento if applicable)
+    if (usePortamento && startFrequency !== frequency) {
+      const glideTime = portamento.time / 1000 // Convert ms to seconds
+      fmEngine.noteOnWithPortamento(startFrequency, frequency, glideTime, velocity)
+    } else {
+      fmEngine.noteOn(frequency, velocity)
+    }
+
+    // Update last played frequency
+    this.lastPlayedFrequency = frequency
 
     // Setup LFO modulation with dynamic routing
     // Poll LFO values every 10ms and route to appropriate destinations
