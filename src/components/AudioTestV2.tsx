@@ -13,6 +13,7 @@ import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
 import { StepSequencerControl } from './StepSequencerControl'
 import { FMRoutingVisualizer } from './FMRoutingVisualizer'
+import { InteractiveKeyboard } from './InteractiveKeyboard'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
@@ -127,6 +128,15 @@ export function AudioTestV2() {
                 {activeVoices} / {maxVoices}
               </span>
             </div>
+          </div>
+
+          {/* Interactive Keyboard */}
+          <div style={{ marginBottom: 'var(--spacing-6)' }}>
+            <InteractiveKeyboard
+              onNoteOn={noteOn}
+              onNoteOff={noteOff}
+              isEnabled={isStarted}
+            />
           </div>
 
           {/* Visualizations Section */}
