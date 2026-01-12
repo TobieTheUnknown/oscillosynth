@@ -6,6 +6,9 @@
 import { useAudioEngine } from '../hooks/useAudioEngine'
 import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
+import { SpectrumAnalyzer } from './SpectrumAnalyzer'
+import { OscilloscopeXY } from './OscilloscopeXY'
+import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
@@ -121,13 +124,50 @@ export function AudioTestV2() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 'var(--spacing-6)', width: '100%' }}>
-            <Oscilloscope
-              width={Math.min(800, window.innerWidth - 64)}
-              height={300}
-              lineWidth={2}
-              glowIntensity={0.6}
-            />
+          {/* Visualizations Section */}
+          <div style={{ marginBottom: 'var(--spacing-6)' }}>
+            <h2
+              style={{
+                fontSize: 'var(--font-size-xl)',
+                marginBottom: 'var(--spacing-4)',
+                color: 'var(--color-trace-primary)',
+                textShadow: '0 0 8px var(--color-trace-glow)',
+              }}
+            >
+              VISUALIZATIONS
+            </h2>
+
+            {/* Main Oscilloscope */}
+            <div style={{ marginBottom: 'var(--spacing-4)', width: '100%' }}>
+              <Oscilloscope
+                width={Math.min(800, window.innerWidth - 64)}
+                height={300}
+                lineWidth={2}
+                glowIntensity={0.6}
+              />
+            </div>
+
+            {/* Side by side: Spectrum + XY */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 'var(--spacing-4)',
+                marginBottom: 'var(--spacing-4)',
+              }}
+            >
+              <SpectrumAnalyzer width={Math.min(400, (window.innerWidth - 96) / 2)} height={300} />
+              <OscilloscopeXY width={Math.min(400, (window.innerWidth - 96) / 2)} height={300} />
+            </div>
+
+            {/* ADSR Visualizer */}
+            {currentPreset && (
+              <ADSRVisualizer
+                operators={currentPreset.operators}
+                width={Math.min(800, window.innerWidth - 64)}
+                height={200}
+              />
+            )}
           </div>
 
           {/* Master Effects with visualizer */}
