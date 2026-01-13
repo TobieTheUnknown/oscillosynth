@@ -1,16 +1,28 @@
 /**
  * Oscilloscope Component
  * Canvas-based waveform visualization with phosphor green aesthetic
+ * Enhanced with visual feedback for FM parameters
  */
 
 import { useEffect, useRef, useState } from 'react'
 import { audioEngine } from '../audio/AudioEngine'
+import { usePresetStore } from '../store/presetStore'
+import { AlgorithmType } from '../audio/types'
 
 interface OscilloscopeProps {
   width?: number
   height?: number
   lineWidth?: number
   glowIntensity?: number
+}
+
+// Algorithm color mapping (hue values)
+const ALGORITHM_COLORS: Record<AlgorithmType, { hue: number; name: string; isDual?: boolean; hue2?: number }> = {
+  [AlgorithmType.SERIAL]: { hue: 120, name: 'METALLIC' }, // Green
+  [AlgorithmType.PARALLEL]: { hue: 30, name: 'WARM' }, // Orange
+  [AlgorithmType.DUAL_SERIAL]: { hue: 180, name: 'COMPLEX', isDual: true, hue2: 300 }, // Cyan→Magenta
+  [AlgorithmType.FAN_OUT]: { hue: 270, name: 'RICH' }, // Purple
+  [AlgorithmType.SPLIT]: { hue: 60, name: 'THICK' }, // Yellow
 }
 
 export function Oscilloscope({
@@ -23,6 +35,9 @@ export function Oscilloscope({
   const animationFrameRef = useRef<number>()
   const [supportsOffscreenCanvas] = useState(() => typeof OffscreenCanvas !== 'undefined')
   const [isAnimating, setIsAnimating] = useState(false)
+
+  // Get current preset for visual effects
+  const getCurrentPreset = usePresetStore((state) => state.getCurrentPreset)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -58,15 +73,57 @@ export function Oscilloscope({
       const pipeline = audioEngine.getPipeline()
       const waveform = pipeline.getWaveform()
 
-      // Clear canvas with fade effect (ghosting)
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
+      // Get current preset for visual effects
+      const preset = getCurrentPreset()
+
+      // Calculate visual effect parameters
+      const algorithm = preset?.algorithm ?? AlgorithmType.SERIAL
+      const algorithmColor = ALGORITHM_COLORS[algorithm]
+
+      // Modulation depth: average of operator levels (0-100)
+      const avgOperatorLevel = preset
+        ? (preset.operators[0].level +
+            preset.operators[1].level +
+            preset.operators[2].level +
+            preset.operators[3].level) /
+          4
+        : 50
+
+      // Filter cutoff (20-20000 Hz) - normalize to 0-1
+      const cutoff = preset?.filter.cutoff ?? 20000
+      const cutoffNormalized = Math.log10(cutoff / 20) / Math.log10(20000 / 20) // 0-1
+
+      // Calculate fade amount based on filter cutoff
+      // Low cutoff = darker background (slower fade), high cutoff = brighter (faster fade)
+      const fadeAmount = 0.2 - cutoffNormalized * 0.15 // 0.2 (dark) to 0.05 (bright)
+
+      // Calculate trace opacity based on cutoff
+      const traceOpacity = 0.4 + cutoffNormalized * 0.6 // 0.4 (dim) to 1.0 (bright)
+
+      // Calculate line width based on modulation depth
+      const dynamicLineWidth = lineWidth + avgOperatorLevel / 50 // 2-4 typically
+
+      // Calculate glow intensity based on modulation depth
+      const dynamicGlowIntensity = glowIntensity + avgOperatorLevel / 125 // 0.6-1.4 typically
+
+      // Clear canvas with dynamic fade effect
+      ctx.fillStyle = `rgba(0, 0, 0, ${fadeAmount})`
       ctx.fillRect(0, 0, width, height)
 
       // Draw grid
       drawGrid(ctx, width, height)
 
-      // Draw waveform
-      drawWaveform(ctx, waveform, width, height, lineWidth, glowIntensity)
+      // Draw waveform with dynamic parameters
+      drawWaveform(
+        ctx,
+        waveform,
+        width,
+        height,
+        dynamicLineWidth,
+        dynamicGlowIntensity,
+        algorithmColor,
+        traceOpacity
+      )
 
       animationFrameRef.current = requestAnimationFrame(render)
     }
@@ -83,6 +140,12 @@ export function Oscilloscope({
     }
   }, [width, height, lineWidth, glowIntensity, supportsOffscreenCanvas])
 
+  // Get algorithm info for display
+  const preset = getCurrentPreset()
+  const algorithm = preset?.algorithm ?? AlgorithmType.SERIAL
+  const algorithmInfo = ALGORITHM_COLORS[algorithm]
+  const algorithmColorString = `hsl(${algorithmInfo.hue}, 100%, 50%)`
+
   return (
     <div
       style={{
@@ -93,7 +156,7 @@ export function Oscilloscope({
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
         backgroundColor: 'var(--color-bg-primary)',
-        boxShadow: '0 0 20px var(--color-trace-glow)',
+        boxShadow: `0 0 20px ${algorithmColorString}33`,
       }}
     >
       <canvas
@@ -104,6 +167,24 @@ export function Oscilloscope({
           height: '100%',
         }}
       />
+      {/* Algorithm label */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 'var(--spacing-2)',
+          left: 'var(--spacing-2)',
+          fontSize: 'var(--font-size-xs)',
+          fontFamily: 'var(--font-family-mono)',
+          fontWeight: 'bold',
+          color: algorithmColorString,
+          opacity: 0.8,
+          textShadow: `0 0 8px ${algorithmColorString}`,
+          letterSpacing: '0.1em',
+        }}
+      >
+        {algorithmInfo.name}
+      </div>
+      {/* Performance indicator */}
       {isAnimating && (
         <div
           style={{
@@ -111,6 +192,7 @@ export function Oscilloscope({
             top: 'var(--spacing-2)',
             right: 'var(--spacing-2)',
             fontSize: 'var(--font-size-xs)',
+            fontFamily: 'var(--font-family-mono)',
             color: 'var(--color-trace-primary)',
             opacity: 0.5,
           }}
@@ -183,7 +265,8 @@ function findZeroCrossing(waveform: Float32Array): number {
 }
 
 /**
- * Draw waveform with phosphor green glow and zero-crossing trigger
+ * Draw waveform with phosphor glow and zero-crossing trigger
+ * Enhanced with algorithm-based color and dynamic intensity
  */
 function drawWaveform(
   ctx: CanvasRenderingContext2D,
@@ -191,7 +274,9 @@ function drawWaveform(
   width: number,
   height: number,
   lineWidth: number,
-  glowIntensity: number
+  glowIntensity: number,
+  algorithmColor: { hue: number; name: string; isDual?: boolean; hue2?: number },
+  traceOpacity: number
 ): void {
   const centerY = height / 2
   const amplitude = height / 2 - 20 // Leave padding
@@ -204,13 +289,31 @@ function drawWaveform(
 
   // Draw glow layers for phosphor effect
   const glowLayers = [
-    { width: lineWidth * 4, opacity: glowIntensity * 0.2 },
-    { width: lineWidth * 2, opacity: glowIntensity * 0.4 },
-    { width: lineWidth, opacity: 1.0 },
+    { width: lineWidth * 4, opacity: glowIntensity * 0.2 * traceOpacity },
+    { width: lineWidth * 2, opacity: glowIntensity * 0.4 * traceOpacity },
+    { width: lineWidth, opacity: traceOpacity },
   ]
 
   glowLayers.forEach((layer) => {
-    ctx.strokeStyle = `rgba(0, 255, 65, ${String(layer.opacity)})`
+    // Use algorithm color
+    const hue = algorithmColor.hue
+    const saturation = 100
+    const lightness = 50
+
+    // For dual-color algorithms (DUAL_SERIAL), blend colors
+    if (algorithmColor.isDual && algorithmColor.hue2) {
+      // Gradient from hue1 to hue2 across the width
+      const gradient = ctx.createLinearGradient(0, 0, width, 0)
+      gradient.addColorStop(0, `hsla(${hue}, ${saturation}%, ${lightness}%, ${String(layer.opacity)})`)
+      gradient.addColorStop(
+        1,
+        `hsla(${algorithmColor.hue2}, ${saturation}%, ${lightness}%, ${String(layer.opacity)})`
+      )
+      ctx.strokeStyle = gradient
+    } else {
+      ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${String(layer.opacity)})`
+    }
+
     ctx.lineWidth = layer.width
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
