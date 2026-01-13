@@ -66,12 +66,11 @@ export class FMEngine {
    * Permet le scaling FM correct basé sur la fréquence réelle
    */
   private setupRoutingWithFrequency(noteFrequency: number): void {
-    // Déconnecter tout d'abord
+    // Déconnecter les connexions internes seulement (pas le master output!)
     this.operators.forEach((op) => {
       op.disconnect()
       op.disconnectFM()
     })
-    this.output.disconnect()
 
     const [op1, op2, op3, op4] = this.operators
 
