@@ -9,6 +9,22 @@ import { audioEngine } from '../audio/AudioEngine'
 import { usePresetStore } from '../store/presetStore'
 import { AlgorithmType } from '../audio/types'
 
+// Inject CSS animation for LFO pulse
+if (typeof document !== 'undefined') {
+  const styleId = 'oscilloscope-animations'
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style')
+    style.id = styleId
+    style.textContent = `
+      @keyframes lfoPulse {
+        0%, 100% { box-shadow: 0 0 20px var(--pulse-color); }
+        50% { box-shadow: 0 0 40px var(--pulse-color); }
+      }
+    `
+    document.head.appendChild(style)
+  }
+}
+
 interface OscilloscopeProps {
   width?: number
   height?: number
@@ -93,9 +109,23 @@ export function Oscilloscope({
       const cutoff = preset?.filter.cutoff ?? 20000
       const cutoffNormalized = Math.log10(cutoff / 20) / Math.log10(20000 / 20) // 0-1
 
-      // Calculate fade amount based on filter cutoff
+      // Master effects parameters
+      const reverbWet = preset?.masterEffects.reverbWet ?? 0
+      const reverbDecay = preset?.masterEffects.reverbDecay ?? 1.5
+      const delayWet = preset?.masterEffects.delayWet ?? 0
+      const delayTime = preset?.masterEffects.delayTime ?? 0.5
+      const delayFeedback = preset?.masterEffects.delayFeedback ?? 0.5
+      const chorusWet = preset?.masterEffects.chorusWet ?? 0
+      const chorusDepth = preset?.masterEffects.chorusDepth ?? 0.5
+      const distortionWet = preset?.masterEffects.distortionWet ?? 0
+
+      // Calculate fade amount based on filter cutoff and reverb
       // Low cutoff = darker background (slower fade), high cutoff = brighter (faster fade)
-      const fadeAmount = 0.2 - cutoffNormalized * 0.15 // 0.2 (dark) to 0.05 (bright)
+      let baseFadeAmount = 0.2 - cutoffNormalized * 0.15 // 0.2 (dark) to 0.05 (bright)
+
+      // Reverb trail lengthening: more reverb = longer trails (slower fade)
+      const reverbFactor = reverbWet * (reverbDecay / 10) // 0-1
+      const fadeAmount = baseFadeAmount * (1 - reverbFactor * 0.8) // Can go down to 0.01 with max reverb
 
       // Calculate trace opacity based on cutoff
       const traceOpacity = 0.4 + cutoffNormalized * 0.6 // 0.4 (dim) to 1.0 (bright)
@@ -122,7 +152,16 @@ export function Oscilloscope({
         dynamicLineWidth,
         dynamicGlowIntensity,
         algorithmColor,
-        traceOpacity
+        traceOpacity,
+        {
+          delayWet,
+          delayTime,
+          delayFeedback,
+          chorusWet,
+          chorusDepth,
+          distortionWet,
+          timestamp,
+        }
       )
 
       animationFrameRef.current = requestAnimationFrame(render)
@@ -146,6 +185,14 @@ export function Oscilloscope({
   const algorithmInfo = ALGORITHM_COLORS[algorithm]
   const algorithmColorString = `hsl(${algorithmInfo.hue}, 100%, 50%)`
 
+  // Calculate LFO pulse effect (LFO is active if rate > 0 and depth > 0)
+  const activeLFOs = preset?.lfos.filter((lfo) => lfo.rate > 0 && lfo.depth > 0) ?? []
+  const hasActiveLFO = activeLFOs.length > 0
+  const avgLFORate = hasActiveLFO
+    ? activeLFOs.reduce((sum, lfo) => sum + lfo.rate, 0) / activeLFOs.length
+    : 1
+  const lfoPulsePeriod = hasActiveLFO ? 1 / avgLFORate : 0
+
   return (
     <div
       style={{
@@ -157,6 +204,9 @@ export function Oscilloscope({
         overflow: 'hidden',
         backgroundColor: 'var(--color-bg-primary)',
         boxShadow: `0 0 20px ${algorithmColorString}33`,
+        animation: hasActiveLFO ? `lfoPulse ${lfoPulsePeriod}s ease-in-out infinite` : 'none',
+        // @ts-expect-error CSS custom property
+        '--pulse-color': `${algorithmColorString}33`,
       }}
     >
       <canvas
@@ -264,6 +314,16 @@ function findZeroCrossing(waveform: Float32Array): number {
   return 0
 }
 
+interface WaveformEffects {
+  delayWet: number
+  delayTime: number
+  delayFeedback: number
+  chorusWet: number
+  chorusDepth: number
+  distortionWet: number
+  timestamp: number
+}
+
 /**
  * Draw waveform with phosphor glow and zero-crossing trigger
  * Enhanced with algorithm-based color and dynamic intensity
@@ -276,7 +336,8 @@ function drawWaveform(
   lineWidth: number,
   glowIntensity: number,
   algorithmColor: { hue: number; name: string; isDual?: boolean; hue2?: number },
-  traceOpacity: number
+  traceOpacity: number,
+  effects: WaveformEffects
 ): void {
   const centerY = height / 2
   const amplitude = height / 2 - 20 // Leave padding
@@ -294,11 +355,46 @@ function drawWaveform(
     { width: lineWidth, opacity: traceOpacity },
   ]
 
+  // Draw delay echo first (behind main signal)
+  if (effects.delayWet > 0.1) {
+    const delayOffsetSamples = Math.floor((effects.delayTime * 48000) / 2) // Approximate delay in samples
+    const delayOpacity = effects.delayWet * effects.delayFeedback * 0.4
+
+    ctx.strokeStyle = `hsla(180, 100%, 60%, ${delayOpacity})` // Cyan echo
+    ctx.lineWidth = lineWidth
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.beginPath()
+
+    const step = displaySamples / width
+    for (let i = 0; i < width; i++) {
+      const sampleIndex = triggerIndex + Math.floor(i * step) + delayOffsetSamples
+      const value = waveform[Math.min(sampleIndex, waveform.length - 1)] ?? 0
+      const x = i
+      const y = centerY + value * amplitude
+
+      if (i === 0) {
+        ctx.moveTo(x, y)
+      } else {
+        ctx.lineTo(x, y)
+      }
+    }
+    ctx.stroke()
+  }
+
+  // Draw main waveform with glow layers
   glowLayers.forEach((layer) => {
     // Use algorithm color
-    const hue = algorithmColor.hue
+    let hue = algorithmColor.hue
     const saturation = 100
     const lightness = 50
+
+    // Chorus shimmer: subtle hue rotation
+    if (effects.chorusWet > 0.1) {
+      const chorusPhase = (effects.timestamp / 1000) * 2 // 2 Hz oscillation
+      const hueShift = Math.sin(chorusPhase) * effects.chorusDepth * 30 // ±30° shift
+      hue = (hue + hueShift + 360) % 360
+    }
 
     // For dual-color algorithms (DUAL_SERIAL), blend colors
     if (algorithmColor.isDual && algorithmColor.hue2) {
@@ -336,4 +432,52 @@ function drawWaveform(
 
     ctx.stroke()
   })
+
+  // Distortion glitch effect (chromatic aberration)
+  if (effects.distortionWet > 0.5) {
+    const glitchIntensity = (effects.distortionWet - 0.5) * 2 // 0-1
+
+    // Red channel offset
+    ctx.globalCompositeOperation = 'screen'
+    ctx.strokeStyle = `rgba(255, 0, 0, ${glitchIntensity * 0.3})`
+    ctx.lineWidth = lineWidth
+    ctx.beginPath()
+
+    const step = displaySamples / width
+    const offset = Math.floor(glitchIntensity * 3) // Pixel offset
+
+    for (let i = 0; i < width; i++) {
+      const sampleIndex = triggerIndex + Math.floor(i * step)
+      const value = waveform[sampleIndex] ?? 0
+      const x = i + offset
+      const y = centerY + value * amplitude
+
+      if (i === 0) {
+        ctx.moveTo(x, y)
+      } else {
+        ctx.lineTo(x, y)
+      }
+    }
+    ctx.stroke()
+
+    // Cyan channel offset (opposite direction)
+    ctx.strokeStyle = `rgba(0, 255, 255, ${glitchIntensity * 0.3})`
+    ctx.beginPath()
+
+    for (let i = 0; i < width; i++) {
+      const sampleIndex = triggerIndex + Math.floor(i * step)
+      const value = waveform[sampleIndex] ?? 0
+      const x = i - offset
+      const y = centerY + value * amplitude
+
+      if (i === 0) {
+        ctx.moveTo(x, y)
+      } else {
+        ctx.lineTo(x, y)
+      }
+    }
+    ctx.stroke()
+
+    ctx.globalCompositeOperation = 'source-over'
+  }
 }
