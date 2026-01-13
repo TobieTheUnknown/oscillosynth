@@ -295,16 +295,47 @@ function drawGrid(
 
 /**
  * Find zero-crossing point (rising edge) for stable trigger
+ * Enhanced: finds the zero-crossing with maximum slope for stability
  */
 function findZeroCrossing(waveform: Float32Array): number {
-  // Look for rising zero crossing in first 25% of buffer
-  const searchRange = Math.floor(waveform.length * 0.25)
+  // Look for rising zero crossing in first 50% of buffer
+  const searchRange = Math.floor(waveform.length * 0.5)
 
-  for (let i = 1; i < searchRange; i++) {
+  let bestCrossing = 0
+  let maxSlope = 0
+
+  // Find the zero-crossing with the steepest positive slope
+  // This is the most stable trigger point for complex waveforms
+  for (let i = 2; i < searchRange - 1; i++) {
     const prev = waveform[i - 1] ?? 0
     const curr = waveform[i] ?? 0
 
     // Found rising edge through zero
+    if (prev <= 0 && curr > 0) {
+      // Calculate slope (derivative) at this crossing
+      // Use 3-point slope for better accuracy
+      const beforePrev = waveform[i - 2] ?? 0
+      const next = waveform[i + 1] ?? 0
+      const slope = (next - beforePrev) / 2 // Central difference
+
+      // Keep track of the crossing with maximum slope
+      if (slope > maxSlope) {
+        maxSlope = slope
+        bestCrossing = i
+      }
+    }
+  }
+
+  // If we found a good crossing with significant slope, use it
+  if (maxSlope > 0.01) {
+    return bestCrossing
+  }
+
+  // Fallback: look for any rising zero crossing
+  for (let i = 1; i < searchRange; i++) {
+    const prev = waveform[i - 1] ?? 0
+    const curr = waveform[i] ?? 0
+
     if (prev <= 0 && curr > 0) {
       return i
     }
