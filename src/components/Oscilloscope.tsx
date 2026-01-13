@@ -76,6 +76,11 @@ export function Oscilloscope({
     const targetFPS = 60
     const frameInterval = 1000 / targetFPS
 
+    // Stable trigger state with smoothing
+    let lastTriggerIndex = 0
+    let triggerLockCounter = 0
+    const TRIGGER_LOCK_FRAMES = 5 // Lock to same trigger for N frames
+
     // Main render loop
     const render = (timestamp: number) => {
       // Throttle to target FPS
@@ -143,6 +148,31 @@ export function Oscilloscope({
       // Draw grid
       drawGrid(ctx, width, height)
 
+      // Stable trigger with frame locking
+      let triggerIndex: number
+
+      if (triggerLockCounter > 0) {
+        // Use previous trigger point for stability
+        triggerIndex = lastTriggerIndex
+        triggerLockCounter--
+      } else {
+        // Find new trigger point
+        const newTrigger = findZeroCrossing(waveform)
+
+        // Only update if it's significantly different (hysteresis)
+        const triggerDiff = Math.abs(newTrigger - lastTriggerIndex)
+        const sampleRate = 48000
+        const minDiffSamples = Math.floor(sampleRate / 20000) // ~2 samples at 48kHz
+
+        if (triggerDiff > minDiffSamples || lastTriggerIndex === 0) {
+          triggerIndex = newTrigger
+          lastTriggerIndex = newTrigger
+          triggerLockCounter = TRIGGER_LOCK_FRAMES
+        } else {
+          triggerIndex = lastTriggerIndex
+        }
+      }
+
       // Draw waveform with dynamic parameters
       drawWaveform(
         ctx,
@@ -161,7 +191,8 @@ export function Oscilloscope({
           chorusDepth,
           distortionWet,
           timestamp,
-        }
+        },
+        triggerIndex
       )
 
       animationFrameRef.current = requestAnimationFrame(render)
@@ -368,13 +399,11 @@ function drawWaveform(
   glowIntensity: number,
   algorithmColor: { hue: number; name: string; isDual?: boolean; hue2?: number },
   traceOpacity: number,
-  effects: WaveformEffects
+  effects: WaveformEffects,
+  triggerIndex: number
 ): void {
   const centerY = height / 2
   const amplitude = height / 2 - 20 // Leave padding
-
-  // Find stable trigger point
-  const triggerIndex = findZeroCrossing(waveform)
 
   // Calculate how many samples to display (approximately 20ms window)
   const displaySamples = Math.min(width * 2, waveform.length - triggerIndex)
