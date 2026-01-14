@@ -46,7 +46,7 @@ export function OperatorControls({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(6, 1fr)',
+          gridTemplateColumns: operatorNumber === 4 ? 'repeat(7, 1fr)' : 'repeat(6, 1fr)',
           gap: 'var(--spacing-3)',
         }}
       >
@@ -112,6 +112,17 @@ export function OperatorControls({
             onChange({ release })
           }}
         />
+        {operatorNumber === 4 && (
+          <PercentageKnob
+            label="Feedback"
+            value={(params.feedback ?? 0) * 100}
+            defaultValue={0}
+            color={color}
+            onChange={(feedback) => {
+              onChange({ feedback: feedback / 100 })
+            }}
+          />
+        )}
       </div>
     </div>
   )

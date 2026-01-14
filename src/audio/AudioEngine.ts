@@ -589,17 +589,17 @@ export class AudioEngine {
     // Update current preset
     this.currentPreset.lfos[index] = { ...this.currentPreset.lfos[index]!, ...params }
 
-    // Update global LFO engine
+    // Update global LFO engine (without recreating - preserves phase)
     if (this.globalLFOEngine) {
-      this.globalLFOEngine.dispose()
-      this.globalLFOEngine = new LFOEngine(this.currentPreset.lfos, this.currentPreset.lfoCombineMode)
+      this.globalLFOEngine.updateLFO(index, params)
     }
 
-    // Update all active voice LFO engines
+    // Update all active voice LFO engines (without recreating - preserves phase)
     this.activeVoices.forEach((activeVoice) => {
-      activeVoice.lfoEngine.dispose()
-      activeVoice.lfoEngine = new LFOEngine(this.currentPreset!.lfos, this.currentPreset!.lfoCombineMode)
+      activeVoice.lfoEngine.updateLFO(index, params)
     })
+
+    console.log(`✅ LFO ${index} updated live: rate=${params.rate ?? 'unchanged'}, depth=${params.depth ?? 'unchanged'}`)
   }
 
   /**
