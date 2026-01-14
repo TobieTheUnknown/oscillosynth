@@ -410,6 +410,13 @@ export class AudioEngine {
   }
 
   /**
+   * Récupère le preset actuellement chargé
+   */
+  getCurrentPreset(): Preset | null {
+    return this.currentPreset
+  }
+
+  /**
    * Change l'algorithm du preset actuel
    */
   setAlgorithm(algorithm: AlgorithmType): void {

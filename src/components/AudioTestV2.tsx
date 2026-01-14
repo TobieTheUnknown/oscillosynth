@@ -15,7 +15,7 @@ import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
 import { FMRoutingVisualizer } from './FMRoutingVisualizer'
 import { InteractiveKeyboard } from './InteractiveKeyboard'
-import { PresetManager } from './PresetManager'
+import { PresetBrowser } from './PresetBrowser'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
 import { MasterEffects } from './MasterEffects'
@@ -36,11 +36,7 @@ export function AudioTestV2() {
     activeVoices,
     maxVoices,
     currentPreset,
-    allPresets,
     startAudio,
-    loadPreset,
-    saveUserPreset,
-    deleteUserPreset,
     setAlgorithm,
     noteOn,
     noteOff,
@@ -56,6 +52,7 @@ export function AudioTestV2() {
 
   const [activeTab, setActiveTab] = useState('PLAY')
   const tabs = ['PLAY', 'SOUND', 'MODULATION', 'EFFECTS', 'VISUALIZE']
+  const [showPresetBrowser, setShowPresetBrowser] = useState(false)
 
   // Sequencer state
   const DEFAULT_STEPS: Step[] = Array.from({ length: 16 }, (_, i) => ({
@@ -356,13 +353,85 @@ export function AudioTestV2() {
                     onClearPattern={handleClearPattern}
                     onRandomPattern={handleRandomPattern}
                   />
-                  <PresetManager
-                    currentPreset={currentPreset}
-                    allPresets={allPresets}
-                    onLoadPreset={loadPreset}
-                    onSavePreset={saveUserPreset}
-                    onDeletePreset={deleteUserPreset}
-                  />
+                  {/* Preset Browser Button */}
+                  <div
+                    style={{
+                      padding: 'var(--spacing-4)',
+                      backgroundColor: 'var(--color-bg-secondary)',
+                      border: '2px solid var(--color-border-primary)',
+                      borderRadius: 'var(--radius-md)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 'var(--font-size-lg)',
+                        color: 'var(--color-trace-primary)',
+                        fontFamily: 'var(--font-family-mono)',
+                        fontWeight: 'bold',
+                        marginBottom: 'var(--spacing-3)',
+                      }}
+                    >
+                      PRESETS
+                    </div>
+
+                    {currentPreset && (
+                      <div
+                        style={{
+                          marginBottom: 'var(--spacing-3)',
+                          padding: 'var(--spacing-3)',
+                          backgroundColor: 'var(--color-bg-primary)',
+                          border: '1px solid var(--color-border-primary)',
+                          borderRadius: 'var(--radius-sm)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 'var(--font-size-xs)',
+                            color: 'var(--color-text-secondary)',
+                            fontFamily: 'var(--font-family-mono)',
+                            marginBottom: 'var(--spacing-1)',
+                          }}
+                        >
+                          Current:
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 'var(--font-size-md)',
+                            color: 'var(--color-trace-primary)',
+                            fontFamily: 'var(--font-family-mono)',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {currentPreset.name}
+                        </div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setShowPresetBrowser(true)}
+                      style={{
+                        width: '100%',
+                        padding: 'var(--spacing-3)',
+                        backgroundColor: 'var(--color-active)',
+                        border: '2px solid var(--color-active)',
+                        borderRadius: 'var(--radius-sm)',
+                        color: '#000',
+                        fontFamily: 'var(--font-family-mono)',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: 'var(--font-size-md)',
+                        transition: 'transform 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.02)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)'
+                      }}
+                    >
+                      🎹 BROWSE PRESETS
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -717,6 +786,9 @@ export function AudioTestV2() {
           </div>
         </div>
       )}
+
+      {/* Preset Browser Modal */}
+      {showPresetBrowser && <PresetBrowser onClose={() => setShowPresetBrowser(false)} />}
     </div>
   )
 }

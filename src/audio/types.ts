@@ -175,6 +175,7 @@ export interface LFOPairDepths {
 export interface Preset {
   id: string
   name: string
+  category?: string
   algorithm: AlgorithmType
   operators: [OperatorParams, OperatorParams, OperatorParams, OperatorParams]
   lfos: [
