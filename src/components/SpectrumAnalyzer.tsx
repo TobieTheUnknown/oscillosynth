@@ -116,7 +116,6 @@ export function SpectrumAnalyzer({ width = 800, height = 300 }: SpectrumAnalyzer
         const barHeight = normalizedValue * height
 
         // Color gradient based on frequency
-        const hue = (i / barCount) * 120 // Green (120°) to cyan (180°)
         const intensity = Math.min(1, normalizedValue * 2)
         const lightness = 40 + intensity * 30
 

@@ -22,6 +22,7 @@ interface BipolarKnobProps {
   color?: string
   colorNegative?: string // Color for negative values
   unit?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl' // Visual hierarchy
 }
 
 export function BipolarKnob({
@@ -34,6 +35,7 @@ export function BipolarKnob({
   color = '#00FF41',
   colorNegative = '#FF4136',
   unit = '',
+  size = 'md',
 }: BipolarKnobProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [sensitivityMode, setSensitivityMode] = useState<'normal' | 'fine' | 'ultra'>('normal')
@@ -44,6 +46,10 @@ export function BipolarKnob({
   const knobRef = useRef<HTMLDivElement>(null)
   const startYRef = useRef(0)
   const startValueRef = useRef(0)
+
+  // Map size prop to pixel values
+  const sizeMap = { sm: 60, md: 80, lg: 96, xl: 120 }
+  const knobSize = sizeMap[size]
 
   const normalizedValue = (value - min) / (max - min)
   const angle = -140 + normalizedValue * 280 // -140° to +140°
@@ -186,8 +192,8 @@ export function BipolarKnob({
       }}
     >
       <svg
-        width="60"
-        height="60"
+        width={knobSize}
+        height={knobSize}
         viewBox="0 0 60 60"
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
@@ -358,7 +364,7 @@ export function BipolarKnob({
           onBlur={handleEditBlur}
           onKeyDown={handleEditKeyDown}
           style={{
-            width: '60px',
+            width: `${knobSize}px`,
             fontSize: 'var(--font-size-sm)',
             color: currentColor,
             fontFamily: 'var(--font-family-mono)',
@@ -428,6 +434,7 @@ interface LogKnobProps {
   onChange: (value: number) => void
   color?: string
   unit?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl' // Visual hierarchy
 }
 
 export function LogKnob({
@@ -439,6 +446,7 @@ export function LogKnob({
   onChange,
   color = '#00FF41',
   unit = '',
+  size = 'md',
 }: LogKnobProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [sensitivityMode, setSensitivityMode] = useState<'normal' | 'fine' | 'ultra'>('normal')
@@ -451,6 +459,10 @@ export function LogKnob({
   const startValueRef = useRef(0)
 
   const resetValue = defaultValue !== undefined ? defaultValue : Math.sqrt(min * max)
+
+  // Map size prop to pixel values
+  const sizeMap = { sm: 60, md: 80, lg: 96, xl: 120 }
+  const knobSize = sizeMap[size]
 
   // Logarithmic mapping
   const logMin = Math.log(min)
@@ -592,8 +604,8 @@ export function LogKnob({
       }}
     >
       <svg
-        width="60"
-        height="60"
+        width={knobSize}
+        height={knobSize}
         viewBox="0 0 60 60"
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
@@ -699,7 +711,7 @@ export function LogKnob({
           onBlur={handleEditBlur}
           onKeyDown={handleEditKeyDown}
           style={{
-            width: '60px',
+            width: `${knobSize}px`,
             fontSize: 'var(--font-size-sm)',
             color: color,
             fontFamily: 'var(--font-family-mono)',
@@ -770,6 +782,7 @@ interface TimeKnobProps {
   defaultValue?: number
   onChange: (value: number) => void
   color?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl' // Visual hierarchy
 }
 
 export function TimeKnob({
@@ -780,6 +793,7 @@ export function TimeKnob({
   defaultValue,
   onChange,
   color = '#00FF41',
+  size = 'md',
 }: TimeKnobProps) {
   // Format time value for display
   const formatTime = (seconds: number): { value: string; unit: string } => {
@@ -809,6 +823,7 @@ export function TimeKnob({
       onChange={onChange}
       color={color}
       unit={unit}
+      size={size}
     />
   )
 }
@@ -823,6 +838,7 @@ interface PercentageKnobProps {
   defaultValue?: number
   onChange: (value: number) => void
   color?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl' // Visual hierarchy
 }
 
 export function PercentageKnob({
@@ -831,6 +847,7 @@ export function PercentageKnob({
   defaultValue = 50,
   onChange,
   color = '#00FF41',
+  size = 'md',
 }: PercentageKnobProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [sensitivityMode, setSensitivityMode] = useState<'normal' | 'fine' | 'ultra'>('normal')
@@ -841,6 +858,10 @@ export function PercentageKnob({
   const knobRef = useRef<HTMLDivElement>(null)
   const startYRef = useRef(0)
   const startValueRef = useRef(0)
+
+  // Map size prop to pixel values
+  const sizeMap = { sm: 60, md: 80, lg: 96, xl: 120 }
+  const knobSize = sizeMap[size]
 
   const normalizedValue = value / 100
   const angle = -140 + normalizedValue * 280
@@ -974,8 +995,8 @@ export function PercentageKnob({
       }}
     >
       <svg
-        width="60"
-        height="60"
+        width={knobSize}
+        height={knobSize}
         viewBox="0 0 60 60"
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
@@ -1081,7 +1102,7 @@ export function PercentageKnob({
           onBlur={handleEditBlur}
           onKeyDown={handleEditKeyDown}
           style={{
-            width: '60px',
+            width: `${knobSize}px`,
             fontSize: 'var(--font-size-sm)',
             color: color,
             fontFamily: 'var(--font-family-mono)',

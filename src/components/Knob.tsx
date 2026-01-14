@@ -15,6 +15,7 @@ interface KnobProps {
   onChange: (value: number) => void
   color?: string
   unit?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl' // Visual hierarchy: sm=60px, md=80px(default), lg=96px, xl=120px
 }
 
 export function Knob({
@@ -27,6 +28,7 @@ export function Knob({
   onChange,
   color = '#00FF41',
   unit = '',
+  size = 'md',
 }: KnobProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [sensitivityMode, setSensitivityMode] = useState<'normal' | 'fine' | 'ultra'>('normal')
@@ -40,6 +42,10 @@ export function Knob({
 
   // Default value is middle of range if not specified
   const resetValue = defaultValue !== undefined ? defaultValue : (min + max) / 2
+
+  // Map size prop to pixel values (matching CSS variables)
+  const sizeMap = { sm: 60, md: 80, lg: 96, xl: 120 }
+  const knobSize = sizeMap[size]
 
   const normalizedValue = (value - min) / (max - min)
   const angle = -140 + normalizedValue * 280 // -140° to +140°
@@ -182,8 +188,8 @@ export function Knob({
     >
       {/* Knob SVG */}
       <svg
-        width="60"
-        height="60"
+        width={knobSize}
+        height={knobSize}
         viewBox="0 0 60 60"
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
@@ -329,7 +335,7 @@ export function Knob({
           onBlur={handleEditBlur}
           onKeyDown={handleEditKeyDown}
           style={{
-            width: '60px',
+            width: `${knobSize}px`,
             fontSize: 'var(--font-size-sm)',
             color: color,
             fontFamily: 'var(--font-family-mono)',

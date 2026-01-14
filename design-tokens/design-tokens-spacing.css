@@ -53,4 +53,10 @@
   --z-modal: 1400;
   --z-popover: 1500;
   --z-tooltip: 1600;
+
+  /* Knob sizes (hierarchy-based) */
+  --knob-size-sm: 60px;   /* Advanced/secondary parameters */
+  --knob-size-md: 80px;   /* Standard parameters (default) */
+  --knob-size-lg: 96px;   /* Primary parameters (Level, Cutoff, Mix) */
+  --knob-size-xl: 120px;  /* Macro controls (future) */
 }
