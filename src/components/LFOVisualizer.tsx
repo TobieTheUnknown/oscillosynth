@@ -244,7 +244,8 @@ function drawLFOInSection(
     const t = (i / points) * Math.PI * 2 + animPhase
     // Use current LFO value as amplitude multiplier
     const value = currentValue * Math.sin(t)
-    const y = centerY + value * amplitude
+    // Invert Y axis so positive values go UP (canvas Y increases downward)
+    const y = centerY - value * amplitude
 
     if (i === 0) {
       ctx.moveTo(x, y)
@@ -307,7 +308,8 @@ function drawPairCombined(
     const t = (i / points) * Math.PI * 2 + phase
     // Use current pair value as amplitude multiplier
     const value = currentValue * Math.sin(t)
-    const y = centerY + value * amplitude
+    // Invert Y axis so positive values go UP (canvas Y increases downward)
+    const y = centerY - value * amplitude
 
     if (i === 0) {
       ctx.moveTo(x, y)

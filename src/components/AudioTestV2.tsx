@@ -9,12 +9,11 @@ import { AlgorithmType } from '../audio/types'
 import { Oscilloscope } from './Oscilloscope'
 import { SpectrumAnalyzer } from './SpectrumAnalyzer'
 import { OscilloscopeXY } from './OscilloscopeXY'
-import { StereoGoniometer } from './StereoGoniometer'
 import { ADSRVisualizer } from './ADSRVisualizer'
 import { LFOPairPanel } from './LFOPairPanel'
 import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
 import { FMRoutingVisualizer } from './FMRoutingVisualizer'
-import { InteractiveKeyboard } from './InteractiveKeyboard'
+import { KeyboardLatchControl } from './KeyboardLatchControl'
 import { PresetBrowser } from './PresetBrowser'
 import { OperatorControls } from './OperatorControls'
 import { FilterControls } from './FilterControls'
@@ -337,7 +336,7 @@ export function AudioTestV2() {
                     gap: 'var(--spacing-4)',
                   }}
                 >
-                  <InteractiveKeyboard onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
+                  <KeyboardLatchControl onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
                   <SequencerUI
                     steps={seqSteps}
                     currentStep={seqCurrentStep}
@@ -582,16 +581,6 @@ export function AudioTestV2() {
                     }}
                   />
                 </div>
-
-                {/* Portamento */}
-                <div>
-                  <PortamentoControls
-                    params={currentPreset.portamento}
-                    onChange={(params) => {
-                      updateCurrentPresetPortamento(params)
-                    }}
-                  />
-                </div>
               </div>
             )}
 
@@ -741,19 +730,6 @@ export function AudioTestV2() {
                     OSCILLOSCOPE
                   </h3>
                   <Oscilloscope width={550} height={300} lineWidth={2} glowIntensity={0.6} />
-                </div>
-                <div>
-                  <h3
-                    style={{
-                      fontSize: 'var(--font-size-md)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-2)',
-                      fontFamily: 'var(--font-family-mono)',
-                    }}
-                  >
-                    STEREO GONIOMETER
-                  </h3>
-                  <StereoGoniometer width={550} height={550} />
                 </div>
                 <div>
                   <h3
