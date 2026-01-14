@@ -188,6 +188,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
               value={params.reverbWet * 100}
               defaultValue={0}
               color="#64C8FF"
+              size="lg"
               onChange={(value) => {
                 onChange({ reverbWet: value / 100 })
               }}
@@ -244,6 +245,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
               value={params.delayWet * 100}
               defaultValue={0}
               color="#FFFF00"
+              size="lg"
               onChange={(value) => {
                 onChange({ delayWet: value / 100 })
               }}
@@ -298,6 +300,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
               value={params.chorusWet * 100}
               defaultValue={0}
               color="#FF64FF"
+              size="lg"
               onChange={(value) => {
                 onChange({ chorusWet: value / 100 })
               }}
@@ -353,6 +356,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
               value={params.distortionWet * 100}
               defaultValue={0}
               color="#FF9664"
+              size="lg"
               onChange={(value) => {
                 onChange({ distortionWet: value / 100 })
               }}

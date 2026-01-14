@@ -66,6 +66,7 @@ export function OperatorControls({
           value={params.level}
           defaultValue={80}
           color={color}
+          size="lg"
           onChange={(level) => {
             onChange({ level })
           }}

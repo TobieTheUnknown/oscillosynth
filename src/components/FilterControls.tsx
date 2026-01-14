@@ -97,6 +97,7 @@ export function FilterControls({ params, onChange }: FilterControlsProps) {
           defaultValue={2000}
           unit="Hz"
           color={color}
+          size="lg"
           onChange={(cutoff) => {
             onChange({ cutoff })
           }}
