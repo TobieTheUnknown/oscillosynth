@@ -32,6 +32,7 @@ interface PresetStore {
   deleteUserPreset: (presetId: string) => void
   initPresets: () => void
   updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => void
+  updateCurrentPresetLFOPairDepth: (pairNumber: 1 | 2 | 3 | 4, depth: number) => void
   updateCurrentPresetOperator: (index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>) => void
   updateCurrentPresetFilter: (params: Partial<FilterParams>) => void
   updateCurrentPresetMasterEffects: (params: Partial<MasterEffectsParams>) => void
@@ -148,6 +149,51 @@ export const usePresetStore = create<PresetStore>()(
             ),
           }))
         }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
+      },
+
+      updateCurrentPresetLFOPairDepth: (pairNumber: 1 | 2 | 3 | 4, depth: number) => {
+        const currentPreset = get().getCurrentPreset()
+        if (!currentPreset) {
+          console.warn('No current preset to update')
+          return
+        }
+
+        // Update pair depth in preset
+        const pairKey = `pair${pairNumber}` as 'pair1' | 'pair2' | 'pair3' | 'pair4'
+        const updatedLFOPairDepths = {
+          ...currentPreset.lfoPairDepths,
+          [pairKey]: depth,
+        }
+
+        // Create updated preset
+        const updatedPreset: Preset = {
+          ...currentPreset,
+          lfoPairDepths: updatedLFOPairDepths,
+        }
+
+        // Update store (factory presets update won't persist, which is correct)
+        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
+        if (isFactoryPreset) {
+          // Update in presets array (temporary, won't persist)
+          set((state) => ({
+            presets: state.presets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        } else {
+          // Update in userPresets array (will persist)
+          set((state) => ({
+            userPresets: state.userPresets.map((p) =>
+              p.id === currentPreset.id ? updatedPreset : p
+            ),
+          }))
+        }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
       updateCurrentPresetOperator: (index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>) => {
@@ -190,6 +236,9 @@ export const usePresetStore = create<PresetStore>()(
             ),
           }))
         }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
       updateCurrentPresetFilter: (params: Partial<FilterParams>) => {
@@ -223,6 +272,9 @@ export const usePresetStore = create<PresetStore>()(
             ),
           }))
         }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
       updateCurrentPresetMasterEffects: (params: Partial<MasterEffectsParams>) => {
@@ -256,6 +308,9 @@ export const usePresetStore = create<PresetStore>()(
             ),
           }))
         }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
       updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => {
@@ -289,6 +344,9 @@ export const usePresetStore = create<PresetStore>()(
             ),
           }))
         }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
       updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => {
@@ -304,8 +362,9 @@ export const usePresetStore = create<PresetStore>()(
           stepSequencer: { ...currentPreset.stepSequencer, ...params },
         }
 
-        // Reload preset in audio engine
+        // Reload preset in audio engine to re-setup step sequencer
         audioEngine.loadPreset(updatedPreset)
+        // Note: loadPreset also calls updateCurrentPresetReference internally
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -337,9 +396,8 @@ export const usePresetStore = create<PresetStore>()(
           portamento: { ...currentPreset.portamento, ...params },
         }
 
-        // Portamento doesn't need engine reload - just update preset
-        // It only affects the behavior of future noteOn calls
-        audioEngine.loadPreset(updatedPreset)
+        // Portamento only affects future noteOn calls, update reference without stopping voices
+        audioEngine.updateCurrentPresetReference(updatedPreset)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -389,6 +447,9 @@ export const usePresetStore = create<PresetStore>()(
             ),
           }))
         }
+
+        // Update AudioEngine reference so active voices use new preset values
+        audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
       // Getters

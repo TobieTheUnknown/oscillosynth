@@ -32,7 +32,6 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.5,
     sustain: 0.3,
     release: 0.8,
-    pan: 0, // Center
   },
   // Operator 2: Modulator harmonique
   {
@@ -42,7 +41,6 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.3,
     sustain: 0.2,
     release: 0.5,
-    pan: 0, // Center
   },
   // Operator 3: Modulator brillance
   {
@@ -52,7 +50,6 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.2,
     sustain: 0.1,
     release: 0.3,
-    pan: 0, // Center
   },
   // Operator 4: Modulator texture
   {
@@ -62,7 +59,6 @@ const defaultOperators: [OperatorParams, OperatorParams, OperatorParams, Operato
     decay: 0.15,
     sustain: 0.05,
     release: 0.2,
-    pan: 0, // Center
   },
 ]
 
@@ -222,6 +218,16 @@ const defaultStereoWidth: StereoWidthParams = {
 }
 
 /**
+ * Depths par défaut pour les paires de LFOs
+ */
+const defaultLFOPairDepths: import('../types').LFOPairDepths = {
+  pair1: 100, // 100% depth for pair 1
+  pair2: 100, // 100% depth for pair 2
+  pair3: 100, // 100% depth for pair 3
+  pair4: 100, // 100% depth for pair 4
+}
+
+/**
  * Preset complet: Electric Piano
  */
 export const defaultPreset: Preset = {
@@ -231,6 +237,7 @@ export const defaultPreset: Preset = {
   operators: defaultOperators,
   lfos: defaultLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
+  lfoPairDepths: defaultLFOPairDepths,
   envelopeFollower: defaultEnvelopeFollower,
   stepSequencer: defaultStepSequencer,
   filter: defaultFilter,
@@ -252,7 +259,6 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.3,
     sustain: 0.7,
     release: 0.4,
-    pan: 0, // Center
   },
   {
     ratio: 2.0,
@@ -261,7 +267,6 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.2,
     sustain: 0.5,
     release: 0.3,
-    pan: 0, // Center
   },
   {
     ratio: 1.5,
@@ -270,7 +275,6 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.15,
     sustain: 0.3,
     release: 0.2,
-    pan: 0, // Center
   },
   {
     ratio: 0.5,
@@ -279,7 +283,7 @@ const bassOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPa
     decay: 0.1,
     sustain: 0.2,
     release: 0.15,
-    pan: 0, // Center
+    feedback: 0.3, // 30% feedback for brass-like harmonics
   },
 ]
 
@@ -371,6 +375,7 @@ export const bassPreset: Preset = {
   operators: bassOperators,
   lfos: bassLFOs,
   lfoCombineMode: LFOCombineMode.ADD,
+  lfoPairDepths: defaultLFOPairDepths,
   envelopeFollower: defaultEnvelopeFollower,
   stepSequencer: defaultStepSequencer,
   filter: bassFilter,
@@ -392,7 +397,6 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.5,
     sustain: 0.8,
     release: 2.0,
-    pan: -0.3, // Slightly left for width
   },
   {
     ratio: 1.5,
@@ -401,7 +405,6 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.6,
     sustain: 0.75,
     release: 2.2,
-    pan: 0.3, // Slightly right for width
   },
   {
     ratio: 2.0,
@@ -410,7 +413,6 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.4,
     sustain: 0.7,
     release: 1.8,
-    pan: -0.2, // Slightly left
   },
   {
     ratio: 3.0,
@@ -419,7 +421,6 @@ const padOperators: [OperatorParams, OperatorParams, OperatorParams, OperatorPar
     decay: 0.7,
     sustain: 0.65,
     release: 2.5,
-    pan: 0.2, // Slightly right
   },
 ]
 
@@ -511,6 +512,7 @@ export const padPreset: Preset = {
   operators: padOperators,
   lfos: padLFOs,
   lfoCombineMode: LFOCombineMode.MULTIPLY,
+  lfoPairDepths: defaultLFOPairDepths,
   envelopeFollower: defaultEnvelopeFollower,
   stepSequencer: defaultStepSequencer,
   filter: padFilter,

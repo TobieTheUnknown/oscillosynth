@@ -16,11 +16,13 @@ interface LFOPairPanelProps {
   lfo1Index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
   lfo2Index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
   destination: LFODestination
+  pairDepth: number // 0-200% - Global depth applied to combined LFO signal
   color1: string
   color2: string
   onLFO1Change: (params: Partial<LFOParams>) => void
   onLFO2Change: (params: Partial<LFOParams>) => void
   onDestinationChange: (destination: LFODestination) => void
+  onPairDepthChange: (depth: number) => void
 }
 
 export function LFOPairPanel({
@@ -30,11 +32,13 @@ export function LFOPairPanel({
   lfo1Index,
   lfo2Index,
   destination,
+  pairDepth,
   color1,
   color2,
   onLFO1Change,
   onLFO2Change,
   onDestinationChange,
+  onPairDepthChange,
 }: LFOPairPanelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -332,6 +336,18 @@ export function LFOPairPanel({
             borderRadius: 'var(--radius-sm)',
             backgroundColor: '#000',
           }}
+        />
+
+        {/* Global Pair Depth Control */}
+        <Knob
+          label="Pair Depth"
+          value={pairDepth}
+          min={0}
+          max={200}
+          step={1}
+          unit="%"
+          color="var(--color-accent-primary)"
+          onChange={onPairDepthChange}
         />
 
         <div

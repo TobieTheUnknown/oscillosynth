@@ -4,6 +4,7 @@
  */
 
 import { Knob } from './Knob'
+import { LogKnob, BipolarKnob } from './KnobVariants'
 import { FilterParams } from '../audio/types'
 
 interface FilterControlsProps {
@@ -88,12 +89,12 @@ export function FilterControls({ params, onChange }: FilterControlsProps) {
         </div>
 
         {/* Knobs */}
-        <Knob
+        <LogKnob
           label="Cutoff"
           value={params.cutoff}
           min={20}
           max={20000}
-          step={10}
+          defaultValue={2000}
           unit="Hz"
           color={color}
           onChange={(cutoff) => {
@@ -111,7 +112,7 @@ export function FilterControls({ params, onChange }: FilterControlsProps) {
             onChange({ resonance })
           }}
         />
-        <Knob
+        <BipolarKnob
           label="Envelope"
           value={params.envelope}
           min={-100}
@@ -119,6 +120,7 @@ export function FilterControls({ params, onChange }: FilterControlsProps) {
           step={1}
           unit="%"
           color={color}
+          colorNegative="#FF4136"
           onChange={(envelope) => {
             onChange({ envelope })
           }}

@@ -45,6 +45,7 @@ export function AudioTestV2() {
     noteOn,
     noteOff,
     updateCurrentPresetLFO,
+    updateCurrentPresetLFOPairDepth,
     updateCurrentPresetOperator,
     updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects,
@@ -507,12 +508,8 @@ export function AudioTestV2() {
                 <div>
                   <PanControls
                     stereoWidth={currentPreset.stereoWidth}
-                    operators={currentPreset.operators}
                     onStereoWidthChange={(params) => {
                       updateCurrentPresetStereoWidth(params)
-                    }}
-                    onOperatorPanChange={(index, pan) => {
-                      updateCurrentPresetOperator(index, { pan })
                     }}
                   />
                 </div>
@@ -562,6 +559,7 @@ export function AudioTestV2() {
                       const pairNumber = pairNum as 1 | 2 | 3 | 4
                       const lfo1Index = ((pairNum - 1) * 2) as 0 | 2 | 4 | 6
                       const lfo2Index = ((pairNum - 1) * 2 + 1) as 1 | 3 | 5 | 7
+                      const pairDepthKey = `pair${pairNumber}` as 'pair1' | 'pair2' | 'pair3' | 'pair4'
 
                       return (
                         <LFOPairPanel
@@ -572,6 +570,7 @@ export function AudioTestV2() {
                           lfo1Index={lfo1Index}
                           lfo2Index={lfo2Index}
                           destination={currentPreset.lfos[lfo1Index].destination}
+                          pairDepth={currentPreset.lfoPairDepths[pairDepthKey]}
                           color1={LFO_COLORS[lfo1Index] ?? '#00FF41'}
                           color2={LFO_COLORS[lfo2Index] ?? '#00FFFF'}
                           onLFO1Change={(params) => {
@@ -583,6 +582,9 @@ export function AudioTestV2() {
                           onDestinationChange={(destination) => {
                             updateCurrentPresetLFO(lfo1Index, { destination })
                             updateCurrentPresetLFO(lfo2Index, { destination })
+                          }}
+                          onPairDepthChange={(depth) => {
+                            updateCurrentPresetLFOPairDepth(pairNumber, depth)
                           }}
                         />
                       )

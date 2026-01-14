@@ -126,30 +126,37 @@ export class AudioEngine {
     // Setup LFO modulation with dynamic routing
     // Poll LFO values every 10ms and route to appropriate destinations
     const lfoInterval = setInterval(() => {
+      if (!this.currentPreset) return
+
       // Process each of the 4 LFO pairs
       for (let pairIndex = 1; pairIndex <= 4; pairIndex++) {
         const pairIdx = pairIndex as 1 | 2 | 3 | 4
         const destination = lfoEngine.getPairDestination(pairIdx)
-        let value = 0
+        let combinedValue = 0
 
-        // Get pair value
+        // Get pair combined value
         switch (pairIdx) {
           case 1:
-            value = lfoEngine.getPair1Value()
+            combinedValue = lfoEngine.getPair1Value()
             break
           case 2:
-            value = lfoEngine.getPair2Value()
+            combinedValue = lfoEngine.getPair2Value()
             break
           case 3:
-            value = lfoEngine.getPair3Value()
+            combinedValue = lfoEngine.getPair3Value()
             break
           case 4:
-            value = lfoEngine.getPair4Value()
+            combinedValue = lfoEngine.getPair4Value()
             break
         }
 
-        // Route to destination
-        this.applyLFOModulation(destination, value, fmEngine)
+        // Apply pair depth (0-200%)
+        const pairDepthKey = `pair${pairIdx}` as 'pair1' | 'pair2' | 'pair3' | 'pair4'
+        const pairDepth = this.currentPreset.lfoPairDepths[pairDepthKey] / 100 // Normalize to 0-2
+        const finalValue = combinedValue * pairDepth
+
+        // Route to destination with final scaled value
+        this.applyLFOModulation(destination, finalValue, fmEngine)
       }
     }, 10)
 
@@ -205,9 +212,9 @@ export class AudioEngine {
 
     switch (destination) {
       case LFODestination.PITCH:
-        // Pitch vibrato: ±50 cents (requires fmEngine)
+        // Pitch vibrato: ±100 cents (requires fmEngine)
         if (fmEngine) {
-          fmEngine.applyPitchModulation(value * 50)
+          fmEngine.applyPitchModulation(value * 100)
         }
         break
 
@@ -281,7 +288,7 @@ export class AudioEngine {
       case LFODestination.FX_REVERB_WET:
         {
           const baseWet = this.currentPreset.masterEffects.reverbWet
-          const modulatedWet = baseWet + value * 0.3 // ±30%
+          const modulatedWet = baseWet + value * 0.5 // ±50%
           this.pipeline.setReverbWet(Math.max(0, Math.min(1, modulatedWet)))
         }
         break
@@ -289,7 +296,7 @@ export class AudioEngine {
       case LFODestination.FX_DELAY_WET:
         {
           const baseWet = this.currentPreset.masterEffects.delayWet
-          const modulatedWet = baseWet + value * 0.3
+          const modulatedWet = baseWet + value * 0.5 // ±50%
           this.pipeline.setDelayWet(Math.max(0, Math.min(1, modulatedWet)))
         }
         break
@@ -305,7 +312,7 @@ export class AudioEngine {
       case LFODestination.FX_CHORUS_WET:
         {
           const baseWet = this.currentPreset.masterEffects.chorusWet
-          const modulatedWet = baseWet + value * 0.3
+          const modulatedWet = baseWet + value * 0.5 // ±50%
           this.pipeline.setChorusWet(Math.max(0, Math.min(1, modulatedWet)))
         }
         break
@@ -313,17 +320,11 @@ export class AudioEngine {
       case LFODestination.FX_DISTORTION_WET:
         {
           const baseWet = this.currentPreset.masterEffects.distortionWet
-          const modulatedWet = baseWet + value * 0.3
+          const modulatedWet = baseWet + value * 0.5 // ±50%
           this.pipeline.setDistortionWet(Math.max(0, Math.min(1, modulatedWet)))
         }
         break
 
-      case LFODestination.PAN:
-        // Auto-pan: modulate stereo position (-1 to 1)
-        if (fmEngine) {
-          fmEngine.applyPanModulation(value)
-        }
-        break
 
       default:
         console.warn(`Unknown LFO destination: ${String(destination)}`)
@@ -345,6 +346,14 @@ export class AudioEngine {
       this.activeVoices.delete(voiceId)
       this.voicePool.release(voiceId)
     }
+  }
+
+  /**
+   * Met à jour la référence du preset actuel sans arrêter les voix
+   * Utilisé pour les changements de paramètres en temps réel
+   */
+  updateCurrentPresetReference(preset: Preset): void {
+    this.currentPreset = preset
   }
 
   /**

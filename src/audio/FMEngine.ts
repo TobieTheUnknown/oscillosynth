@@ -210,14 +210,6 @@ export class FMEngine {
     this.operators[operatorIndex].applyRatioModulation(baseRatio, modulationValue)
   }
 
-  /**
-   * Apply pan modulation to all operators (auto-pan)
-   */
-  applyPanModulation(panValue: number): void {
-    this.operators.forEach((op) => {
-      op.applyPanModulation(panValue)
-    })
-  }
 
   /**
    * Mise à jour paramètres opérateur

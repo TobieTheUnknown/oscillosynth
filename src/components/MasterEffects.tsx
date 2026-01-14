@@ -5,6 +5,7 @@
 
 import { useRef, useEffect } from 'react'
 import { Knob } from './Knob'
+import { TimeKnob, PercentageKnob } from './KnobVariants'
 import { MasterEffectsParams } from '../audio/types'
 import { audioEngine } from '../audio/AudioEngine'
 
@@ -182,37 +183,32 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
             REVERB
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-            <Knob
+            <PercentageKnob
               label="Mix"
-              value={params.reverbWet}
-              min={0}
-              max={1}
-              step={0.01}
-              unit="%"
+              value={params.reverbWet * 100}
+              defaultValue={0}
               color="#64C8FF"
-              onChange={(reverbWet) => {
-                onChange({ reverbWet })
+              onChange={(value) => {
+                onChange({ reverbWet: value / 100 })
               }}
             />
-            <Knob
+            <TimeKnob
               label="Decay"
               value={params.reverbDecay}
               min={0.1}
               max={10}
-              step={0.1}
-              unit="s"
+              defaultValue={2.5}
               color="#64C8FF"
               onChange={(reverbDecay) => {
                 onChange({ reverbDecay })
               }}
             />
-            <Knob
+            <TimeKnob
               label="PreDly"
               value={params.reverbPreDelay}
-              min={0}
+              min={0.001}
               max={1}
-              step={0.01}
-              unit="s"
+              defaultValue={0.01}
               color="#64C8FF"
               onChange={(reverbPreDelay) => {
                 onChange({ reverbPreDelay })
@@ -243,39 +239,33 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
             DELAY
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-            <Knob
+            <PercentageKnob
               label="Mix"
-              value={params.delayWet}
-              min={0}
-              max={1}
-              step={0.01}
-              unit="%"
+              value={params.delayWet * 100}
+              defaultValue={0}
               color="#FFFF00"
-              onChange={(delayWet) => {
-                onChange({ delayWet })
+              onChange={(value) => {
+                onChange({ delayWet: value / 100 })
               }}
             />
-            <Knob
+            <TimeKnob
               label="Time"
               value={params.delayTime}
-              min={0}
+              min={0.001}
               max={2}
-              step={0.01}
-              unit="s"
+              defaultValue={0.25}
               color="#FFFF00"
               onChange={(delayTime) => {
                 onChange({ delayTime })
               }}
             />
-            <Knob
+            <PercentageKnob
               label="Feedbck"
-              value={params.delayFeedback}
-              min={0}
-              max={0.95}
-              step={0.01}
+              value={params.delayFeedback * 100}
+              defaultValue={30}
               color="#FFFF00"
-              onChange={(delayFeedback) => {
-                onChange({ delayFeedback })
+              onChange={(value) => {
+                onChange({ delayFeedback: value / 100 })
               }}
             />
           </div>
@@ -303,16 +293,13 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
             CHORUS
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-            <Knob
+            <PercentageKnob
               label="Mix"
-              value={params.chorusWet}
-              min={0}
-              max={1}
-              step={0.01}
-              unit="%"
+              value={params.chorusWet * 100}
+              defaultValue={0}
               color="#FF64FF"
-              onChange={(chorusWet) => {
-                onChange({ chorusWet })
+              onChange={(value) => {
+                onChange({ chorusWet: value / 100 })
               }}
             />
             <Knob
@@ -327,15 +314,13 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
                 onChange({ chorusFrequency })
               }}
             />
-            <Knob
+            <PercentageKnob
               label="Depth"
-              value={params.chorusDepth}
-              min={0}
-              max={1}
-              step={0.01}
+              value={params.chorusDepth * 100}
+              defaultValue={70}
               color="#FF64FF"
-              onChange={(chorusDepth) => {
-                onChange({ chorusDepth })
+              onChange={(value) => {
+                onChange({ chorusDepth: value / 100 })
               }}
             />
           </div>
@@ -363,27 +348,22 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
             DISTORTION
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-            <Knob
+            <PercentageKnob
               label="Mix"
-              value={params.distortionWet}
-              min={0}
-              max={1}
-              step={0.01}
-              unit="%"
+              value={params.distortionWet * 100}
+              defaultValue={0}
               color="#FF9664"
-              onChange={(distortionWet) => {
-                onChange({ distortionWet })
+              onChange={(value) => {
+                onChange({ distortionWet: value / 100 })
               }}
             />
-            <Knob
+            <PercentageKnob
               label="Amount"
-              value={params.distortionAmount}
-              min={0}
-              max={1}
-              step={0.01}
+              value={params.distortionAmount * 100}
+              defaultValue={40}
               color="#FF9664"
-              onChange={(distortionAmount) => {
-                onChange({ distortionAmount })
+              onChange={(value) => {
+                onChange({ distortionAmount: value / 100 })
               }}
             />
           </div>

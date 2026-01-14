@@ -13,16 +13,17 @@ interface LFOPairControlProps {
   lfo1Index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
   lfo2Index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
   destination: LFODestination
+  pairDepth: number // 0-200% - Global depth applied to combined LFO signal
   color1: string
   color2: string
   onLFO1Change: (params: Partial<LFOParams>) => void
   onLFO2Change: (params: Partial<LFOParams>) => void
+  onPairDepthChange: (depth: number) => void
 }
 
 const DESTINATION_LABELS: Record<LFODestination, string> = {
   [LFODestination.PITCH]: 'PITCH',
   [LFODestination.AMPLITUDE]: 'AMP',
-  [LFODestination.PAN]: 'PAN',
   [LFODestination.FILTER_CUTOFF]: 'FILTER CUTOFF',
   [LFODestination.FILTER_RESONANCE]: 'FILTER RES',
   [LFODestination.OP1_LEVEL]: 'OP1 LEVEL',
@@ -47,10 +48,12 @@ export function LFOPairControl({
   lfo1Index,
   lfo2Index,
   destination,
+  pairDepth,
   color1,
   color2,
   onLFO1Change,
   onLFO2Change,
+  onPairDepthChange,
 }: LFOPairControlProps) {
   const destLabel = DESTINATION_LABELS[destination] ?? 'UNKNOWN'
 
@@ -111,14 +114,14 @@ export function LFOPairControl({
         />
       </div>
 
-      {/* Center: Pair info */}
+      {/* Center: Pair info and global depth control */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 'var(--spacing-2)',
+          gap: 'var(--spacing-3)',
           minWidth: '200px',
         }}
       >
@@ -150,6 +153,17 @@ export function LFOPairControl({
         >
           {lfo1Params.waveform.toUpperCase()} + {lfo2Params.waveform.toUpperCase()}
         </div>
+        {/* Global Pair Depth Control */}
+        <Knob
+          label="Pair Depth"
+          value={pairDepth}
+          min={0}
+          max={200}
+          step={1}
+          unit="%"
+          color="var(--color-accent-primary)"
+          onChange={onPairDepthChange}
+        />
       </div>
 
       {/* LFO 2 Controls (Right) */}

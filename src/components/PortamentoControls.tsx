@@ -3,7 +3,7 @@
  * Enable/disable portamento and control glide time and mode
  */
 
-import { Knob } from './Knob'
+import { TimeKnob } from './KnobVariants'
 import { PortamentoParams } from '../audio/types'
 
 interface PortamentoControlsProps {
@@ -61,14 +61,13 @@ export function PortamentoControls({ params, onChange }: PortamentoControlsProps
 
         {/* Glide Time Knob */}
         <div>
-          <Knob
+          <TimeKnob
             label="TIME"
-            value={params.time}
-            onChange={(value) => onChange({ time: value })}
-            min={0}
-            max={1000}
-            step={10}
-            unit="ms"
+            value={params.time / 1000}
+            onChange={(value) => onChange({ time: value * 1000 })}
+            min={0.001}
+            max={1}
+            defaultValue={0.1}
             color="var(--color-trace-primary)"
           />
         </div>

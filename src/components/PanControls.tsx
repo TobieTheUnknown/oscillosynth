@@ -4,20 +4,16 @@
  */
 
 import { Knob } from './Knob'
-import { StereoWidthParams, OperatorParams } from '../audio/types'
+import { StereoWidthParams } from '../audio/types'
 
 interface PanControlsProps {
   stereoWidth: StereoWidthParams
-  operators: [OperatorParams, OperatorParams, OperatorParams, OperatorParams]
   onStereoWidthChange: (params: Partial<StereoWidthParams>) => void
-  onOperatorPanChange: (index: 0 | 1 | 2 | 3, pan: number) => void
 }
 
 export function PanControls({
   stereoWidth,
-  operators,
   onStereoWidthChange,
-  onOperatorPanChange,
 }: PanControlsProps) {
   return (
     <div
@@ -114,7 +110,6 @@ export function PanControls({
           display: 'flex',
           flexDirection: 'column',
           gap: 'var(--spacing-3)',
-          marginBottom: 'var(--spacing-4)',
           padding: 'var(--spacing-3)',
           backgroundColor: 'var(--color-bg-primary)',
           borderRadius: 'var(--radius-sm)',
@@ -185,69 +180,6 @@ export function PanControls({
           >
             Pan notes based on pitch (low=left, high=right)
           </div>
-        </div>
-      </div>
-
-      {/* Operator Pan Section */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--spacing-3)',
-          padding: 'var(--spacing-3)',
-          backgroundColor: 'var(--color-bg-primary)',
-          borderRadius: 'var(--radius-sm)',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 'var(--font-size-sm)',
-            color: 'var(--color-text-secondary)',
-            fontFamily: 'var(--font-family-mono)',
-            fontWeight: 'bold',
-          }}
-        >
-          OPERATOR PANNING
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 'var(--spacing-3)',
-          }}
-        >
-          {operators.map((op, index) => (
-            <div key={index}>
-              <Knob
-                label={`OP${index + 1}`}
-                value={op.pan}
-                onChange={(value) => onOperatorPanChange(index as 0 | 1 | 2 | 3, value)}
-                min={-1}
-                max={1}
-                step={0.05}
-                color={
-                  index === 0
-                    ? 'var(--color-op1)'
-                    : index === 1
-                    ? 'var(--color-op2)'
-                    : index === 2
-                    ? 'var(--color-op3)'
-                    : 'var(--color-op4)'
-                }
-              />
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            fontSize: 'var(--font-size-xs)',
-            color: 'var(--color-text-tertiary)',
-            fontFamily: 'var(--font-family-mono)',
-            fontStyle: 'italic',
-            textAlign: 'center',
-          }}
-        >
-          Pan each operator independently (L=left, C=center, R=right)
         </div>
       </div>
     </div>

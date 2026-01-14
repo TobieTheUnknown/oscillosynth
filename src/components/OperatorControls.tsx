@@ -4,6 +4,7 @@
  */
 
 import { Knob } from './Knob'
+import { TimeKnob, PercentageKnob } from './KnobVariants'
 import { OperatorParams } from '../audio/types'
 
 interface OperatorControlsProps {
@@ -60,60 +61,52 @@ export function OperatorControls({
             onChange({ ratio })
           }}
         />
-        <Knob
+        <PercentageKnob
           label="Level"
           value={params.level}
-          min={0}
-          max={100}
-          step={1}
-          unit="%"
+          defaultValue={80}
           color={color}
           onChange={(level) => {
             onChange({ level })
           }}
         />
-        <Knob
+        <TimeKnob
           label="Attack"
           value={params.attack}
           min={0.001}
           max={5}
-          step={0.01}
-          unit="s"
+          defaultValue={0.01}
           color={color}
           onChange={(attack) => {
             onChange({ attack })
           }}
         />
-        <Knob
+        <TimeKnob
           label="Decay"
           value={params.decay}
           min={0.001}
           max={5}
-          step={0.01}
-          unit="s"
+          defaultValue={0.3}
           color={color}
           onChange={(decay) => {
             onChange({ decay })
           }}
         />
-        <Knob
+        <PercentageKnob
           label="Sustain"
-          value={params.sustain}
-          min={0}
-          max={1}
-          step={0.01}
+          value={params.sustain * 100}
+          defaultValue={70}
           color={color}
           onChange={(sustain) => {
-            onChange({ sustain })
+            onChange({ sustain: sustain / 100 })
           }}
         />
-        <Knob
+        <TimeKnob
           label="Release"
           value={params.release}
           min={0.001}
           max={5}
-          step={0.01}
-          unit="s"
+          defaultValue={0.5}
           color={color}
           onChange={(release) => {
             onChange({ release })

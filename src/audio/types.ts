@@ -41,7 +41,6 @@ export enum LFOCombineMode {
 export enum LFODestination {
   PITCH = 'pitch', // Pitch vibrato (detune)
   AMPLITUDE = 'amplitude', // Amplitude tremolo
-  PAN = 'pan', // Auto-pan (stereo position)
   FILTER_CUTOFF = 'filter_cutoff', // Filter cutoff frequency
   FILTER_RESONANCE = 'filter_resonance', // Filter resonance (Q)
   OP1_LEVEL = 'op1_level', // Operator 1 level
@@ -71,7 +70,6 @@ export interface OperatorParams {
   sustain: number // 0 - 1.0
   release: number // 0.001 - 10.0 secondes
   feedback?: number // 0 - 1.0 (operator 4 only)
-  pan: number // -1.0 to 1.0 (-1=left, 0=center, 1=right)
 }
 
 /**
@@ -162,6 +160,16 @@ export interface MasterEffectsParams {
 }
 
 /**
+ * Depths des paires de LFOs (global par paire)
+ */
+export interface LFOPairDepths {
+  pair1: number // 0 - 200% (Paire 1: LFO 1+2)
+  pair2: number // 0 - 200% (Paire 2: LFO 3+4)
+  pair3: number // 0 - 200% (Paire 3: LFO 5+6)
+  pair4: number // 0 - 200% (Paire 4: LFO 7+8)
+}
+
+/**
  * Preset complet
  */
 export interface Preset {
@@ -180,6 +188,7 @@ export interface Preset {
     LFOParams
   ] // 8 LFOs in 4 pairs
   lfoCombineMode: LFOCombineMode
+  lfoPairDepths: LFOPairDepths // Depth global par paire
   envelopeFollower: EnvelopeFollowerParams
   stepSequencer: StepSequencerParams
   filter: FilterParams

@@ -10,8 +10,8 @@ export class FMOperator {
   private oscillator: Tone.Oscillator
   private envelope: Tone.AmplitudeEnvelope
   private gain: Tone.Gain
-  private panner: Tone.Panner
   private fmGain: Tone.Gain // Gain dédié pour connexions FM
+  private feedbackGain: Tone.Gain | null = null // Feedback loop (operator 4 only)
   private fmConnections: Set<AudioParam> = new Set() // Tracking des cibles FM
   private static readonly FM_INDEX_MULTIPLIER = 50 // Intensité de modulation
   private baseFrequency: number
@@ -38,19 +38,28 @@ export class FMOperator {
     // Gain pour level control
     this.gain = new Tone.Gain(params.level / 100)
 
-    // Panner pour stereo positioning (-1 = left, 0 = center, 1 = right)
-    this.panner = new Tone.Panner(params.pan)
-
-    // Routing: oscillator → envelope → gain → panner
+    // Routing: oscillator → envelope → gain
     this.oscillator.connect(this.envelope)
     this.envelope.connect(this.gain)
-    this.gain.connect(this.panner)
 
     // FM-specific gain node (separate from audio gain)
     this.fmGain = new Tone.Gain(0) // Initial value, updated dynamically
 
     // Parallel FM signal chain: oscillator → envelope → fmGain
     this.envelope.connect(this.fmGain)
+
+    // Setup feedback loop if feedback parameter exists (typically operator 4)
+    if (params.feedback !== undefined && params.feedback > 0) {
+      // Feedback gain scales the self-modulation depth
+      // Typical range: 0-1, mapped to 0-2000 Hz of modulation depth
+      this.feedbackGain = new Tone.Gain(params.feedback * 2000)
+
+      // Create feedback loop: envelope → feedbackGain → oscillator.frequency
+      this.envelope.connect(this.feedbackGain)
+      this.feedbackGain.connect(this.oscillator.frequency)
+
+      console.log(`✨ Feedback FM enabled: ${params.feedback.toFixed(2)} (${(params.feedback * 2000).toFixed(0)} Hz depth)`)
+    }
   }
 
   /**
@@ -99,14 +108,14 @@ export class FMOperator {
    * Connecte la sortie de cet opérateur à une destination
    */
   connect(destination: Tone.ToneAudioNode | AudioParam): void {
-    this.panner.connect(destination as Tone.InputNode)
+    this.gain.connect(destination as Tone.InputNode)
   }
 
   /**
    * Déconnecte cet opérateur
    */
   disconnect(): void {
-    this.panner.disconnect()
+    this.gain.disconnect()
   }
 
   /**
@@ -174,8 +183,8 @@ export class FMOperator {
    */
   applyLevelModulation(baseLevel: number, modulationValue: number): void {
     // modulationValue is -1 to 1
-    // Map to ±50% of base level
-    const modulatedLevel = baseLevel * (1 + modulationValue * 0.5)
+    // Map to ±100% of base level (full range modulation)
+    const modulatedLevel = baseLevel * (1 + modulationValue * 1.0)
     const clampedLevel = Math.max(0, Math.min(100, modulatedLevel))
     // Smooth level changes to avoid clicks (5ms ramp)
     this.gain.gain.rampTo(clampedLevel / 100, 0.005)
@@ -186,22 +195,13 @@ export class FMOperator {
    */
   applyRatioModulation(baseRatio: number, modulationValue: number): void {
     // modulationValue is -1 to 1
-    // Map to ±20% of base ratio
-    const modulatedRatio = baseRatio * (1 + modulationValue * 0.2)
+    // Map to ±50% of base ratio (wider ratio modulation)
+    const modulatedRatio = baseRatio * (1 + modulationValue * 0.5)
     const clampedRatio = Math.max(0.5, Math.min(16, modulatedRatio))
     // Smooth frequency changes to avoid clicks (5ms ramp)
     this.oscillator.frequency.rampTo(this.baseFrequency * clampedRatio, 0.005)
   }
 
-  /**
-   * Apply pan modulation (stereo positioning)
-   */
-  applyPanModulation(panValue: number): void {
-    // panValue should be -1 to 1 (-1 = left, 0 = center, 1 = right)
-    const clampedPan = Math.max(-1, Math.min(1, panValue))
-    // Smooth pan changes to avoid clicks (5ms ramp)
-    this.panner.pan.rampTo(clampedPan, 0.005)
-  }
 
   /**
    * Mise à jour des paramètres en temps réel
@@ -237,17 +237,36 @@ export class FMOperator {
       this.envelope.release = params.release
     }
 
-    if (params.pan !== undefined) {
-      this.params.pan = params.pan
-      this.panner.pan.value = params.pan
+    if (params.feedback !== undefined) {
+      this.params.feedback = params.feedback
+
+      // Update or create feedback loop
+      if (params.feedback > 0) {
+        if (!this.feedbackGain) {
+          // Create new feedback loop
+          this.feedbackGain = new Tone.Gain(params.feedback * 2000)
+          this.envelope.connect(this.feedbackGain)
+          this.feedbackGain.connect(this.oscillator.frequency)
+          console.log(`✨ Feedback FM created: ${params.feedback.toFixed(2)}`)
+        } else {
+          // Update existing feedback gain
+          this.feedbackGain.gain.value = params.feedback * 2000
+        }
+      } else if (this.feedbackGain) {
+        // Disable feedback if set to 0
+        this.feedbackGain.disconnect()
+        this.feedbackGain.dispose()
+        this.feedbackGain = null
+        console.log('🔇 Feedback FM disabled')
+      }
     }
   }
 
   /**
    * Récupère le signal audio de sortie
    */
-  get output(): Tone.Panner {
-    return this.panner
+  get output(): Tone.Gain {
+    return this.gain
   }
 
   /**
@@ -279,6 +298,9 @@ export class FMOperator {
     this.envelope.dispose()
     this.gain.dispose()
     this.fmGain.dispose()
-    this.panner.dispose()
+
+    if (this.feedbackGain) {
+      this.feedbackGain.dispose()
+    }
   }
 }
