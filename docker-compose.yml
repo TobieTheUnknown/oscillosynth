@@ -2,11 +2,35 @@ version: '3.8'
 
 services:
   oscillosynth:
-    build: .
+    image: tobtheunknown/oscillosynth:latest
+    container_name: oscillosynth
+    restart: unless-stopped
+
     ports:
       - "5173:5173"
+
     volumes:
-      - ./src:/app/src
-      - ./public:/app/public
+      # Persist user presets and settings (localStorage is browser-side, but useful for backups)
+      - /volume1/docker/oscillosynth/data:/app/data
+
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - TZ=Europe/Paris
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - oscillosynth-network
+
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "traefik.enable=false"
+
+networks:
+  oscillosynth-network:
+    driver: bridge
