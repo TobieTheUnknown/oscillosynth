@@ -58,6 +58,7 @@ export class LFOModulator {
       case LFODestination.FX_DELAY_TIME:
       case LFODestination.FX_CHORUS_WET:
       case LFODestination.FX_DISTORTION_WET:
+      case LFODestination.FX_STEREO_WIDTH:
       case LFODestination.NOISE_LEVEL:
       case LFODestination.NOISE_FILTER_CUTOFF:
       case LFODestination.NOISE_FILTER_RESONANCE:
@@ -162,6 +163,10 @@ export class LFOModulator {
 
       case LFODestination.FX_DISTORTION_WET:
         this.modulateDistortionWet(value, context)
+        break
+
+      case LFODestination.FX_STEREO_WIDTH:
+        this.modulateStereoWidth(value, context)
         break
 
       case LFODestination.NOISE_LEVEL:
@@ -354,6 +359,18 @@ export class LFOModulator {
   }
 
   /**
+   * Modulate stereo width: ±100%
+   * Base value is 100% (normal stereo), modulation can go from 0% (mono) to 200% (wide)
+   */
+  private static modulateStereoWidth(value: number, context: ModulationContext): void {
+    if (context.currentPreset) {
+      const baseWidth = context.currentPreset.masterEffects.stereoWidth
+      const modulatedWidth = baseWidth + value * 100 // ±100% range
+      context.pipeline.setStereoWidth(Math.max(0, Math.min(200, modulatedWidth)))
+    }
+  }
+
+  /**
    * Modulate noise level: ±50%
    */
   private static modulateNoiseLevel(value: number, context: ModulationContext): void {
@@ -369,7 +386,7 @@ export class LFOModulator {
   private static modulateNoiseFilterCutoff(value: number, context: ModulationContext): void {
     if (context.noiseFilter) {
       const modulatedCutoff = context.baseNoiseFilterCutoff * (1 + value * 0.9)
-      context.noiseFilter.frequency.value = Math.max(20, Math.min(20000, modulatedCutoff))
+      context.noiseFilter.frequency.value = Math.max(20, Math.min(10000, modulatedCutoff))
     }
   }
 

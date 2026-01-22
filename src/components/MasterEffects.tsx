@@ -78,10 +78,11 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
 
       // Color varies based on active effects (cyan to rose gradient)
       let effectIntensity = 0
-      effectIntensity += params.reverbWet * 0.25
-      effectIntensity += params.delayWet * 0.25
-      effectIntensity += params.chorusWet * 0.25
-      effectIntensity += params.distortionWet * 0.25
+      effectIntensity += params.reverbWet * 0.2
+      effectIntensity += params.delayWet * 0.2
+      effectIntensity += params.chorusWet * 0.2
+      effectIntensity += params.distortionWet * 0.2
+      effectIntensity += Math.abs(params.stereoWidth - 100) / 100 * 0.2 // Stereo width deviation from 100%
 
       // Interpolate between cyan (78, 205, 196) and rose (255, 107, 157)
       const r = Math.floor(78 + effectIntensity * (255 - 78))
@@ -158,11 +159,11 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(5, 1fr)',
           gap: 'var(--spacing-4)',
         }}
       >
-        {/* Reverb */}
+        {/* Distortion */}
         <div
           style={{
             padding: 'var(--spacing-3)',
@@ -174,101 +175,33 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
           <div
             style={{
               fontSize: 'var(--font-size-sm)',
-              color: '#64C8FF',
+              color: '#FF9664',
               fontFamily: 'var(--font-family-mono)',
               fontWeight: 'bold',
               marginBottom: 'var(--spacing-2)',
               textAlign: 'center',
             }}
           >
-            REVERB
+            DISTORTION
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
             <PercentageKnob
               label="Mix"
-              value={params.reverbWet * 100}
+              value={params.distortionWet * 100}
               defaultValue={0}
-              color="#64C8FF"
+              color="#FF9664"
               size="lg"
               onChange={(value) => {
-                onChange({ reverbWet: value / 100 })
-              }}
-            />
-            <TimeKnob
-              label="Decay"
-              value={params.reverbDecay}
-              min={0.1}
-              max={10}
-              defaultValue={2.5}
-              color="#64C8FF"
-              onChange={(reverbDecay) => {
-                onChange({ reverbDecay })
-              }}
-            />
-            <TimeKnob
-              label="PreDly"
-              value={params.reverbPreDelay}
-              min={0.001}
-              max={1}
-              defaultValue={0.01}
-              color="#64C8FF"
-              onChange={(reverbPreDelay) => {
-                onChange({ reverbPreDelay })
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Delay */}
-        <div
-          style={{
-            padding: 'var(--spacing-3)',
-            backgroundColor: 'var(--color-bg-primary)',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--color-border-primary)',
-          }}
-        >
-          <div
-            style={{
-              fontSize: 'var(--font-size-sm)',
-              color: '#FFFF00',
-              fontFamily: 'var(--font-family-mono)',
-              fontWeight: 'bold',
-              marginBottom: 'var(--spacing-2)',
-              textAlign: 'center',
-            }}
-          >
-            DELAY
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
-            <PercentageKnob
-              label="Mix"
-              value={params.delayWet * 100}
-              defaultValue={0}
-              color="#FFFF00"
-              size="lg"
-              onChange={(value) => {
-                onChange({ delayWet: value / 100 })
-              }}
-            />
-            <TimeKnob
-              label="Time"
-              value={params.delayTime}
-              min={0.001}
-              max={2}
-              defaultValue={0.25}
-              color="#FFFF00"
-              onChange={(delayTime) => {
-                onChange({ delayTime })
+                onChange({ distortionWet: value / 100 })
               }}
             />
             <PercentageKnob
-              label="Feedbck"
-              value={params.delayFeedback * 100}
-              defaultValue={30}
-              color="#FFFF00"
+              label="Amount"
+              value={params.distortionAmount * 100}
+              defaultValue={40}
+              color="#FF9664"
               onChange={(value) => {
-                onChange({ delayFeedback: value / 100 })
+                onChange({ distortionAmount: value / 100 })
               }}
             />
           </div>
@@ -330,7 +263,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
           </div>
         </div>
 
-        {/* Distortion */}
+        {/* Delay */}
         <div
           style={{
             padding: 'var(--spacing-3)',
@@ -342,33 +275,139 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
           <div
             style={{
               fontSize: 'var(--font-size-sm)',
-              color: '#FF9664',
+              color: '#FFFF00',
               fontFamily: 'var(--font-family-mono)',
               fontWeight: 'bold',
               marginBottom: 'var(--spacing-2)',
               textAlign: 'center',
             }}
           >
-            DISTORTION
+            DELAY
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
             <PercentageKnob
               label="Mix"
-              value={params.distortionWet * 100}
+              value={params.delayWet * 100}
               defaultValue={0}
-              color="#FF9664"
+              color="#FFFF00"
               size="lg"
               onChange={(value) => {
-                onChange({ distortionWet: value / 100 })
+                onChange({ delayWet: value / 100 })
+              }}
+            />
+            <TimeKnob
+              label="Time"
+              value={params.delayTime}
+              min={0.001}
+              max={2}
+              defaultValue={0.25}
+              color="#FFFF00"
+              onChange={(delayTime) => {
+                onChange({ delayTime })
               }}
             />
             <PercentageKnob
-              label="Amount"
-              value={params.distortionAmount * 100}
-              defaultValue={40}
-              color="#FF9664"
+              label="Feedbck"
+              value={params.delayFeedback * 100}
+              defaultValue={30}
+              color="#FFFF00"
               onChange={(value) => {
-                onChange({ distortionAmount: value / 100 })
+                onChange({ delayFeedback: value / 100 })
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Stereo Width */}
+        <div
+          style={{
+            padding: 'var(--spacing-3)',
+            backgroundColor: 'var(--color-bg-primary)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border-primary)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 'var(--font-size-sm)',
+              color: '#96FF64',
+              fontFamily: 'var(--font-family-mono)',
+              fontWeight: 'bold',
+              marginBottom: 'var(--spacing-2)',
+              textAlign: 'center',
+            }}
+          >
+            STEREO WIDTH
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+            <Knob
+              label="Width"
+              value={params.stereoWidth}
+              min={0}
+              max={200}
+              step={1}
+              unit="%"
+              color="#96FF64"
+              size="lg"
+              onChange={(stereoWidth) => {
+                onChange({ stereoWidth })
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Reverb */}
+        <div
+          style={{
+            padding: 'var(--spacing-3)',
+            backgroundColor: 'var(--color-bg-primary)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border-primary)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 'var(--font-size-sm)',
+              color: '#64C8FF',
+              fontFamily: 'var(--font-family-mono)',
+              fontWeight: 'bold',
+              marginBottom: 'var(--spacing-2)',
+              textAlign: 'center',
+            }}
+          >
+            REVERB
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+            <PercentageKnob
+              label="Mix"
+              value={params.reverbWet * 100}
+              defaultValue={0}
+              color="#64C8FF"
+              size="lg"
+              onChange={(value) => {
+                onChange({ reverbWet: value / 100 })
+              }}
+            />
+            <TimeKnob
+              label="Decay"
+              value={params.reverbDecay}
+              min={0.1}
+              max={10}
+              defaultValue={2.5}
+              color="#64C8FF"
+              onChange={(reverbDecay) => {
+                onChange({ reverbDecay })
+              }}
+            />
+            <TimeKnob
+              label="PreDly"
+              value={params.reverbPreDelay}
+              min={0.001}
+              max={1}
+              defaultValue={0.01}
+              color="#64C8FF"
+              onChange={(reverbPreDelay) => {
+                onChange({ reverbPreDelay })
               }}
             />
           </div>

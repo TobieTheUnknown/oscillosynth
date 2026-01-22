@@ -249,15 +249,14 @@ export class AudioEngine {
     const wasNoiseActive = this.noiseActiveNotes.size > 0
     this.noiseActiveNotes.add(midiNote)
 
-    // Trigger noise envelope on first note or retrigger
-    if (this.noiseEnvelope) {
-      if (!wasNoiseActive) {
-        // First note - trigger attack
-        this.noiseEnvelope.triggerAttack()
-      } else {
-        // Retrigger for legato/polyphonic behavior
-        this.noiseEnvelope.triggerAttack()
-      }
+    // Only trigger noise envelope if:
+    // 1. No notes were playing before (first note)
+    // 2. Noise level is 0 (not in continuous mode)
+    // If noise level > 0, envelope was already triggered by setNoiseLevel()
+    if (this.noiseEnvelope && !wasNoiseActive && this.baseNoiseLevel === 0) {
+      // First note with noise level at 0 - trigger attack for note-triggered noise
+      this.noiseEnvelope.triggerAttack()
+      console.log('🎵 Noise envelope triggered by note (note-triggered mode)')
     }
 
     console.log(
@@ -303,9 +302,11 @@ export class AudioEngine {
     // Noise envelope handling
     this.noiseActiveNotes.delete(midiNote)
 
-    // Release noise envelope when all notes are off
-    if (this.noiseActiveNotes.size === 0 && this.noiseEnvelope) {
+    // Only release noise envelope when all notes are off AND noise level is 0
+    // If noise level > 0, keep envelope open for continuous noise
+    if (this.noiseActiveNotes.size === 0 && this.noiseEnvelope && this.baseNoiseLevel === 0) {
       this.noiseEnvelope.triggerRelease()
+      console.log('🎵 Noise envelope released by note (note-triggered mode)')
     }
 
     console.log(`🎵 Note OFF: ${String(midiNote)}`)
@@ -455,13 +456,18 @@ export class AudioEngine {
     this.pipeline.setReverbDecay(preset.masterEffects.reverbDecay)
     this.pipeline.setReverbPreDelay(preset.masterEffects.reverbPreDelay)
     this.pipeline.setDelayWet(preset.masterEffects.delayWet)
-    this.pipeline.setDelayTime(preset.masterEffects.delayTime)
+    this.pipeline.setDelayTimeWithSync(
+      preset.masterEffects.delayTime,
+      preset.masterEffects.delaySync,
+      preset.masterEffects.delaySyncValue
+    )
     this.pipeline.setDelayFeedback(preset.masterEffects.delayFeedback)
     this.pipeline.setChorusWet(preset.masterEffects.chorusWet)
     this.pipeline.setChorusFrequency(preset.masterEffects.chorusFrequency)
     this.pipeline.setChorusDepth(preset.masterEffects.chorusDepth)
     this.pipeline.setDistortionWet(preset.masterEffects.distortionWet)
     this.pipeline.setDistortionAmount(preset.masterEffects.distortionAmount)
+    this.pipeline.setStereoWidth(preset.masterEffects.stereoWidth)
 
     // Configure stereo width
     // REMOVED: stereoWidth parameter not in UI
@@ -566,10 +572,26 @@ export class AudioEngine {
   }
 
   setNoiseLevel(level: number): void {
+    const wasNoiseActive = this.baseNoiseLevel > 0
     this.baseNoiseLevel = level
+
     if (this.noiseGain) {
       // level is 0-100, convert to 0-1
       this.noiseGain.gain.value = level / 100
+    }
+
+    // Trigger noise envelope when noise is enabled (independent of note events)
+    // This allows LFO modulation to be audible even without notes playing
+    if (this.noiseEnvelope) {
+      if (level > 0 && !wasNoiseActive) {
+        // Noise just enabled - trigger envelope to sustain phase
+        this.noiseEnvelope.triggerAttack()
+        console.log('🔊 Noise envelope triggered (continuous mode)')
+      } else if (level === 0 && wasNoiseActive) {
+        // Noise just disabled - release envelope
+        this.noiseEnvelope.triggerRelease()
+        console.log('🔇 Noise envelope released')
+      }
     }
   }
 
@@ -668,7 +690,7 @@ export class AudioEngine {
     modulatedValues.filterCutoff = Math.max(
       20,
       Math.min(
-        20000,
+        10000,
         applyLFOModulation(
           this.currentPreset.filter.cutoff,
           LFODestination.FILTER_CUTOFF,
@@ -780,6 +802,18 @@ export class AudioEngine {
       )
     )
 
+    modulatedValues.stereoWidth = Math.max(
+      0,
+      Math.min(
+        200,
+        applyLFOModulation(
+          this.currentPreset.masterEffects.stereoWidth,
+          LFODestination.FX_STEREO_WIDTH,
+          100
+        )
+      )
+    )
+
     // Synth engine parameters
     modulatedValues.detune = Math.max(
       0,
@@ -829,7 +863,7 @@ export class AudioEngine {
     modulatedValues.noiseFilterCutoff = Math.max(
       20,
       Math.min(
-        20000,
+        10000,
         applyLFOModulation(
           this.baseNoiseFilterCutoff,
           LFODestination.NOISE_FILTER_CUTOFF,
@@ -1000,7 +1034,11 @@ export class AudioEngine {
         break
       case LFODestination.FX_DELAY_TIME:
         if (this.currentPreset) {
-          this.pipeline.setDelayTime(this.currentPreset.masterEffects.delayTime)
+          this.pipeline.setDelayTimeWithSync(
+            this.currentPreset.masterEffects.delayTime,
+            this.currentPreset.masterEffects.delaySync,
+            this.currentPreset.masterEffects.delaySyncValue
+          )
         }
         break
       case LFODestination.FX_CHORUS_WET:
@@ -1011,6 +1049,11 @@ export class AudioEngine {
       case LFODestination.FX_DISTORTION_WET:
         if (this.currentPreset) {
           this.pipeline.setDistortionWet(this.currentPreset.masterEffects.distortionWet)
+        }
+        break
+      case LFODestination.FX_STEREO_WIDTH:
+        if (this.currentPreset) {
+          this.pipeline.setStereoWidth(this.currentPreset.masterEffects.stereoWidth)
         }
         break
       // Per-voice destinations and LFO rates don't need reset (handled by voice lifecycle)
@@ -1120,8 +1163,12 @@ export class AudioEngine {
     if (params.delayWet !== undefined) {
       this.pipeline.setDelayWet(params.delayWet)
     }
-    if (params.delayTime !== undefined) {
-      this.pipeline.setDelayTime(params.delayTime)
+    if (params.delayTime !== undefined || params.delaySync !== undefined || params.delaySyncValue !== undefined) {
+      this.pipeline.setDelayTimeWithSync(
+        params.delayTime ?? this.currentPreset.masterEffects.delayTime,
+        params.delaySync ?? this.currentPreset.masterEffects.delaySync,
+        params.delaySyncValue ?? this.currentPreset.masterEffects.delaySyncValue
+      )
     }
     if (params.delayFeedback !== undefined) {
       this.pipeline.setDelayFeedback(params.delayFeedback)
@@ -1140,6 +1187,9 @@ export class AudioEngine {
     }
     if (params.distortionAmount !== undefined) {
       this.pipeline.setDistortionAmount(params.distortionAmount)
+    }
+    if (params.stereoWidth !== undefined) {
+      this.pipeline.setStereoWidth(params.stereoWidth)
     }
   }
 

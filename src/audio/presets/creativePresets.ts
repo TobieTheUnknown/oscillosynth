@@ -60,11 +60,14 @@ const evolvingPad: Preset = {
     delayWet: 0.25,
     delayTime: 0.375,
     delayFeedback: 0.5,
+    delaySync: true,
+    delaySyncValue: '1/4',
     chorusWet: 0.35,
     chorusFrequency: 1.2,
     chorusDepth: 0.8,
     distortionWet: 0,
     distortionAmount: 0,
+    stereoWidth: 100,
   },
 
   synthEngine: {
@@ -120,11 +123,14 @@ const digitalChaos: Preset = {
     delayWet: 0.3,
     delayTime: 0.125,
     delayFeedback: 0.6,
+    delaySync: true,
+    delaySyncValue: '1/8',
     chorusWet: 0.15,
     chorusFrequency: 3.5,
     chorusDepth: 0.5,
     distortionWet: 0.5,
     distortionAmount: 0.7,
+    stereoWidth: 100,
   },
 
   synthEngine: {
@@ -179,11 +185,14 @@ const morphingBass: Preset = {
     delayWet: 0.2,
     delayTime: 0.25,
     delayFeedback: 0.4,
+    delaySync: true,
+    delaySyncValue: '1/4',
     chorusWet: 0.25,
     chorusFrequency: 0.8,
     chorusDepth: 0.9,
     distortionWet: 0.3,
     distortionAmount: 0.5,
+    stereoWidth: 100,
   },
 
   synthEngine: {
@@ -238,11 +247,14 @@ const spaceLead: Preset = {
     delayWet: 0.45,
     delayTime: 0.5,
     delayFeedback: 0.7,
+    delaySync: true,
+    delaySyncValue: '1/2',
     chorusWet: 0.4,
     chorusFrequency: 2.0,
     chorusDepth: 0.85,
     distortionWet: 0.1,
     distortionAmount: 0.3,
+    stereoWidth: 100,
   },
 
   synthEngine: {
@@ -297,11 +309,14 @@ const rhythmicTexture: Preset = {
     delayWet: 0.35,
     delayTime: 0.1875, // Dotted 16th
     delayFeedback: 0.55,
+    delaySync: true,
+    delaySyncValue: '1/8',
     chorusWet: 0.2,
     chorusFrequency: 4.0,
     chorusDepth: 0.6,
     distortionWet: 0.4,
     distortionAmount: 0.6,
+    stereoWidth: 100,
   },
 
   synthEngine: {

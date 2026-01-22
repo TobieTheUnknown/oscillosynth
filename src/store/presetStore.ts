@@ -17,16 +17,43 @@ import { factoryPresets, defaultPreset, defaultSynthEngine } from '../audio/pres
 import { audioEngine } from '../audio/AudioEngine'
 
 /**
- * Migration helper: Add synthEngine to old presets that don't have it
+ * Migration helper: Add missing parameters to old presets
+ * Ensures all presets have complete masterEffects and synthEngine
  */
 function migratePreset(preset: any): Preset {
-  if (!preset.synthEngine) {
-    return {
-      ...preset,
-      synthEngine: defaultSynthEngine,
-    }
+  // Migrate masterEffects - add any missing parameters with defaults
+  const migratedMasterEffects: MasterEffectsParams = {
+    reverbWet: preset.masterEffects?.reverbWet ?? 0,
+    reverbDecay: preset.masterEffects?.reverbDecay ?? 2.5,
+    reverbPreDelay: preset.masterEffects?.reverbPreDelay ?? 0.01,
+    delayWet: preset.masterEffects?.delayWet ?? 0,
+    delayTime: preset.masterEffects?.delayTime ?? 0.25,
+    delayFeedback: preset.masterEffects?.delayFeedback ?? 0.3,
+    delaySync: preset.masterEffects?.delaySync ?? true,
+    delaySyncValue: preset.masterEffects?.delaySyncValue ?? '1/4',
+    chorusWet: preset.masterEffects?.chorusWet ?? 0,
+    chorusFrequency: preset.masterEffects?.chorusFrequency ?? 1.5,
+    chorusDepth: preset.masterEffects?.chorusDepth ?? 0.7,
+    distortionWet: preset.masterEffects?.distortionWet ?? 0,
+    distortionAmount: preset.masterEffects?.distortionAmount ?? 0.4,
+    stereoWidth: preset.masterEffects?.stereoWidth ?? 100,
   }
-  return preset as Preset
+
+  // Migrate synthEngine - add any missing parameters with defaults
+  const migratedSynthEngine: SynthEngineParams = {
+    detune: preset.synthEngine?.detune ?? 0,
+    fmIndex: preset.synthEngine?.fmIndex ?? 100,
+    feedback: preset.synthEngine?.feedback ?? 0,
+    subOscLevel: preset.synthEngine?.subOscLevel ?? 0,
+    stereoSpread: preset.synthEngine?.stereoSpread ?? 0,
+    brightness: preset.synthEngine?.brightness ?? 0,
+  }
+
+  return {
+    ...preset,
+    masterEffects: migratedMasterEffects,
+    synthEngine: migratedSynthEngine,
+  } as Preset
 }
 
 interface PresetStore {

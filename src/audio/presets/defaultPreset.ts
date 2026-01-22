@@ -24,11 +24,14 @@ const defaultMasterEffects: MasterEffectsParams = {
   delayWet: 0,
   delayTime: 0.25,
   delayFeedback: 0.3,
+  delaySync: true,
+  delaySyncValue: '1/4',
   chorusWet: 0,
   chorusFrequency: 1.5,
   chorusDepth: 0.7,
   distortionWet: 0,
   distortionAmount: 0.4,
+  stereoWidth: 100, // 100% = normal stereo (no effect)
 }
 
 export const defaultSynthEngine: SynthEngineParams = {

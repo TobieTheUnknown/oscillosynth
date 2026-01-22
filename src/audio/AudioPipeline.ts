@@ -11,7 +11,12 @@ export class AudioPipeline {
   private delay: Tone.FeedbackDelay
   private chorus: Tone.Chorus
   private distortion: Tone.Distortion
-  private stereoWidener: Tone.StereoWidener
+  // Custom stereo width control using Mid/Side processing + micro-detune
+  private midSideSplit: Tone.MidSideSplit
+  private midGain: Tone.Gain
+  private sideGain: Tone.Gain
+  private sideChorus: Tone.Chorus // Subtle chorus on Side channel for enhanced width
+  private midSideMerge: Tone.MidSideMerge
   private limiter: Tone.Limiter
   private analyser: Tone.Analyser
   private stereoAnalyser: Tone.Analyser
@@ -23,7 +28,7 @@ export class AudioPipeline {
     // Low-pass filter 24dB (4-pole)
     this.filter = new Tone.Filter({
       type: 'lowpass',
-      frequency: 20000, // Full range par défaut
+      frequency: 10000, // 10kHz max par défaut
       rolloff: -24, // 24dB/octave
       Q: 1,
     })
@@ -38,6 +43,7 @@ export class AudioPipeline {
     this.delay = new Tone.FeedbackDelay({
       delayTime: 0.25,
       feedback: 0.3,
+      maxDelay: 2, // Max 2 seconds - CRITICAL: allows delay times up to 2s
     })
 
     // Chorus
@@ -52,8 +58,20 @@ export class AudioPipeline {
       distortion: 0.4,
     })
 
-    // Stereo Widener (width: 0=mono, 1=normal stereo, >1=wide)
-    this.stereoWidener = new Tone.StereoWidener(0) // Start with normal stereo (no widening)
+    // Custom Stereo Width control using Mid/Side processing + micro-chorus
+    // This allows: 0% = mono, 100% = normal stereo, 200% = ultra-wide stereo
+    this.midSideSplit = new Tone.MidSideSplit()
+    this.midGain = new Tone.Gain(1.0) // Mid channel (L+R) - always 1.0
+    this.sideGain = new Tone.Gain(1.0) // Side channel (L-R) - controls width (1.0 = 100% = normal)
+
+    // Micro-chorus on Side channel for enhanced stereo imaging
+    this.sideChorus = new Tone.Chorus({
+      frequency: 0.3, // Very slow modulation
+      delayTime: 8, // Subtle delay
+      depth: 0, // Start at 0, will be controlled by width
+    }).start()
+
+    this.midSideMerge = new Tone.MidSideMerge()
 
     // Limiter anti-clipping
     this.limiter = new Tone.Limiter(-0.3) // -0.3dB ceiling
@@ -82,7 +100,9 @@ export class AudioPipeline {
     // Output gain
     this.output = new Tone.Gain(1.0)
 
-    // Routing: filter → distortion → chorus → delay → reverb → stereoWidener → limiter → analysers → output
+    // Routing: filter → distortion → chorus → delay → [Mid/Side Width] → reverb → limiter → analysers → output
+    // Mid/Side width placed BEFORE reverb so reverb affects the widened signal
+    // Mid/Side chain: split → (mid gain + side gain) → merge
     // Follower taps after limiter (same point as analyser) for amplitude tracking
     // Follower → Meter for reading smoothed amplitude
     // Both mono and stereo analysers tap after limiter for visualization
@@ -90,9 +110,18 @@ export class AudioPipeline {
     this.filter.connect(this.distortion)
     this.distortion.connect(this.chorus)
     this.chorus.connect(this.delay)
-    this.delay.connect(this.reverb)
-    this.reverb.connect(this.stereoWidener)
-    this.stereoWidener.connect(this.limiter)
+
+    // Mid/Side stereo width processing with micro-chorus on Side
+    this.delay.connect(this.midSideSplit)
+    this.midSideSplit.mid.connect(this.midGain)
+    this.midSideSplit.side.connect(this.sideGain)
+    this.midGain.connect(this.midSideMerge.mid)
+    // Side channel goes through gain → chorus → merge for enhanced width
+    this.sideGain.connect(this.sideChorus)
+    this.sideChorus.connect(this.midSideMerge.side)
+    this.midSideMerge.connect(this.reverb)
+
+    this.reverb.connect(this.limiter)
     this.limiter.connect(this.analyser)
     this.limiter.connect(this.stereoAnalyser)
     this.limiter.connect(this.follower)
@@ -139,7 +168,7 @@ export class AudioPipeline {
    * Set filter cutoff frequency
    */
   setFilterCutoff(frequency: number): void {
-    const clampedFreq = Math.max(20, Math.min(20000, frequency))
+    const clampedFreq = Math.max(20, Math.min(10000, frequency))
     // Smooth filter changes to avoid zipper noise (5ms ramp)
     this.filter.frequency.rampTo(clampedFreq, 0.005)
   }
@@ -249,6 +278,47 @@ export class AudioPipeline {
     this.delay.delayTime.value = Math.max(0, Math.min(2, time))
   }
 
+  /**
+   * Set delay time with optional tempo sync
+   * If sync is true, syncValue is used to calculate time based on BPM
+   */
+  setDelayTimeWithSync(time: number, sync: boolean, syncValue?: string): void {
+    if (sync && syncValue) {
+      const convertedTime = this.syncValueToSeconds(syncValue)
+      this.delay.delayTime.value = Math.max(0, Math.min(2, convertedTime))
+    } else {
+      this.setDelayTime(time)
+    }
+  }
+
+  /**
+   * Convert sync value (musical notation) to seconds based on current BPM
+   * e.g., '1/4' = quarter note, '1/8' = eighth note, etc.
+   */
+  private syncValueToSeconds(syncValue: string): number {
+    const bpm = Tone.Transport.bpm.value
+    const quarterNoteTime = 60 / bpm // Time for one quarter note in seconds
+
+    // Parse sync value (e.g., '1/4', '1/8', '2', etc.)
+    const fractionMatch = syncValue.match(/^(\d+)\/(\d+)$/)
+    const wholeMatch = syncValue.match(/^(\d+)$/)
+
+    if (fractionMatch) {
+      // Fractional note (e.g., '1/4', '1/8')
+      const numerator = parseInt(fractionMatch[1])
+      const denominator = parseInt(fractionMatch[2])
+      const beats = (4 / denominator) * numerator // Convert to quarter note beats
+      return quarterNoteTime * beats
+    } else if (wholeMatch) {
+      // Whole bars (e.g., '1', '2', '4')
+      const bars = parseInt(wholeMatch[1])
+      return quarterNoteTime * 4 * bars // 4 quarter notes per bar
+    }
+
+    // Default to quarter note if parse fails
+    return quarterNoteTime
+  }
+
   setDelayFeedback(feedback: number): void {
     this.delay.feedback.value = Math.max(0, Math.min(0.95, feedback))
   }
@@ -280,15 +350,42 @@ export class AudioPipeline {
   }
 
   /**
-   * Stereo Width controls
+   * Stereo Width controls using Mid/Side processing + micro-chorus
+   * Width: 0-200% where:
+   * - 0% = Mono (no side signal)
+   * - 100% = Normal stereo (side gain = 1, no chorus)
+   * - 200% = Ultra-wide stereo (side gain = 3.5, chorus active)
    */
   setStereoWidth(width: number): void {
-    // width: 0-200% where 100% = normal stereo (no effect)
-    // For Tone.StereoWidener: 0 = normal stereo, 1 = wide stereo
-    // Map: 100% → 0 (no effect), 200% → 1 (wide)
-    // For 0-100%: we just reduce the effect (0 = barely any effect)
-    const normalizedWidth = Math.max(0, Math.min(1, (width - 100) / 100))
-    this.stereoWidener.width.value = normalizedWidth
+    // Clamp to 0-200%
+    const clampedWidth = Math.max(0, Math.min(200, width))
+
+    // More aggressive side gain curve for drastic effect
+    // 0% → 0, 100% → 1, 200% → 3.5 (much wider than before)
+    let sideGainValue: number
+    if (clampedWidth <= 100) {
+      // Below 100%: Linear reduction to mono
+      sideGainValue = clampedWidth / 100
+    } else {
+      // Above 100%: Aggressive widening (1 to 3.5)
+      // Map 100-200% to 1.0-3.5
+      const excessWidth = (clampedWidth - 100) / 100 // 0 to 1
+      sideGainValue = 1 + excessWidth * 2.5 // 1 to 3.5
+    }
+
+    // Apply side gain
+    this.sideGain.gain.value = sideGainValue
+
+    // Activate micro-chorus progressively above 100% for enhanced width
+    if (clampedWidth > 100) {
+      const chorusAmount = (clampedWidth - 100) / 100 // 0 to 1
+      this.sideChorus.wet.value = Math.min(0.3, chorusAmount * 0.3) // Max 30% wet
+      this.sideChorus.depth = Math.min(0.5, chorusAmount * 0.5) // Max 50% depth
+    } else {
+      // No chorus below 100%
+      this.sideChorus.wet.value = 0
+      this.sideChorus.depth = 0
+    }
   }
 
   /**
@@ -314,7 +411,11 @@ export class AudioPipeline {
     this.delay.dispose()
     this.chorus.dispose()
     this.distortion.dispose()
-    this.stereoWidener.dispose()
+    this.midSideSplit.dispose()
+    this.midGain.dispose()
+    this.sideGain.dispose()
+    this.sideChorus.dispose()
+    this.midSideMerge.dispose()
     this.limiter.dispose()
     this.analyser.dispose()
     this.stereoAnalyser.dispose()

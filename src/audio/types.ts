@@ -49,6 +49,7 @@ export enum LFODestination {
   FX_DELAY_TIME = 'fx_delay_time',
   FX_CHORUS_WET = 'fx_chorus_wet',
   FX_DISTORTION_WET = 'fx_distortion_wet',
+  FX_STEREO_WIDTH = 'fx_stereo_width',
   // Noise generator
   NOISE_LEVEL = 'noise_level',
   NOISE_FILTER_CUTOFF = 'noise_filter_cutoff',
@@ -101,7 +102,7 @@ export interface LFOParams {
  */
 export interface FilterParams {
   type: 'lowpass' | 'highpass' | 'bandpass' | 'notch'
-  cutoff: number // 20 - 20000 Hz
+  cutoff: number // 20 - 10000 Hz
   resonance: number // 0 - 20 (Q factor)
 }
 
@@ -119,8 +120,10 @@ export interface MasterEffectsParams {
 
   // Delay
   delayWet: number // 0 - 1
-  delayTime: number // 0 - 2 seconds
+  delayTime: number // 0 - 2 seconds (free mode)
   delayFeedback: number // 0 - 0.95
+  delaySync: boolean // Sync tempo vs free-running
+  delaySyncValue?: string // '1/16', '1/8', '1/4', '1/2', '1', '2', '4', '8' bars
 
   // Chorus
   chorusWet: number // 0 - 1
@@ -130,6 +133,9 @@ export interface MasterEffectsParams {
   // Distortion
   distortionWet: number // 0 - 1
   distortionAmount: number // 0 - 1
+
+  // Stereo Width (placed before reverb)
+  stereoWidth: number // 0 - 200% (100% = normal stereo)
 }
 
 // REMOVED: LFOPairDepths - Simplified to individual LFOs only (no pairs)

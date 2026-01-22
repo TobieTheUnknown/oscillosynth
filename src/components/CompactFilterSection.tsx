@@ -84,7 +84,7 @@ export function CompactFilterSection({
           label="Cutoff"
           value={params.cutoff}
           min={20}
-          max={20000}
+          max={10000}
           step={10}
           unit="Hz"
           color="var(--color-idle)"
