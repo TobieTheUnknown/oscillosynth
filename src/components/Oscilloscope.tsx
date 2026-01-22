@@ -34,7 +34,7 @@ interface OscilloscopeProps {
 
 // Algorithm color mapping (hue values)
 const ALGORITHM_COLORS: Record<AlgorithmType, { hue: number; name: string; isDual?: boolean; hue2?: number }> = {
-  [AlgorithmType.SERIAL]: { hue: 120, name: 'METALLIC' }, // Green
+  [AlgorithmType.SERIAL]: { hue: 180, name: 'METALLIC' }, // Cyan (was green)
   [AlgorithmType.PARALLEL]: { hue: 30, name: 'WARM' }, // Orange
   [AlgorithmType.DUAL_SERIAL]: { hue: 180, name: 'COMPLEX', isDual: true, hue2: 300 }, // Cyan→Magenta
   [AlgorithmType.FAN_OUT]: { hue: 270, name: 'RICH' }, // Purple
@@ -294,7 +294,7 @@ function drawGrid(
   height: number
 ): void {
   // Grid lines (very dim)
-  ctx.strokeStyle = '#001a0a' // --color-trace-grid
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
   ctx.lineWidth = 1
 
   // Vertical lines
@@ -316,7 +316,7 @@ function drawGrid(
   }
 
   // Center line (brighter)
-  ctx.strokeStyle = 'rgba(0, 255, 65, 0.2)'
+  ctx.strokeStyle = 'rgba(78, 205, 196, 0.2)' // Cyan
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(0, height / 2)

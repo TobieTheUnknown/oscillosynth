@@ -44,7 +44,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
       ctx.fillRect(0, 0, width, height)
 
       // Draw grid
-      ctx.strokeStyle = 'rgba(0, 255, 65, 0.1)'
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
       ctx.lineWidth = 1
 
       // Horizontal lines
@@ -66,7 +66,7 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
       }
 
       // Draw center line
-      ctx.strokeStyle = 'rgba(0, 255, 65, 0.3)'
+      ctx.strokeStyle = 'rgba(78, 205, 196, 0.2)'
       ctx.beginPath()
       ctx.moveTo(0, height / 2)
       ctx.lineTo(width, height / 2)
@@ -76,16 +76,17 @@ export function MasterEffects({ params, onChange }: MasterEffectsProps) {
       const centerY = height / 2
       const amplitude = height * 0.4
 
-      // Color varies based on active effects
+      // Color varies based on active effects (cyan to rose gradient)
       let effectIntensity = 0
       effectIntensity += params.reverbWet * 0.25
       effectIntensity += params.delayWet * 0.25
       effectIntensity += params.chorusWet * 0.25
       effectIntensity += params.distortionWet * 0.25
 
-      const r = Math.floor(effectIntensity * 255)
-      const g = Math.floor(255 - effectIntensity * 100)
-      const b = Math.floor(65 + effectIntensity * 190)
+      // Interpolate between cyan (78, 205, 196) and rose (255, 107, 157)
+      const r = Math.floor(78 + effectIntensity * (255 - 78))
+      const g = Math.floor(205 - effectIntensity * (205 - 107))
+      const b = Math.floor(196 - effectIntensity * (196 - 157))
 
       ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`
       ctx.lineWidth = 2

@@ -9,9 +9,10 @@ import { audioEngine } from '../audio/AudioEngine'
 interface OscilloscopeXYProps {
   width?: number
   height?: number
+  children?: React.ReactNode
 }
 
-export function OscilloscopeXY({ width = 400, height = 400 }: OscilloscopeXYProps) {
+export function OscilloscopeXY({ width = 400, height = 400, children }: OscilloscopeXYProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export function OscilloscopeXY({ width = 400, height = 400 }: OscilloscopeXYProp
       ctx.fillRect(0, 0, width, height)
 
       // Draw grid
-      ctx.strokeStyle = 'rgba(0, 255, 65, 0.1)'
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
       ctx.lineWidth = 1
 
       // Center cross
@@ -58,20 +59,21 @@ export function OscilloscopeXY({ width = 400, height = 400 }: OscilloscopeXYProp
         ctx.stroke()
       }
 
-      // XY plot
+      // XY plot - use waveform with offset
       const centerX = width / 2
       const centerY = height / 2
       const scale = Math.min(width, height) * 0.4
 
       const points: Array<{ x: number; y: number }> = []
-
-      // Use waveform as X and Y with slight offset for Lissajous
       const halfLen = Math.floor(waveform.length / 2)
 
-      ctx.strokeStyle = '#00FF41'
+      // Get idle color from CSS variable
+      const idleColor = getComputedStyle(document.documentElement).getPropertyValue('--color-idle').trim() || '#4ECDC4'
+
+      ctx.strokeStyle = idleColor
       ctx.lineWidth = 2
-      ctx.shadowBlur = 8
-      ctx.shadowColor = '#00FF41'
+      ctx.shadowBlur = 10
+      ctx.shadowColor = idleColor
 
       ctx.beginPath()
       for (let i = 0; i < halfLen; i++) {
@@ -95,18 +97,22 @@ export function OscilloscopeXY({ width = 400, height = 400 }: OscilloscopeXYProp
         const end = points[points.length - 1]
 
         if (start && end) {
-          ctx.fillStyle = '#00FFFF'
+          // Start point - use idle color
+          ctx.fillStyle = idleColor
           ctx.shadowBlur = 12
-          ctx.shadowColor = '#00FFFF'
+          ctx.shadowColor = idleColor
           ctx.beginPath()
           ctx.arc(start.x, start.y, 3, 0, Math.PI * 2)
           ctx.fill()
 
-          ctx.fillStyle = '#FF00FF'
-          ctx.shadowColor = '#FF00FF'
+          // End point - slightly different shade
+          ctx.fillStyle = idleColor
+          ctx.shadowColor = idleColor
+          ctx.globalAlpha = 0.6
           ctx.beginPath()
           ctx.arc(end.x, end.y, 3, 0, Math.PI * 2)
           ctx.fill()
+          ctx.globalAlpha = 1
           ctx.shadowBlur = 0
         }
       }
@@ -157,6 +163,7 @@ export function OscilloscopeXY({ width = 400, height = 400 }: OscilloscopeXYProp
       >
         XY OSCILLOSCOPE
       </div>
+      {children}
     </div>
   )
 }

@@ -1,0 +1,465 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, Square, Activity, Waves, Zap, Plus, Trash2, Sliders, Pause, X, Power } from 'lucide-react';
+
+/**
+ * UTILS & CONSTANTS
+ */
+const WAVEFORMS = {
+  SINE: 'sine',
+  SQUARE: 'square',
+  SAW: 'saw',
+  TRIANGLE: 'triangle',
+  NOISE: 'noise',
+};
+
+const DESTINATIONS = [
+  'Unassigned',
+  'Filter Cutoff',
+  'Filter Res',
+  'Osc 1 Pitch',
+  'Osc 2 Pitch',
+  'Wavetable Pos',
+  'FM Amount',
+  'Reverb Mix',
+  'Delay Feedback'
+];
+
+// Math helpers for waveforms
+const getWaveValue = (type, time, frequency, phase = 0) => {
+  const t = time * frequency + phase;
+  const pi2 = Math.PI * 2;
+  
+  switch (type) {
+    case WAVEFORMS.SINE:
+      return Math.sin(t * pi2);
+    case WAVEFORMS.SQUARE:
+      return Math.sin(t * pi2) >= 0 ? 1 : -1;
+    case WAVEFORMS.SAW:
+      return 2 * (t - Math.floor(t + 0.5));
+    case WAVEFORMS.TRIANGLE:
+      return 2 * Math.abs(2 * (t - Math.floor(t + 0.5))) - 1;
+    case WAVEFORMS.NOISE:
+      return Math.random() * 2 - 1;
+    default:
+      return 0;
+  }
+};
+
+/**
+ * KNOB COMPONENT (Potentiomètre)
+ * Click and drag vertically to adjust
+ */
+const Knob = ({ value, min, max, onChange, label, unit, color, size = 60 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const startY = useRef(0);
+  const startValue = useRef(0);
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    startY.current = e.clientY;
+    startValue.current = value;
+    document.body.style.cursor = 'ns-resize';
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    const deltaY = startY.current - e.clientY;
+    const range = max - min;
+    const sensitivity = 0.5; // pixel to value ratio
+    // For smaller ranges (like rate 0-10), we need more pixel distance per value
+    const scale = range < 20 ? 0.05 : 1; 
+    
+    let newValue = startValue.current + deltaY * scale * sensitivity;
+    newValue = Math.min(Math.max(newValue, min), max);
+    
+    // Round to 1 decimal for rate, integer for others if needed
+    if (max <= 10) newValue = Math.round(newValue * 10) / 10;
+    else newValue = Math.round(newValue);
+
+    onChange(newValue);
+  }, [max, min, onChange]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    document.body.style.cursor = 'default';
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
+
+  // SVG Math for Arc
+  const radius = size / 2 - 4;
+  const circumference = 2 * Math.PI * radius;
+  const percentage = (value - min) / (max - min);
+  // We want a 270 degree arc (0.75 of circle), starting from bottom-left
+  const strokeDasharray = `${circumference * 0.75}`;
+  const strokeDashoffset = circumference * 0.75 * (1 - percentage);
+  const rotation = 135; // Start at 135 degrees (bottom left)
+
+  return (
+    <div className="flex flex-col items-center select-none group">
+      <div 
+        className="relative cursor-ns-resize transition-transform active:scale-95"
+        style={{ width: size, height: size }}
+        onMouseDown={handleMouseDown}
+      >
+        <svg width={size} height={size} className="transform -rotate-90">
+          {/* Background Track */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke="#262626"
+            strokeWidth="4"
+            strokeDasharray={strokeDasharray}
+            transform={`rotate(${rotation} ${size / 2} ${size / 2})`}
+            strokeLinecap="round"
+          />
+          {/* Value Arc */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke={color}
+            strokeWidth="4"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            transform={`rotate(${rotation} ${size / 2} ${size / 2})`}
+            strokeLinecap="round"
+            className={`transition-all duration-75 ${isDragging ? 'brightness-125' : ''}`}
+          />
+        </svg>
+        
+        {/* Inner Knob Visual */}
+        <div className="absolute inset-0 m-auto rounded-full bg-neutral-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border border-neutral-700 flex items-center justify-center pointer-events-none"
+             style={{ width: size * 0.7, height: size * 0.7 }}>
+           <div className="w-1 h-1/2 bg-neutral-600 rounded-full origin-bottom transform translate-y-[-25%]"
+                style={{ transform: `rotate(${percentage * 270 - 135}deg) translateY(-8px)` }}></div>
+        </div>
+      </div>
+
+      {/* Label & Value */}
+      <div className="mt-2 text-center">
+        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{label}</div>
+        <div className="text-xs font-mono font-bold" style={{ color: isDragging ? color : '#d4d4d4' }}>
+          {value}{unit}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 1. Oscilloscope Component (Canvas Visualization) - Compact
+const Oscilloscope = ({ type, rate, depth, color, isRunning }) => {
+  const canvasRef = useRef(null);
+  const requestRef = useRef();
+  const timeRef = useRef(0);
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerY = height / 2;
+    
+    // Clear
+    ctx.fillStyle = '#171717'; 
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw Grid
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#262626';
+    ctx.beginPath();
+    // Vertical lines
+    for(let i=0; i<width; i+=20) { ctx.moveTo(i, 0); ctx.lineTo(i, height); }
+    // Horizontal lines
+    for(let i=0; i<height; i+=20) { ctx.moveTo(0, i); ctx.lineTo(width, i); }
+    ctx.stroke();
+
+    // Center Line
+    ctx.strokeStyle = '#404040';
+    ctx.beginPath();
+    ctx.moveTo(0, centerY);
+    ctx.lineTo(width, centerY);
+    ctx.stroke();
+
+    // Draw Waveform
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    ctx.lineJoin = 'round';
+
+    const points = width; 
+    const timeWindow = 2; // seconds visible
+
+    for (let i = 0; i <= points; i++) {
+      const relativeTime = (i / width) * timeWindow - timeWindow; 
+      const actualTime = timeRef.current + relativeTime;
+      const value = getWaveValue(type, actualTime, rate);
+      const y = centerY - (value * (height / 2 - 4) * (depth / 100)); // tight fit
+      
+      if (i === 0) ctx.moveTo(i, y);
+      else ctx.lineTo(i, y);
+    }
+    ctx.stroke();
+
+    // Glow Effect (drawing same path with shadow)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = color;
+    ctx.stroke();
+    ctx.shadowBlur = 0; // reset
+
+    if (isRunning) timeRef.current += 0.015;
+    requestRef.current = requestAnimationFrame(draw);
+  }, [type, rate, depth, color, isRunning]);
+
+  useEffect(() => {
+    requestRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(requestRef.current);
+  }, [draw]);
+
+  return (
+    <div className="relative w-full h-24 bg-neutral-900 rounded border border-neutral-800 overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
+      <canvas ref={canvasRef} width={300} height={100} className="w-full h-full" />
+    </div>
+  );
+};
+
+// 2. Individual LFO Control Module
+const LFOModule = ({ lfo, updateLfo, deleteLfo }) => {
+  return (
+    <div className="bg-[#1e1e1e] rounded-lg border border-neutral-800 shadow-xl flex flex-col overflow-hidden relative group">
+      {/* Top Bar Accent */}
+      <div className="h-1 w-full" style={{ backgroundColor: lfo.color }}></div>
+      
+      {/* Header: Name & Destination */}
+      <div className="p-3 border-b border-neutral-800 bg-[#252525] flex justify-between items-start">
+        <div className="w-full">
+           <div className="flex justify-between items-center mb-2">
+              <h3 className="font-bold text-neutral-300 text-sm tracking-wider font-mono">LFO {lfo.id}</h3>
+              <div className="flex gap-2">
+                 <button 
+                  onClick={() => updateLfo(lfo.id, 'active', !lfo.active)}
+                  className={`p-1 rounded hover:bg-neutral-700 transition-colors ${lfo.active ? 'text-green-400' : 'text-neutral-600'}`}
+                  title="Toggle LFO"
+                >
+                  <Power size={14} />
+                </button>
+                <button onClick={() => deleteLfo(lfo.id)} className="text-neutral-600 hover:text-red-500 transition-colors">
+                  <X size={14} />
+                </button>
+              </div>
+           </div>
+           
+           {/* Destination Selector */}
+           <div className="relative">
+             <select 
+               value={lfo.destination}
+               onChange={(e) => updateLfo(lfo.id, 'destination', e.target.value)}
+               className="w-full bg-[#181818] text-xs text-neutral-300 font-mono border border-neutral-700 rounded px-2 py-1 appearance-none hover:border-neutral-600 focus:outline-none focus:border-[color:var(--lfo-color)] cursor-pointer"
+               style={{ '--lfo-color': lfo.color }}
+             >
+               {DESTINATIONS.map(dest => <option key={dest} value={dest}>{dest.toUpperCase()}</option>)}
+             </select>
+             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+               <div className="w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[4px] border-t-neutral-500"></div>
+             </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Main Body */}
+      <div className="p-3 space-y-3">
+        {/* Viz */}
+        <Oscilloscope 
+          type={lfo.type} 
+          rate={lfo.rate} 
+          depth={lfo.depth} 
+          color={lfo.active ? lfo.color : '#404040'}
+          isRunning={lfo.active}
+        />
+
+        {/* Controls Row */}
+        <div className="flex items-start justify-between gap-2 pt-1">
+          
+          {/* Waveforms (Vertical Stack for compactness) */}
+          <div className="flex flex-col gap-1 bg-neutral-900/50 p-1 rounded border border-neutral-800">
+             {[
+              { type: WAVEFORMS.SINE, icon: <Activity size={12} /> },
+              { type: WAVEFORMS.SQUARE, icon: <Square size={12} /> },
+              { type: WAVEFORMS.SAW, icon: <Zap size={12} /> },
+              { type: WAVEFORMS.TRIANGLE, icon: <Waves size={12} /> },
+            ].map((wave) => (
+              <button
+                key={wave.type}
+                onClick={() => updateLfo(lfo.id, 'type', wave.type)}
+                className={`p-1.5 rounded transition-all ${
+                  lfo.type === wave.type 
+                    ? 'text-white shadow-[0_0_8px_rgba(255,255,255,0.2)]'
+                    : 'text-neutral-600 hover:text-neutral-400'
+                }`}
+                style={{ backgroundColor: lfo.type === wave.type ? lfo.color : 'transparent' }}
+              >
+                {wave.icon}
+              </button>
+            ))}
+          </div>
+
+          {/* Knobs */}
+          <div className="flex-1 flex justify-around items-center bg-[#222] rounded border border-neutral-800 py-2 px-1">
+            <Knob 
+              label="RATE" 
+              value={lfo.rate} 
+              min={0.1} 
+              max={10.0} 
+              unit="Hz"
+              color={lfo.color} 
+              onChange={(v) => updateLfo(lfo.id, 'rate', v)}
+            />
+            <div className="w-px h-12 bg-neutral-800"></div>
+            <Knob 
+              label="DEPTH" 
+              value={lfo.depth} 
+              min={0} 
+              max={100} 
+              unit="%"
+              color={lfo.color} 
+              onChange={(v) => updateLfo(lfo.id, 'depth', v)}
+            />
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 3. Main Application Container
+export default function LFOInterface() {
+  const [lfos, setLfos] = useState([
+    { id: 1, destination: 'Filter Cutoff', type: WAVEFORMS.SINE, rate: 0.5, depth: 80, active: true, color: '#06b6d4' },
+    { id: 2, destination: 'Osc 1 Pitch', type: WAVEFORMS.SQUARE, rate: 4.2, depth: 25, active: true, color: '#ec4899' },
+    { id: 3, destination: 'Wavetable Pos', type: WAVEFORMS.SAW, rate: 0.2, depth: 100, active: true, color: '#84cc16' },
+    { id: 4, destination: 'Reverb Mix', type: WAVEFORMS.TRIANGLE, rate: 1.5, depth: 60, active: true, color: '#f59e0b' },
+  ]);
+
+  const [globalPlay, setGlobalPlay] = useState(true);
+
+  // Actions
+  const updateLfo = (id, key, value) => {
+    setLfos(prev => prev.map(lfo => 
+      lfo.id === id ? { ...lfo, [key]: value } : lfo
+    ));
+  };
+
+  const addLfo = () => {
+    const newId = Math.max(...lfos.map(l => l.id), 0) + 1;
+    const colors = ['#f59e0b', '#8b5cf6', '#14b8a6', '#f43f5e', '#3b82f6', '#eab308'];
+    const randomColor = colors[(newId - 1) % colors.length];
+    
+    setLfos([
+      ...lfos,
+      { 
+        id: newId, 
+        destination: 'Unassigned', 
+        type: WAVEFORMS.SINE, 
+        rate: 1.0, 
+        depth: 50, 
+        active: true, 
+        color: randomColor 
+      }
+    ]);
+  };
+
+  const deleteLfo = (id) => {
+    setLfos(prev => prev.filter(l => l.id !== id));
+  };
+
+  const toggleGlobalPlay = () => {
+    const newState = !globalPlay;
+    setGlobalPlay(newState);
+    setLfos(prev => prev.map(l => ({ ...l, active: newState })));
+  };
+
+  return (
+    <div className="min-h-screen bg-[#121212] text-neutral-200 font-sans selection:bg-neutral-700 selection:text-white pb-20">
+      
+      {/* Rack Mount Header */}
+      <header className="sticky top-0 z-50 bg-[#1a1a1a] border-b border-neutral-800 px-6 py-3 flex justify-between items-center shadow-lg">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 bg-gradient-to-br from-neutral-700 to-neutral-800 rounded flex items-center justify-center shadow-inner border border-neutral-600">
+            <Sliders className="text-cyan-500" size={18} />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-widest text-neutral-300 font-mono">MOD_RACK <span className="text-cyan-600 text-xs">v2.0</span></h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* BPM / Global Rate (Fake) */}
+          <div className="hidden sm:flex bg-black/40 rounded border border-neutral-800 px-3 py-1 items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+            <span className="font-mono text-xs text-red-500">128 BPM</span>
+          </div>
+
+          <button 
+            onClick={toggleGlobalPlay}
+            className={`w-10 h-10 rounded flex items-center justify-center transition-all ${
+              globalPlay 
+                ? 'bg-neutral-800 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)] border border-cyan-900' 
+                : 'bg-neutral-800 text-neutral-500 border border-neutral-700'
+            }`}
+          >
+            {globalPlay ? <Pause size={18} /> : <Play size={18} />}
+          </button>
+          
+          <button 
+            onClick={addLfo}
+            className="w-10 h-10 bg-neutral-800 hover:bg-neutral-700 rounded border border-neutral-700 text-neutral-400 hover:text-white flex items-center justify-center transition-colors"
+            title="Add Module"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
+      </header>
+
+      {/* Main Rack Area */}
+      <main className="p-4 sm:p-6 max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {lfos.map(lfo => (
+            <LFOModule 
+              key={lfo.id} 
+              lfo={lfo} 
+              updateLfo={updateLfo}
+              deleteLfo={deleteLfo}
+            />
+          ))}
+          
+          {/* Empty Rack Slot (Add Button Placeholder) */}
+          <div 
+            onClick={addLfo}
+            className="min-h-[220px] rounded-lg border-2 border-dashed border-neutral-800 hover:border-neutral-700 flex flex-col items-center justify-center cursor-pointer transition-colors group"
+          >
+            <Plus className="text-neutral-700 group-hover:text-neutral-500 mb-2" size={40} />
+            <span className="text-xs font-mono text-neutral-700 group-hover:text-neutral-500">INSTALL MODULE</span>
+          </div>
+        </div>
+      </main>
+      
+      {/* Screw holes for rack aesthetic */}
+      <div className="fixed left-2 top-1/2 -translate-y-1/2 flex flex-col gap-96 opacity-20 pointer-events-none hidden xl:flex">
+         <div className="w-3 h-3 rounded-full bg-neutral-800 shadow-inner"></div>
+         <div className="w-3 h-3 rounded-full bg-neutral-800 shadow-inner"></div>
+      </div>
+      <div className="fixed right-2 top-1/2 -translate-y-1/2 flex flex-col gap-96 opacity-20 pointer-events-none hidden xl:flex">
+         <div className="w-3 h-3 rounded-full bg-neutral-800 shadow-inner"></div>
+         <div className="w-3 h-3 rounded-full bg-neutral-800 shadow-inner"></div>
+      </div>
+
+    </div>
+  );
+}

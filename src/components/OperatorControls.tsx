@@ -18,7 +18,7 @@ export function OperatorControls({
   params,
   onChange,
 }: OperatorControlsProps) {
-  const color = ['#00FF41', '#00FFFF', '#FFFF00', '#FF64FF'][operatorNumber - 1] ?? '#00FF41'
+  const color = ['#4ECDC4', '#FF6B9D', '#FFE66D', '#8A2BE2'][operatorNumber - 1] ?? '#4ECDC4'
 
   return (
     <div

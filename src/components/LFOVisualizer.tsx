@@ -13,16 +13,16 @@ interface LFOVisualizerProps {
   height?: number
 }
 
-// LFO colors (phosphor variations) - 8 LFOs
+// LFO colors (modern digital palette) - 8 LFOs
 const LFO_COLORS = [
-  'rgba(0, 255, 65, 0.8)', // LFO 1: Green
-  'rgba(0, 255, 255, 0.8)', // LFO 2: Cyan
-  'rgba(255, 255, 0, 0.8)', // LFO 3: Yellow
-  'rgba(255, 100, 255, 0.8)', // LFO 4: Magenta
-  'rgba(100, 200, 255, 0.8)', // LFO 5: Sky Blue
-  'rgba(255, 150, 100, 0.8)', // LFO 6: Orange
-  'rgba(150, 255, 150, 0.8)', // LFO 7: Light Green
-  'rgba(255, 100, 150, 0.8)', // LFO 8: Pink
+  'rgba(78, 205, 196, 0.8)', // LFO 1: Cyan
+  'rgba(255, 107, 157, 0.8)', // LFO 2: Rose
+  'rgba(255, 230, 109, 0.8)', // LFO 3: Yellow
+  'rgba(138, 43, 226, 0.8)', // LFO 4: Violet
+  'rgba(107, 157, 255, 0.8)', // LFO 5: Blue
+  'rgba(255, 165, 0, 0.8)', // LFO 6: Orange
+  'rgba(78, 205, 196, 0.6)', // LFO 7: Cyan (lighter)
+  'rgba(255, 100, 100, 0.8)', // LFO 8: Red
 ]
 
 const COMBINED_COLOR = 'rgba(255, 255, 255, 1.0)' // White for combined
@@ -101,8 +101,8 @@ export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps)
         // Draw LFO 1 and LFO 2 of this pair
         const lfo1 = lfoEngine.getLFO(lfo1Index)
         const lfo2 = lfoEngine.getLFO(lfo2Index)
-        const color1 = LFO_COLORS[lfo1Index] ?? LFO_COLORS[0] ?? 'rgba(0, 255, 65, 0.8)'
-        const color2 = LFO_COLORS[lfo2Index] ?? LFO_COLORS[1] ?? 'rgba(0, 255, 255, 0.8)'
+        const color1 = LFO_COLORS[lfo1Index] ?? LFO_COLORS[0] ?? 'rgba(78, 205, 196, 0.8)'
+        const color2 = LFO_COLORS[lfo2Index] ?? LFO_COLORS[1] ?? 'rgba(255, 107, 157, 0.8)'
 
         drawLFOInSection(ctx, lfo1, 0, width, sectionHeight, phase, color1, yOffset)
         drawLFOInSection(ctx, lfo2, 1, width, sectionHeight, phase, color2, yOffset)
@@ -180,7 +180,7 @@ export function LFOVisualizer({ width = 800, height = 400 }: LFOVisualizerProps)
  * Draw grid
  */
 function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-  ctx.strokeStyle = '#001a0a' // Dim grid
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)' // Dim grid
   ctx.lineWidth = 1
 
   // Vertical lines
@@ -202,7 +202,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number):
   }
 
   // Center line (brighter)
-  ctx.strokeStyle = 'rgba(0, 255, 65, 0.15)'
+  ctx.strokeStyle = 'rgba(78, 205, 196, 0.15)' // Cyan center line
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(0, height / 2)

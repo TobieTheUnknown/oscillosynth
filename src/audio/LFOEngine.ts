@@ -1,14 +1,10 @@
 /**
  * LFO Engine
- * Système de 8 LFOs avec combinaison par paires
- * Paire 1 (LFO 1+2) → Pitch modulation
- * Paire 2 (LFO 3+4) → Amplitude modulation
- * Paire 3 (LFO 5+6) → Filter Cutoff modulation
- * Paire 4 (LFO 7+8) → User-defined destination
+ * Système de 4 LFOs individuels
  */
 
 import * as Tone from 'tone'
-import { LFOParams, LFOCombineMode, WaveformType, LFODestination } from './types'
+import { LFOParams, WaveformType, LFODestination } from './types'
 
 export class LFO {
   public params: LFOParams // Public pour accès aux destinations
@@ -44,7 +40,33 @@ export class LFO {
 
     if (params.sync !== undefined) {
       this.params.sync = params.sync
-      // TODO: Implémenter tempo sync dans Phase 2
+    }
+
+    if (params.syncValue !== undefined) {
+      this.params.syncValue = params.syncValue
+    }
+  }
+
+  /**
+   * Convert sync division to frequency in Hz based on current BPM
+   */
+  private syncDivisionToFrequency(division: string): number {
+    const bpm = Tone.Transport.bpm.value
+    const bps = bpm / 60 // beats per second
+
+    // Parse division string (e.g., "1/4", "1/8", "1", "2")
+    if (division.includes('/')) {
+      const parts = division.split('/').map(Number)
+      const num = parts[0] ?? 1
+      const denom = parts[1] ?? 4
+      // 1/4 = quarter note = 1 beat, 1/8 = eighth note = 0.5 beats, etc.
+      const beats = (num / denom) * 4 // Convert to beats (4 beats per bar)
+      return bps / beats
+    } else {
+      // Whole numbers represent bars (1 bar = 4 beats)
+      const bars = Number(division)
+      const beats = bars * 4
+      return bps / beats
     }
   }
 
@@ -52,7 +74,12 @@ export class LFO {
    * Calcule la valeur du waveform à un temps donné
    */
   private computeWaveform(t: number): number {
-    const phase = (t * this.params.rate * Math.PI * 2 + this.phase) % (Math.PI * 2)
+    // Use synced frequency if sync is enabled, otherwise use rate
+    const frequency = this.params.sync && this.params.syncValue
+      ? this.syncDivisionToFrequency(this.params.syncValue)
+      : this.params.rate
+
+    const phase = (t * frequency * Math.PI * 2 + this.phase) % (Math.PI * 2)
 
     switch (this.params.waveform) {
       case WaveformType.SINE:
@@ -100,132 +127,67 @@ export class LFO {
  * Paire 4 (LFO 7+8) → Destination définie dans params
  */
 export class LFOEngine {
-  private lfos: [LFO, LFO, LFO, LFO, LFO, LFO, LFO, LFO]
-  private combineMode: LFOCombineMode
+  private lfos: [LFO, LFO, LFO, LFO]
 
-  constructor(
-    lfoParams: [
-      LFOParams,
-      LFOParams,
-      LFOParams,
-      LFOParams,
-      LFOParams,
-      LFOParams,
-      LFOParams,
-      LFOParams
-    ],
-    combineMode: LFOCombineMode = LFOCombineMode.ADD
-  ) {
-    this.combineMode = combineMode
-
-    // Créer 8 LFOs
+  constructor(lfoParams: [LFOParams, LFOParams, LFOParams, LFOParams]) {
+    // Créer 4 LFOs
     this.lfos = [
       new LFO(lfoParams[0]),
       new LFO(lfoParams[1]),
       new LFO(lfoParams[2]),
       new LFO(lfoParams[3]),
-      new LFO(lfoParams[4]),
-      new LFO(lfoParams[5]),
-      new LFO(lfoParams[6]),
-      new LFO(lfoParams[7]),
     ]
 
-    console.log('✅ LFO Engine created with 8 LFOs in 4 pairs')
-  }
-
-  /**
-   * Calcule la valeur combinée d'une paire de LFOs
-   */
-  private computePairValue(lfo1: LFO, lfo2: LFO): number {
-    const val1 = lfo1.getValue()
-    const val2 = lfo2.getValue()
-
-    switch (this.combineMode) {
-      case LFOCombineMode.ADD:
-        // ADD: moyenne des deux LFOs (clamped -1 to 1)
-        return Math.max(-1, Math.min(1, (val1 + val2) / 2))
-
-      case LFOCombineMode.MULTIPLY:
-        // MULTIPLY: produit des deux LFOs
-        return val1 * val2
-
-      case LFOCombineMode.MIN:
-        // MIN: minimum des deux LFOs
-        return Math.min(val1, val2)
-
-      case LFOCombineMode.MAX:
-        // MAX: maximum des deux LFOs
-        return Math.max(val1, val2)
-
-      default:
-        return val1
-    }
-  }
-
-  /**
-   * Update combine mode
-   */
-  updateCombineMode(mode: LFOCombineMode): void {
-    this.combineMode = mode
-    console.log(`✅ LFO combine mode: ${mode}`)
+    console.log('✅ LFO Engine created with 4 individual LFOs')
   }
 
   /**
    * Update un LFO spécifique
    */
-  updateLFO(index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>): void {
+  updateLFO(index: 0 | 1 | 2 | 3, params: Partial<LFOParams>): void {
     this.lfos[index].updateParams(params)
   }
 
   /**
    * Récupère un LFO spécifique
    */
-  getLFO(index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7): LFO {
+  getLFO(index: 0 | 1 | 2 | 3): LFO {
     return this.lfos[index]
   }
 
   /**
-   * Récupère la valeur combinée de la Paire 1 (LFO 1+2)
+   * Récupère la valeur du LFO 1
    */
-  getPair1Value(): number {
-    return this.computePairValue(this.lfos[0], this.lfos[1])
+  getLFO1Value(): number {
+    return this.lfos[0].getValue()
   }
 
   /**
-   * Récupère la valeur combinée de la Paire 2 (LFO 3+4)
+   * Récupère la valeur du LFO 2
    */
-  getPair2Value(): number {
-    return this.computePairValue(this.lfos[2], this.lfos[3])
+  getLFO2Value(): number {
+    return this.lfos[1].getValue()
   }
 
   /**
-   * Récupère la valeur combinée de la Paire 3 (LFO 5+6)
+   * Récupère la valeur du LFO 3
    */
-  getPair3Value(): number {
-    return this.computePairValue(this.lfos[4], this.lfos[5])
+  getLFO3Value(): number {
+    return this.lfos[2].getValue()
   }
 
   /**
-   * Récupère la valeur combinée de la Paire 4 (LFO 7+8)
+   * Récupère la valeur du LFO 4
    */
-  getPair4Value(): number {
-    return this.computePairValue(this.lfos[6], this.lfos[7])
+  getLFO4Value(): number {
+    return this.lfos[3].getValue()
   }
 
   /**
-   * Récupère la destination d'une paire de LFOs
+   * Récupère la destination d'un LFO
    */
-  getPairDestination(pairIndex: 1 | 2 | 3 | 4): LFODestination {
-    const lfoIndex = ((pairIndex - 1) * 2) as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
-    return this.lfos[lfoIndex]!.params.destination
-  }
-
-  /**
-   * Récupère la valeur combinée actuelle (legacy - maintenant utilise Paire 1)
-   * @deprecated Utiliser getPair1Value(), getPair2Value(), etc. à la place
-   */
-  getCombinedValue(): number {
-    return this.getPair1Value()
+  getLFODestination(lfoIndex: 0 | 1 | 2 | 3): LFODestination {
+    return this.lfos[lfoIndex].params.destination
   }
 
   /**

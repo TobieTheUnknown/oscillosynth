@@ -14,7 +14,10 @@ interface KnobProps {
   defaultValue?: number // Value to reset to on double-click (defaults to middle of range)
   onChange: (value: number) => void
   color?: string
+  connectionColor?: string | null // LFO connection color - overrides default color when connected (deprecated - use connectionColors)
+  connectionColors?: string[] // Multiple modulator colors (LFOs + envelope)
   unit?: string
+  hideNumericValue?: boolean // Hide the numeric value display (show only unit)
   size?: 'sm' | 'md' | 'lg' | 'xl' // Visual hierarchy: sm=60px, md=80px(default), lg=96px, xl=120px
 }
 
@@ -26,8 +29,11 @@ export function Knob({
   step = 0.1,
   defaultValue,
   onChange,
-  color = '#00FF41',
+  color = 'var(--color-idle)',
+  connectionColor = null,
+  connectionColors = [],
   unit = '',
+  hideNumericValue = false,
   size = 'md',
 }: KnobProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -40,8 +46,17 @@ export function Knob({
   const startYRef = useRef(0)
   const startValueRef = useRef(0)
 
+  // Knob circle radius and circumference
+  const KNOB_RADIUS = 25
+  const KNOB_CIRCUMFERENCE = 2 * Math.PI * KNOB_RADIUS // ~157.08
+
   // Default value is middle of range if not specified
   const resetValue = defaultValue !== undefined ? defaultValue : (min + max) / 2
+
+  // Use connection colors if multiple modulators, or single connection color, or default color
+  const hasMultipleConnections = connectionColors.length > 0
+  const activeColors = hasMultipleConnections ? connectionColors : (connectionColor ? [connectionColor] : [color])
+  const activeColor = activeColors[0] // Primary color for UI elements
 
   // Map size prop to pixel values (matching CSS variables)
   const sizeMap = { sm: 60, md: 80, lg: 96, xl: 120 }
@@ -107,7 +122,7 @@ export function Knob({
     }
   }
 
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = (e: WheelEvent) => {
     if (isEditing) return
     e.preventDefault()
 
@@ -125,6 +140,17 @@ export function Knob({
       inputRef.current.select()
     }
   }, [isEditing])
+
+  // Register wheel event as non-passive to allow preventDefault
+  useEffect(() => {
+    const knobElement = knobRef.current
+    if (!knobElement) return
+
+    knobElement.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      knobElement.removeEventListener('wheel', handleWheel)
+    }
+  }, [isEditing, value, min, max, step, onChange])
 
   useEffect(() => {
     if (!isDragging) return
@@ -175,7 +201,6 @@ export function Knob({
       ref={knobRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onWheel={handleWheel}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -195,7 +220,7 @@ export function Knob({
         onDoubleClick={handleDoubleClick}
         style={{
           filter: isDragging
-            ? `drop-shadow(0 0 12px ${color}) drop-shadow(0 0 4px ${color})`
+            ? `drop-shadow(0 0 12px ${activeColor}) drop-shadow(0 0 4px ${activeColor})`
             : `drop-shadow(0 2px 4px rgba(0,0,0,0.5))`,
           transform: isBouncing ? 'scale(1.15)' : 'scale(1)',
           transition: isBouncing ? 'transform 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'transform 0.15s ease-out',
@@ -211,9 +236,9 @@ export function Knob({
 
           {/* Glow filter */}
           <filter id={`knob-glow-${label}`}>
-            <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+            <feGaussianBlur stdDeviation="1.5" result="activeColoredBlur"/>
             <feMerge>
-              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="activeColoredBlur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
@@ -237,7 +262,7 @@ export function Knob({
               y1={y1}
               x2={x2}
               y2={y2}
-              stroke={isActive ? color : '#333'}
+              stroke={isActive ? activeColor : '#333'}
               strokeWidth={i % 5 === 0 ? 2 : 1}
               opacity={isActive ? 0.8 : 0.3}
             />
@@ -250,7 +275,7 @@ export function Knob({
           cy="30"
           r="25"
           fill="none"
-          stroke={color}
+          stroke={activeColor}
           strokeWidth="1.5"
           opacity="0.2"
         />
@@ -261,7 +286,7 @@ export function Knob({
           cy="30"
           r="20"
           fill={`url(#knob-gradient-${label})`}
-          stroke={color}
+          stroke={activeColor}
           strokeWidth="2"
         />
 
@@ -275,20 +300,71 @@ export function Knob({
           opacity="0.1"
         />
 
-        {/* Value arc with glow */}
-        <circle
-          cx="30"
-          cy="30"
-          r="25"
-          fill="none"
-          stroke={color}
-          strokeWidth="3"
-          strokeDasharray={`${normalizedValue * 157} 157`}
-          strokeDashoffset="-39.25"
-          strokeLinecap="round"
-          opacity="0.9"
-          filter={`url(#knob-glow-${label})`}
-        />
+        {/* Background fixed arcs for multiple connections */}
+        {hasMultipleConnections && activeColors.map((connectionColor, index) => {
+          const totalArcs = activeColors.length
+          const segmentLength = KNOB_CIRCUMFERENCE / totalArcs
+          const segmentOffset = -(KNOB_CIRCUMFERENCE / 4) - (index * segmentLength)
+
+          return (
+            <circle
+              key={`bg-${index}`}
+              cx="30"
+              cy="30"
+              r={KNOB_RADIUS}
+              fill="none"
+              stroke={connectionColor}
+              strokeWidth="2"
+              strokeDasharray={`${segmentLength} ${KNOB_CIRCUMFERENCE}`}
+              strokeDashoffset={segmentOffset}
+              strokeLinecap="round"
+              opacity="0.15"
+            />
+          )
+        })}
+
+        {/* Value arc with glow - segmented for multiple connections */}
+        {hasMultipleConnections ? (
+          // Multiple arcs for multiple modulators
+          activeColors.map((connectionColor, index) => {
+            const totalArcs = activeColors.length
+            const segmentLength = KNOB_CIRCUMFERENCE / totalArcs
+            const arcLength = normalizedValue * segmentLength
+            const segmentOffset = -(KNOB_CIRCUMFERENCE / 4) - (index * segmentLength)
+
+            return (
+              <circle
+                key={index}
+                cx="30"
+                cy="30"
+                r={KNOB_RADIUS}
+                fill="none"
+                stroke={connectionColor}
+                strokeWidth="3"
+                strokeDasharray={`${arcLength} ${KNOB_CIRCUMFERENCE}`}
+                strokeDashoffset={segmentOffset}
+                strokeLinecap="round"
+                opacity="0.9"
+                filter={`url(#knob-glow-${label})`}
+              />
+            )
+          })
+        ) : (
+          // Single arc for single or no connection
+          <circle
+            cx="30"
+            cy="30"
+            r={KNOB_RADIUS}
+            fill="none"
+            stroke={activeColor}
+            strokeWidth="3"
+            strokeDasharray={`${normalizedValue * KNOB_CIRCUMFERENCE} ${KNOB_CIRCUMFERENCE}`}
+            strokeDashoffset={-(KNOB_CIRCUMFERENCE / 4)}
+            strokeLinecap="round"
+            opacity="0.9"
+            filter={`url(#knob-glow-${label})`}
+          />
+        )}
 
         {/* Pointer with glow */}
         <line
@@ -296,14 +372,14 @@ export function Knob({
           y1="30"
           x2="30"
           y2="12"
-          stroke={color}
+          stroke={activeColor}
           strokeWidth="3"
           strokeLinecap="round"
           transform={`rotate(${angle} 30 30)`}
           filter={`url(#knob-glow-${label})`}
         />
 
-        {/* Center dot with glow */}
+        {/* Center dot with glow - always idle color */}
         <circle
           cx="30"
           cy="30"
@@ -317,7 +393,7 @@ export function Knob({
       <div
         style={{
           fontSize: 'var(--font-size-xs)',
-          color: 'var(--color-text-secondary)',
+          activeColor: 'var(--activeColor-text-secondary)',
           fontFamily: 'var(--font-family-mono)',
           textAlign: 'center',
         }}
@@ -337,12 +413,12 @@ export function Knob({
           style={{
             width: `${knobSize}px`,
             fontSize: 'var(--font-size-sm)',
-            color: color,
+            activeColor: activeColor,
             fontFamily: 'var(--font-family-mono)',
             fontWeight: 'bold',
             textAlign: 'center',
             backgroundColor: '#000',
-            border: `1px solid ${color}`,
+            border: `1px solid ${activeColor}`,
             borderRadius: '2px',
             padding: '2px',
             outline: 'none',
@@ -353,22 +429,23 @@ export function Knob({
           onClick={handleValueClick}
           style={{
             fontSize: 'var(--font-size-sm)',
-            color: color,
+            activeColor: activeColor,
             fontFamily: 'var(--font-family-mono)',
             fontWeight: 'bold',
             cursor: 'text',
             padding: '2px 4px',
             borderRadius: '2px',
-            transition: 'background-color 0.2s',
+            transition: 'background-activeColor 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 255, 65, 0.1)'
+            e.currentTarget.style.backgroundColor = 'var(--color-hover)'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'transparent'
           }}
         >
-          {value.toFixed(step < 1 ? 1 : 0)}
+          {!hideNumericValue && value.toFixed(step < 1 ? 1 : 0)}
+          {hideNumericValue && '\u00A0'}
           {unit}
         </div>
       )}
@@ -378,7 +455,7 @@ export function Knob({
         <div
           style={{
             fontSize: 'var(--font-size-xs)',
-            color: sensitivityMode === 'ultra' ? '#FF6B00' : '#FFD700',
+            activeColor: sensitivityMode === 'ultra' ? '#FF6B00' : '#FFD700',
             fontFamily: 'var(--font-family-mono)',
             fontWeight: 'bold',
             textAlign: 'center',

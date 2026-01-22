@@ -11,13 +11,23 @@ import {
   OperatorParams,
   FilterParams,
   MasterEffectsParams,
-  EnvelopeFollowerParams,
-  StepSequencerParams,
-  PortamentoParams,
-  StereoWidthParams,
+  SynthEngineParams,
 } from '../audio/types'
-import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
+import { factoryPresets, defaultPreset, defaultSynthEngine } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
+
+/**
+ * Migration helper: Add synthEngine to old presets that don't have it
+ */
+function migratePreset(preset: any): Preset {
+  if (!preset.synthEngine) {
+    return {
+      ...preset,
+      synthEngine: defaultSynthEngine,
+    }
+  }
+  return preset as Preset
+}
 
 interface PresetStore {
   // State
@@ -31,15 +41,11 @@ interface PresetStore {
   saveUserPreset: (preset: Preset) => void
   deleteUserPreset: (presetId: string) => void
   initPresets: () => void
-  updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => void
-  updateCurrentPresetLFOPairDepth: (pairNumber: 1 | 2 | 3 | 4, depth: number) => void
+  updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => void
   updateCurrentPresetOperator: (index: 0 | 1 | 2 | 3, params: Partial<OperatorParams>) => void
   updateCurrentPresetFilter: (params: Partial<FilterParams>) => void
   updateCurrentPresetMasterEffects: (params: Partial<MasterEffectsParams>) => void
-  updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => void
-  updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => void
-  updateCurrentPresetPortamento: (params: Partial<PortamentoParams>) => void
-  updateCurrentPresetStereoWidth: (params: Partial<StereoWidthParams>) => void
+  updateCurrentPresetSynthEngine: (params: Partial<SynthEngineParams>) => void
 
   // Getters
   getCurrentPreset: () => Preset | null
@@ -97,13 +103,20 @@ export const usePresetStore = create<PresetStore>()(
           return
         }
 
+        // Migrate user presets (add synthEngine if missing)
+        const migratedUserPresets = get().userPresets.map(migratePreset)
+
         // Load default preset on init
         const preset = defaultPreset
         audioEngine.loadPreset(preset)
-        set({ currentPresetId: preset.id, isInitialized: true })
+        set({
+          currentPresetId: preset.id,
+          isInitialized: true,
+          userPresets: migratedUserPresets
+        })
       },
 
-      updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7, params: Partial<LFOParams>) => {
+      updateCurrentPresetLFO: (index: 0 | 1 | 2 | 3, params: Partial<LFOParams>) => {
         const currentPreset = get().getCurrentPreset()
         if (!currentPreset) {
           console.warn('No current preset to update')
@@ -114,64 +127,13 @@ export const usePresetStore = create<PresetStore>()(
         audioEngine.updateLFOParams(index, params)
 
         // Create updated LFOs array
-        const updatedLFOs = [...currentPreset.lfos] as [
-          LFOParams,
-          LFOParams,
-          LFOParams,
-          LFOParams,
-          LFOParams,
-          LFOParams,
-          LFOParams,
-          LFOParams
-        ]
+        const updatedLFOs = [...currentPreset.lfos] as [LFOParams, LFOParams, LFOParams, LFOParams]
         updatedLFOs[index] = { ...updatedLFOs[index]!, ...params }
 
         // Create updated preset
         const updatedPreset: Preset = {
           ...currentPreset,
           lfos: updatedLFOs,
-        }
-
-        // Update store (factory presets update won't persist, which is correct)
-        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
-        if (isFactoryPreset) {
-          // Update in presets array (temporary, won't persist)
-          set((state) => ({
-            presets: state.presets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        } else {
-          // Update in userPresets array (will persist)
-          set((state) => ({
-            userPresets: state.userPresets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        }
-
-        // Update AudioEngine reference so active voices use new preset values
-        audioEngine.updateCurrentPresetReference(updatedPreset)
-      },
-
-      updateCurrentPresetLFOPairDepth: (pairNumber: 1 | 2 | 3 | 4, depth: number) => {
-        const currentPreset = get().getCurrentPreset()
-        if (!currentPreset) {
-          console.warn('No current preset to update')
-          return
-        }
-
-        // Update pair depth in preset
-        const pairKey = `pair${pairNumber}` as 'pair1' | 'pair2' | 'pair3' | 'pair4'
-        const updatedLFOPairDepths = {
-          ...currentPreset.lfoPairDepths,
-          [pairKey]: depth,
-        }
-
-        // Create updated preset
-        const updatedPreset: Preset = {
-          ...currentPreset,
-          lfoPairDepths: updatedLFOPairDepths,
         }
 
         // Update store (factory presets update won't persist, which is correct)
@@ -313,7 +275,7 @@ export const usePresetStore = create<PresetStore>()(
         audioEngine.updateCurrentPresetReference(updatedPreset)
       },
 
-      updateCurrentPresetEnvelopeFollower: (params: Partial<EnvelopeFollowerParams>) => {
+      updateCurrentPresetSynthEngine: (params: Partial<SynthEngineParams>) => {
         const currentPreset = get().getCurrentPreset()
         if (!currentPreset) {
           console.warn('No current preset to update')
@@ -321,116 +283,13 @@ export const usePresetStore = create<PresetStore>()(
         }
 
         // Update live without stopping notes
-        audioEngine.updateEnvelopeFollowerParams(params)
+        audioEngine.updateSynthEngineParams(params)
 
         // Create updated preset
         const updatedPreset: Preset = {
           ...currentPreset,
-          envelopeFollower: { ...currentPreset.envelopeFollower, ...params },
+          synthEngine: { ...currentPreset.synthEngine, ...params },
         }
-
-        // Update store
-        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
-        if (isFactoryPreset) {
-          set((state) => ({
-            presets: state.presets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        } else {
-          set((state) => ({
-            userPresets: state.userPresets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        }
-
-        // Update AudioEngine reference so active voices use new preset values
-        audioEngine.updateCurrentPresetReference(updatedPreset)
-      },
-
-      updateCurrentPresetStepSequencer: (params: Partial<StepSequencerParams>) => {
-        const currentPreset = get().getCurrentPreset()
-        if (!currentPreset) {
-          console.warn('No current preset to update')
-          return
-        }
-
-        // Create updated preset
-        const updatedPreset: Preset = {
-          ...currentPreset,
-          stepSequencer: { ...currentPreset.stepSequencer, ...params },
-        }
-
-        // Reload preset in audio engine to re-setup step sequencer
-        audioEngine.loadPreset(updatedPreset)
-        // Note: loadPreset also calls updateCurrentPresetReference internally
-
-        // Update store
-        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
-        if (isFactoryPreset) {
-          set((state) => ({
-            presets: state.presets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        } else {
-          set((state) => ({
-            userPresets: state.userPresets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        }
-      },
-
-      updateCurrentPresetPortamento: (params: Partial<PortamentoParams>) => {
-        const currentPreset = get().getCurrentPreset()
-        if (!currentPreset) {
-          console.warn('No current preset to update')
-          return
-        }
-
-        // Create updated preset
-        const updatedPreset: Preset = {
-          ...currentPreset,
-          portamento: { ...currentPreset.portamento, ...params },
-        }
-
-        // Portamento only affects future noteOn calls, update reference without stopping voices
-        audioEngine.updateCurrentPresetReference(updatedPreset)
-
-        // Update store
-        const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
-        if (isFactoryPreset) {
-          set((state) => ({
-            presets: state.presets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        } else {
-          set((state) => ({
-            userPresets: state.userPresets.map((p) =>
-              p.id === currentPreset.id ? updatedPreset : p
-            ),
-          }))
-        }
-      },
-
-      updateCurrentPresetStereoWidth: (params: Partial<StereoWidthParams>) => {
-        const currentPreset = get().getCurrentPreset()
-        if (!currentPreset) {
-          console.warn('No current preset to update')
-          return
-        }
-
-        // Create updated preset
-        const updatedPreset: Preset = {
-          ...currentPreset,
-          stereoWidth: { ...currentPreset.stereoWidth, ...params },
-        }
-
-        // Update stereo width in audio engine (live update)
-        audioEngine.updateStereoWidthParams(updatedPreset.stereoWidth)
 
         // Update store
         const isFactoryPreset = get().presets.some((p) => p.id === currentPreset.id)
@@ -460,7 +319,8 @@ export const usePresetStore = create<PresetStore>()(
       },
 
       getAllPresets: () => {
-        return [...get().presets, ...get().userPresets]
+        // Migrate all presets to ensure they have synthEngine
+        return [...get().presets, ...get().userPresets].map(migratePreset)
       },
     }),
     {
@@ -469,6 +329,15 @@ export const usePresetStore = create<PresetStore>()(
         userPresets: state.userPresets,
         currentPresetId: state.currentPresetId,
       }),
+      merge: (persistedState: any, currentState: PresetStore) => {
+        // Migrate user presets when loading from localStorage
+        const migratedUserPresets = (persistedState?.userPresets || []).map(migratePreset)
+        return {
+          ...currentState,
+          ...persistedState,
+          userPresets: migratedUserPresets,
+        }
+      },
     }
   )
 )

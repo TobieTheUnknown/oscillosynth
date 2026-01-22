@@ -25,15 +25,7 @@ export enum WaveformType {
   RANDOM = 'random', // Not supported by Tone.js - placeholder for future implementation
 }
 
-/**
- * Mode de combinaison LFO
- */
-export enum LFOCombineMode {
-  ADD = 'add', // lfo1 + lfo2
-  MULTIPLY = 'multiply', // lfo1 * lfo2
-  MIN = 'min', // min(lfo1, lfo2)
-  MAX = 'max', // max(lfo1, lfo2)
-}
+// REMOVED: LFOCombineMode - Simplified to individual LFOs (no combining)
 
 /**
  * Destinations de modulation LFO
@@ -57,6 +49,17 @@ export enum LFODestination {
   FX_DELAY_TIME = 'fx_delay_time',
   FX_CHORUS_WET = 'fx_chorus_wet',
   FX_DISTORTION_WET = 'fx_distortion_wet',
+  // Noise generator
+  NOISE_LEVEL = 'noise_level',
+  NOISE_FILTER_CUTOFF = 'noise_filter_cutoff',
+  NOISE_FILTER_RESONANCE = 'noise_filter_resonance',
+  // Synth engine parameters
+  SYNTH_DETUNE = 'synth_detune',
+  SYNTH_FM_INDEX = 'synth_fm_index',
+  SYNTH_BRIGHTNESS = 'synth_brightness',
+  SYNTH_FEEDBACK = 'synth_feedback',
+  SYNTH_SUB_OSC = 'synth_sub_osc',
+  SYNTH_STEREO_SPREAD = 'synth_stereo_spread',
 }
 
 /**
@@ -85,26 +88,8 @@ export interface LFOParams {
   destination: LFODestination // Where this LFO pair modulates
 }
 
-/**
- * Paramètres Envelope Follower
- */
-export interface EnvelopeFollowerParams {
-  enabled: boolean // Envelope follower on/off
-  smoothing: number // 0 - 1 (attack/release time)
-  depth: number // 0 - 200% (modulation depth)
-  destination: LFODestination // Where the envelope follower modulates (reuses LFO destinations)
-}
-
-/**
- * Paramètres Step Sequencer
- */
-export interface StepSequencerParams {
-  enabled: boolean // Step sequencer on/off
-  steps: number[] // Array of 16 step values (0-100)
-  rate: number // 0.1 - 20 Hz (step rate)
-  depth: number // 0 - 200% (modulation depth)
-  destination: LFODestination // Where the step sequencer modulates
-}
+// Removed: EnvelopeFollowerParams - not used in UI
+// Removed: StepSequencerParams - not used in UI
 
 /**
  * Paramètres du filtre
@@ -113,27 +98,10 @@ export interface FilterParams {
   type: 'lowpass' | 'highpass' | 'bandpass' | 'notch'
   cutoff: number // 20 - 20000 Hz
   resonance: number // 0 - 20 (Q factor)
-  envelope: number // -100 to 100 (envelope amount on cutoff)
 }
 
-/**
- * Paramètres Portamento
- */
-export interface PortamentoParams {
-  enabled: boolean // Portamento on/off
-  time: number // 0 - 1000 ms (glide time between notes)
-  mode: 'always' | 'legato' // always = always glide, legato = only when overlapping notes
-}
-
-/**
- * Paramètres Stereo Width
- */
-export interface StereoWidthParams {
-  enabled: boolean // Stereo width on/off
-  width: number // 0 - 200% (0=mono, 100=normal stereo, 200=wide stereo)
-  noteSpread: boolean // Spread notes across stereo field based on pitch
-  noteSpreadAmount: number // 0 - 100% (amount of note-based panning)
-}
+// Removed: PortamentoParams - not used in UI
+// Removed: StereoWidthParams - not used in UI
 
 /**
  * Paramètres des effets master
@@ -159,14 +127,18 @@ export interface MasterEffectsParams {
   distortionAmount: number // 0 - 1
 }
 
+// REMOVED: LFOPairDepths - Simplified to individual LFOs only (no pairs)
+
 /**
- * Depths des paires de LFOs (global par paire)
+ * Paramètres créatifs de la synth engine
  */
-export interface LFOPairDepths {
-  pair1: number // 0 - 200% (Paire 1: LFO 1+2)
-  pair2: number // 0 - 200% (Paire 2: LFO 3+4)
-  pair3: number // 0 - 200% (Paire 3: LFO 5+6)
-  pair4: number // 0 - 200% (Paire 4: LFO 7+8)
+export interface SynthEngineParams {
+  detune: number // 0 - 100 cents - Désaccordage global de tous les opérateurs
+  fmIndex: number // 0 - 200% - Profondeur globale de modulation FM
+  feedback: number // 0 - 100% - Feedback global (mélangé avec feedback op4)
+  subOscLevel: number // 0 - 100% - Niveau oscillateur sub -1 octave
+  stereoSpread: number // 0 - 100% - Désaccordage stéréo pour largeur
+  brightness: number // -12 à +12 dB - Filtre shelf haut pour contrôle de brillance
 }
 
 /**
@@ -178,24 +150,10 @@ export interface Preset {
   category?: string
   algorithm: AlgorithmType
   operators: [OperatorParams, OperatorParams, OperatorParams, OperatorParams]
-  lfos: [
-    LFOParams,
-    LFOParams,
-    LFOParams,
-    LFOParams,
-    LFOParams,
-    LFOParams,
-    LFOParams,
-    LFOParams
-  ] // 8 LFOs in 4 pairs
-  lfoCombineMode: LFOCombineMode
-  lfoPairDepths: LFOPairDepths // Depth global par paire
-  envelopeFollower: EnvelopeFollowerParams
-  stepSequencer: StepSequencerParams
+  lfos: [LFOParams, LFOParams, LFOParams, LFOParams] // 4 individual LFOs
   filter: FilterParams
   masterEffects: MasterEffectsParams
-  portamento: PortamentoParams
-  stereoWidth: StereoWidthParams
+  synthEngine: SynthEngineParams // Paramètres créatifs de la synth engine
   masterVolume: number // 0 - 1.0
 }
 

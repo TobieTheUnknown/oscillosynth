@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { audioEngine } from '../audio/AudioEngine'
-import { AlgorithmType, AudioEngineState } from '../audio/types'
+import { AlgorithmType, AudioEngineState, LFODestination } from '../audio/types'
 
 interface AudioStore extends AudioEngineState {
   // Actions
@@ -18,6 +18,18 @@ interface AudioStore extends AudioEngineState {
   // MIDI
   noteOn: (note: number, velocity?: number) => void
   noteOff: (note: number) => void
+
+  // Noise Generator
+  setNoiseType: (type: 'white' | 'pink' | 'brown') => void
+  setNoiseLevel: (level: number) => void
+  setNoiseFilterCutoff: (cutoff: number) => void
+  setNoiseFilterResonance: (resonance: number) => void
+
+  // Envelope modulation
+  setEnvelopeDestinations: (destinations: LFODestination[]) => void
+
+  // Live View - get modulated parameter values
+  getModulatedValues: () => Record<string, number>
 
   // Update state
   updateState: () => void
@@ -77,6 +89,30 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   noteOff: (note: number) => {
     audioEngine.noteOff(note)
     // updateState will be called by auto-update interval
+  },
+
+  setNoiseType: (type: 'white' | 'pink' | 'brown') => {
+    audioEngine.setNoiseType(type)
+  },
+
+  setNoiseLevel: (level: number) => {
+    audioEngine.setNoiseLevel(level)
+  },
+
+  setNoiseFilterCutoff: (cutoff: number) => {
+    audioEngine.setNoiseFilterCutoff(cutoff)
+  },
+
+  setNoiseFilterResonance: (resonance: number) => {
+    audioEngine.setNoiseFilterResonance(resonance)
+  },
+
+  setEnvelopeDestinations: (destinations: LFODestination[]) => {
+    audioEngine.setEnvelopeDestinations(destinations)
+  },
+
+  getModulatedValues: () => {
+    return audioEngine.getModulatedValues()
   },
 
   updateState: () => {

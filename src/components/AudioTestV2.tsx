@@ -1,33 +1,45 @@
 /**
- * AudioTest V2 Component
- * Version avec Zustand stores et hooks
+ * AudioTestV2 - Redesigned Ultra-Compact Layout
+ * Everything on one screen - centered oscilloscope with compact controls
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAudioEngine } from '../hooks/useAudioEngine'
-import { AlgorithmType } from '../audio/types'
-import { Oscilloscope } from './Oscilloscope'
-import { SpectrumAnalyzer } from './SpectrumAnalyzer'
 import { OscilloscopeXY } from './OscilloscopeXY'
-import { ADSRVisualizer } from './ADSRVisualizer'
-import { LFOPairPanel } from './LFOPairPanel'
-import { EnvelopeFollowerControl } from './EnvelopeFollowerControl'
-import { FMRoutingVisualizer } from './FMRoutingVisualizer'
-import { KeyboardLatchControl } from './KeyboardLatchControl'
+import { IntegratedOscilloscopeControls } from './IntegratedOscilloscopeControls'
+import { InlineKeyboard } from './InlineKeyboard'
+import { SimplifiedSynthEngine } from './SimplifiedSynthEngine'
+import { CompactFilterSection } from './CompactFilterSection'
+import { CompactEffectsSection } from './CompactEffectsSection'
+import { CompactSynthSection } from './CompactSynthSection'
+import { ADSREnvelope } from './ADSREnvelope'
+import { LFOPad } from './LFOPad'
 import { PresetBrowser } from './PresetBrowser'
-import { OperatorControls } from './OperatorControls'
-import { FilterControls } from './FilterControls'
-import { MasterEffects } from './MasterEffects'
-import { PortamentoControls } from './PortamentoControls'
-import { PanControls } from './PanControls'
-import { TabBar } from './TabBar'
-import { SequencerUI } from './SequencerUI'
+import { NoiseGenerator } from './NoiseGenerator'
+import { IdleColorPicker } from './IdleColorPicker'
+import { usePresetStore } from '../store/presetStore'
+import { LFODestination } from '../audio/types'
 import * as Tone from 'tone'
 
-interface Step {
-  enabled: boolean
-  note: number
+// Color palette
+const COLORS = {
+  cyan: '#4ECDC4',
+  rose: '#FF6B9D',
+  yellow: '#FFE66D',
+  violet: '#8A2BE2',
 }
+
+// LFO colors for 8 LFOs (softened/pastel versions)
+const LFO_COLORS = [
+  '#FF6B6B', // LFO 1: Soft Red
+  '#6B9DFF', // LFO 2: Soft Blue
+  '#9FFF9F', // LFO 3: Soft Green
+  '#B19CD9', // LFO 4: Soft Violet
+  '#5FD3F3', // LFO 5: Soft Cyan
+  '#FFB380', // LFO 6: Soft Orange
+  '#7FFFD4', // LFO 7: Soft Mint (Aquamarine)
+  '#FFB3D9', // LFO 8: Soft Pink
+]
 
 export function AudioTestV2() {
   const {
@@ -39,732 +51,555 @@ export function AudioTestV2() {
     setAlgorithm,
     noteOn,
     noteOff,
+    setMasterVolume,
     updateCurrentPresetLFO,
-    updateCurrentPresetLFOPairDepth,
     updateCurrentPresetOperator,
     updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects,
-    updateCurrentPresetEnvelopeFollower,
-    updateCurrentPresetPortamento,
-    updateCurrentPresetStereoWidth,
+    updateCurrentPresetSynthEngine,
+    setNoiseType,
+    setNoiseLevel,
+    setNoiseFilterCutoff,
+    setNoiseFilterResonance,
+    setEnvelopeDestinations,
+    getModulatedValues,
   } = useAudioEngine()
 
-  const [activeTab, setActiveTab] = useState('PLAY')
-  const tabs = ['PLAY', 'SOUND', 'MODULATION', 'EFFECTS', 'VISUALIZE']
-  const [showPresetBrowser, setShowPresetBrowser] = useState(false)
+  const { loadPreset, getAllPresets, saveUserPreset } = usePresetStore()
 
-  // Sequencer state
-  const DEFAULT_STEPS: Step[] = Array.from({ length: 16 }, (_, i) => ({
-    enabled: i % 4 === 0,
-    note: 60 + (i % 8),
-  }))
-  const [seqSteps, setSeqSteps] = useState<Step[]>(DEFAULT_STEPS)
-  const [seqCurrentStep, setSeqCurrentStep] = useState<number>(-1)
-  const [seqIsPlaying, setSeqIsPlaying] = useState(false)
-  const [seqBpm, setSeqBpm] = useState(120)
-  const [seqGateLength, setSeqGateLength] = useState(50)
-  const sequenceRef = useRef<Tone.Sequence<number> | null>(null)
-  const activeNoteRef = useRef<number | null>(null)
+  // Latch mode for keyboard
+  const [latchMode, setLatchMode] = useState(true)
+  const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set())
 
-  // Sequencer cleanup
+  // Live View mode - show modulated values in real-time
+  const [liveViewEnabled, setLiveViewEnabled] = useState(false)
+  const [modulatedValues, setModulatedValues] = useState<Record<string, number>>({})
+
+  // Poll modulated values when Live View is enabled
   useEffect(() => {
-    return () => {
-      if (sequenceRef.current) {
-        sequenceRef.current.dispose()
-        sequenceRef.current = null
-      }
-      if (activeNoteRef.current !== null) {
-        noteOff(activeNoteRef.current)
-        activeNoteRef.current = null
-      }
-    }
-  }, [noteOff])
-
-  // Sequencer logic
-  useEffect(() => {
-    if (!isStarted) {
-      if (seqIsPlaying) {
-        setSeqIsPlaying(false)
-        Tone.Transport.stop()
-        if (activeNoteRef.current !== null) {
-          noteOff(activeNoteRef.current)
-          activeNoteRef.current = null
-        }
-      }
+    if (!liveViewEnabled || !isStarted) {
+      setModulatedValues({})
       return
     }
 
-    if (sequenceRef.current) {
-      sequenceRef.current.dispose()
-      sequenceRef.current = null
+    // Poll at 30fps (every ~33ms) for smooth visual updates
+    const interval = setInterval(() => {
+      const values = getModulatedValues()
+      setModulatedValues(values)
+    }, 33)
+
+    return () => clearInterval(interval)
+  }, [liveViewEnabled, isStarted, getModulatedValues])
+
+  // Helper to get display value (modulated if Live View enabled, otherwise base)
+  const getDisplayValue = (baseValue: number, modulatedKey: string): number => {
+    if (liveViewEnabled && modulatedKey in modulatedValues) {
+      return modulatedValues[modulatedKey]
     }
+    return baseValue
+  }
 
-    Tone.Transport.bpm.value = seqBpm
+  // Create display params with modulated values when Live View is enabled
+  const getDisplayFilter = () => {
+    if (!currentPreset) return null
+    return {
+      ...currentPreset.filter,
+      cutoff: getDisplayValue(currentPreset.filter.cutoff, 'filterCutoff'),
+      resonance: getDisplayValue(currentPreset.filter.resonance, 'filterResonance'),
+    }
+  }
 
-    const sequence = new Tone.Sequence(
-      (time, step: number) => {
-        Tone.Draw.schedule(() => {
-          setSeqCurrentStep(step)
-        }, time)
+  const getDisplayEffects = () => {
+    if (!currentPreset) return null
+    return {
+      ...currentPreset.masterEffects,
+      reverbWet: getDisplayValue(currentPreset.masterEffects.reverbWet, 'reverbWet'),
+      delayWet: getDisplayValue(currentPreset.masterEffects.delayWet, 'delayWet'),
+      chorusWet: getDisplayValue(currentPreset.masterEffects.chorusWet, 'chorusWet'),
+    }
+  }
 
-        const currentStepData = seqSteps[step]
-        if (currentStepData && currentStepData.enabled) {
-          if (activeNoteRef.current !== null) {
-            noteOff(activeNoteRef.current)
-            activeNoteRef.current = null
-          }
+  const getDisplaySynthEngine = () => {
+    if (!currentPreset) return null
+    return {
+      ...currentPreset.synthEngine,
+      detune: getDisplayValue(currentPreset.synthEngine.detune, 'detune'),
+      fmIndex: getDisplayValue(currentPreset.synthEngine.fmIndex, 'fmIndex'),
+      brightness: getDisplayValue(currentPreset.synthEngine.brightness, 'brightness'),
+    }
+  }
 
-          const note = currentStepData.note
-          noteOn(note, 100)
-          activeNoteRef.current = note
+  const getDisplayOperators = () => {
+    if (!currentPreset) return null
+    return currentPreset.operators.map((op, index) => ({
+      ...op,
+      level: getDisplayValue(op.level, `op${index + 1}Level`),
+      ratio: getDisplayValue(op.ratio, `op${index + 1}Ratio`),
+    }))
+  }
 
-          const stepDuration = 60 / seqBpm / 4
-          const noteDuration = stepDuration * (seqGateLength / 100)
+  // Noise generator state (UI only, audio is controlled directly)
+  const [noiseType, setNoiseTypeUI] = useState<'white' | 'pink' | 'brown'>('white')
+  const [noiseLevel, setNoiseLevelUI] = useState(0)
+  const [noiseFilterCutoff, setNoiseFilterCutoffUI] = useState(5000)
+  const [noiseFilterResonance, setNoiseFilterResonanceUI] = useState(1)
 
-          Tone.Transport.scheduleOnce(() => {
-            if (activeNoteRef.current === note) {
-              noteOff(note)
-              activeNoteRef.current = null
-            }
-          }, time + noteDuration)
-        } else {
-          if (activeNoteRef.current !== null) {
-            Tone.Draw.schedule(() => {
-              if (activeNoteRef.current !== null) {
-                noteOff(activeNoteRef.current)
-                activeNoteRef.current = null
-              }
-            }, time)
-          }
-        }
-      },
-      Array.from({ length: 16 }, (_, i) => i),
-      '16n'
-    )
+  // Patch cable dragging state
+  const [draggingLfoIndex, setDraggingLfoIndex] = useState<number | null>(null)
+  const [draggingEnvelope, setDraggingEnvelope] = useState(false)
 
-    sequence.start(0)
-    sequenceRef.current = sequence
-  }, [seqSteps, seqBpm, seqGateLength, isStarted, noteOn, noteOff, seqIsPlaying])
+  // Envelope connections (destinations where envelope modulates)
+  const [envelopeDestinations, setEnvelopeDestinationsLocal] = useState<LFODestination[]>([])
 
-  const handleSeqPlayStop = () => {
-    if (!seqIsPlaying) {
-      Tone.Transport.start()
-      setSeqIsPlaying(true)
-    } else {
-      Tone.Transport.stop()
-      Tone.Transport.position = 0
-      setSeqIsPlaying(false)
-      setSeqCurrentStep(-1)
-      if (activeNoteRef.current !== null) {
-        noteOff(activeNoteRef.current)
-        activeNoteRef.current = null
+  // Sync envelope destinations with audio engine
+  useEffect(() => {
+    if (setEnvelopeDestinations) {
+      setEnvelopeDestinations(envelopeDestinations)
+    }
+  }, [envelopeDestinations, setEnvelopeDestinations])
+
+  // Handle patch connection
+  const handlePatchConnect = (destination: LFODestination) => {
+    if (draggingLfoIndex !== null) {
+      updateCurrentPresetLFO(draggingLfoIndex, { destination })
+      setDraggingLfoIndex(null)
+    } else if (draggingEnvelope) {
+      // Add envelope destination if not already present
+      if (!envelopeDestinations.includes(destination)) {
+        setEnvelopeDestinationsLocal([...envelopeDestinations, destination])
       }
+      setDraggingEnvelope(false)
     }
   }
 
-  const handleToggleStep = (index: number) => {
-    const newSteps = [...seqSteps]
-    const currentStep = newSteps[index]
-    if (currentStep) {
-      newSteps[index] = { ...currentStep, enabled: !currentStep.enabled }
-      setSeqSteps(newSteps)
-    }
+  // Handle envelope disconnect
+  const handleEnvelopeDisconnect = (destination: LFODestination) => {
+    setEnvelopeDestinationsLocal(envelopeDestinations.filter(d => d !== destination))
   }
 
-  const handleSetStepNote = (index: number, note: number) => {
-    const newSteps = [...seqSteps]
-    const currentStep = newSteps[index]
-    if (currentStep) {
-      newSteps[index] = { ...currentStep, note }
-      setSeqSteps(newSteps)
-    }
-  }
+  // Helper to combine LFO and envelope connections for display
+  const getCombinedConnections = () => {
+    if (!currentPreset) return []
 
-  const handleClearPattern = () => {
-    setSeqSteps(seqSteps.map((step) => ({ ...step, enabled: false })))
-  }
+    const lfoConnections = currentPreset.lfos.map((lfo, index) => ({
+      destination: lfo.destination,
+      color: LFO_COLORS[index],
+      lfoIndex: index,
+    }))
 
-  const handleRandomPattern = () => {
-    setSeqSteps(
-      seqSteps.map(() => ({
-        enabled: Math.random() > 0.5,
-        note: 48 + Math.floor(Math.random() * 25),
-      }))
-    )
-  }
+    const envelopeConnections = envelopeDestinations.map(dest => ({
+      destination: dest,
+      color: '#FF8C42', // Orange color for envelope
+      lfoIndex: -1, // Special index to identify envelope connections
+    }))
 
-  const LFO_COLORS = [
-    '#00FF41',
-    '#00FFFF',
-    '#FFFF00',
-    '#FF64FF',
-    '#64C8FF',
-    '#FF9664',
-    '#96FF96',
-    '#FF6496',
-  ]
+    return [...lfoConnections, ...envelopeConnections]
+  }
 
   return (
     <div
       style={{
-        padding: 'var(--spacing-4)',
-        maxWidth: '100vw',
         minHeight: '100vh',
-        overflow: 'hidden',
+        backgroundColor: 'var(--color-bg-primary)',
+        color: 'var(--color-text-primary)',
+        fontFamily: 'var(--font-family-base)',
+        overflow: 'auto',
       }}
     >
-      {/* Header */}
-      <div
+      {/* Top Header */}
+      <header
         style={{
+          padding: 'var(--spacing-3) var(--spacing-4)',
+          backgroundColor: 'var(--color-bg-secondary)',
+          borderBottom: '1px solid var(--color-border-primary)',
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 'var(--spacing-4)',
+          alignItems: 'center',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+          zIndex: 100,
+          position: 'sticky',
+          top: 0,
         }}
       >
-        <div>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
           <h1
             style={{
+              margin: 0,
               fontSize: 'var(--font-size-xl)',
-              color: 'var(--color-trace-primary)',
-              marginBottom: 'var(--spacing-1)',
-              textShadow: '0 0 8px var(--color-trace-glow)',
+              fontFamily: 'var(--font-family-mono)',
+              fontWeight: 'bold',
+              background: `linear-gradient(90deg, ${COLORS.cyan} 0%, ${COLORS.rose} 50%, ${COLORS.yellow} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '0.05em',
             }}
           >
-            OscilloSynth
+            OSCILLOSYNTH
           </h1>
-          <p
-            style={{
-              fontSize: 'var(--font-size-xs)',
-              color: 'var(--color-text-tertiary)',
-            }}
-          >
-            FM Synthesizer
-          </p>
-        </div>
-
-        {/* Status info */}
-        {isStarted && (
           <div
             style={{
-              display: 'flex',
-              gap: 'var(--spacing-3)',
               fontSize: 'var(--font-size-xs)',
-              color: 'var(--color-text-secondary)',
               fontFamily: 'var(--font-family-mono)',
+              color: 'var(--color-text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--spacing-2)',
             }}
           >
-            <div>
-              <strong>Preset:</strong> {currentPreset?.name ?? 'None'}
-            </div>
-            <div>
-              <strong>Algo:</strong> {currentPreset?.algorithm ?? '--'}
-            </div>
-            <div>
-              <strong>Voices:</strong>{' '}
-              <span
-                style={{
-                  color:
-                    activeVoices >= maxVoices ? 'var(--color-warning)' : 'var(--color-success)',
-                }}
-              >
-                {activeVoices}/{maxVoices}
-              </span>
-            </div>
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: isStarted ? 'var(--color-idle)' : 'var(--color-text-tertiary)',
+                boxShadow: isStarted ? '0 0 8px var(--color-idle)' : 'none',
+                animation: isStarted ? 'pulse 2s ease-in-out infinite' : 'none',
+              }}
+            />
+            {activeVoices}/{maxVoices} VOICES
           </div>
-        )}
-      </div>
+        </div>
 
-      {!isStarted ? (
-        <button
-          onClick={() => {
-            void startAudio()
-          }}
+        {/* Live View + Preset Browser + Idle Color Picker */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+          {/* Live View Toggle */}
+          <button
+            onClick={() => setLiveViewEnabled(!liveViewEnabled)}
+            style={{
+              padding: 'var(--spacing-2) var(--spacing-3)',
+              backgroundColor: liveViewEnabled ? 'var(--color-idle)' : 'var(--color-bg-tertiary)',
+              color: liveViewEnabled ? '#000' : 'var(--color-text-primary)',
+              border: `1px solid ${liveViewEnabled ? 'var(--color-idle)' : 'var(--color-border-primary)'}`,
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--font-size-xs)',
+              fontFamily: 'var(--font-family-mono)',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--spacing-2)',
+              boxShadow: liveViewEnabled ? '0 0 12px var(--color-idle)' : 'none',
+            }}
+          >
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: liveViewEnabled ? '#000' : 'var(--color-idle)',
+                animation: liveViewEnabled ? 'pulse 1s ease-in-out infinite' : 'none',
+              }}
+            />
+            LIVE VIEW
+          </button>
+
+          <PresetBrowser
+            currentPreset={currentPreset}
+            allPresets={getAllPresets()}
+            onPresetChange={loadPreset}
+            onSavePreset={saveUserPreset}
+          />
+          <IdleColorPicker />
+        </div>
+      </header>
+
+      {/* Main Content - Centered Layout */}
+      <main
+        style={{
+          padding: 'var(--spacing-4)',
+          maxWidth: '1600px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 'var(--spacing-4)',
+        }}
+      >
+        {/* Top Section: 4 LFOs around Oscilloscope */}
+        <div
           style={{
-            padding: 'var(--spacing-4) var(--spacing-8)',
-            backgroundColor: 'transparent',
-            color: 'var(--color-trace-primary)',
-            border: '2px solid var(--color-border-primary)',
-            borderRadius: 'var(--radius-md)',
-            fontSize: 'var(--font-size-md)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-family-mono)',
-            minHeight: 'var(--touch-target-min)',
+            display: 'grid',
+            gridTemplateColumns: '200px 500px 200px',
+            gap: 'var(--spacing-3)',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          Start Audio Engine
-        </button>
-      ) : (
-        <div>
-          {/* Tab Navigation */}
-          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-
-          {/* Tab Content */}
-          <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-            {/* PLAY TAB */}
-            {activeTab === 'PLAY' && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'auto 1fr',
-                  gap: 'var(--spacing-4)',
-                  alignItems: 'start',
-                }}
-              >
-                {/* Left: XY Oscilloscope */}
-                <div>
-                  <div
-                    style={{
-                      fontSize: 'var(--font-size-sm)',
-                      color: 'var(--color-trace-primary)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                      marginBottom: 'var(--spacing-2)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    LISSAJOUS (XY)
-                  </div>
-                  <OscilloscopeXY width={500} height={500} />
-                </div>
-
-                {/* Right: Keyboard + Sequencer + Preset Manager */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--spacing-4)',
-                  }}
-                >
-                  <KeyboardLatchControl onNoteOn={noteOn} onNoteOff={noteOff} isEnabled={isStarted} />
-                  <SequencerUI
-                    steps={seqSteps}
-                    currentStep={seqCurrentStep}
-                    isPlaying={seqIsPlaying}
-                    bpm={seqBpm}
-                    gateLength={seqGateLength}
-                    isEnabled={isStarted}
-                    onPlayStop={handleSeqPlayStop}
-                    onBpmChange={setSeqBpm}
-                    onGateChange={setSeqGateLength}
-                    onToggleStep={handleToggleStep}
-                    onSetStepNote={handleSetStepNote}
-                    onClearPattern={handleClearPattern}
-                    onRandomPattern={handleRandomPattern}
-                  />
-                  {/* Preset Browser Button */}
-                  <div
-                    style={{
-                      padding: 'var(--spacing-4)',
-                      backgroundColor: 'var(--color-bg-secondary)',
-                      border: '2px solid var(--color-border-primary)',
-                      borderRadius: 'var(--radius-md)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 'var(--font-size-lg)',
-                        color: 'var(--color-trace-primary)',
-                        fontFamily: 'var(--font-family-mono)',
-                        fontWeight: 'bold',
-                        marginBottom: 'var(--spacing-3)',
-                      }}
-                    >
-                      PRESETS
-                    </div>
-
-                    {currentPreset && (
-                      <div
-                        style={{
-                          marginBottom: 'var(--spacing-3)',
-                          padding: 'var(--spacing-3)',
-                          backgroundColor: 'var(--color-bg-primary)',
-                          border: '1px solid var(--color-border-primary)',
-                          borderRadius: 'var(--radius-sm)',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 'var(--font-size-xs)',
-                            color: 'var(--color-text-secondary)',
-                            fontFamily: 'var(--font-family-mono)',
-                            marginBottom: 'var(--spacing-1)',
-                          }}
-                        >
-                          Current:
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 'var(--font-size-md)',
-                            color: 'var(--color-trace-primary)',
-                            fontFamily: 'var(--font-family-mono)',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          {currentPreset.name}
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={() => setShowPresetBrowser(true)}
-                      style={{
-                        width: '100%',
-                        padding: 'var(--spacing-3)',
-                        backgroundColor: 'var(--color-active)',
-                        border: '2px solid var(--color-active)',
-                        borderRadius: 'var(--radius-sm)',
-                        color: '#000',
-                        fontFamily: 'var(--font-family-mono)',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        fontSize: 'var(--font-size-md)',
-                        transition: 'transform 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.02)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)'
-                      }}
-                    >
-                      🎹 BROWSE PRESETS
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* Left LFOs - Stacked Vertically */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+            {/* LFO 1 */}
+            {currentPreset && (
+              <LFOPad
+                lfoNumber={1}
+                lfoIndex={0}
+                params={currentPreset.lfos[0]}
+                color={LFO_COLORS[0]}
+                onChange={(params) => updateCurrentPresetLFO(0, params)}
+                onPatchStart={() => setDraggingLfoIndex(0)}
+              />
             )}
-
-            {/* SOUND TAB */}
-            {activeTab === 'SOUND' && currentPreset && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--spacing-4)',
-                }}
-              >
-                {/* Algorithm Selector */}
-                <div>
-                  <h2
-                    style={{
-                      fontSize: 'var(--font-size-lg)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-3)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    FM ALGORITHM
-                  </h2>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(5, 1fr)',
-                      gap: 'var(--spacing-3)',
-                      marginBottom: 'var(--spacing-4)',
-                    }}
-                  >
-                    {[
-                      { value: AlgorithmType.SERIAL, name: 'SERIAL', color: '#FF6464' },
-                      { value: AlgorithmType.PARALLEL, name: 'PARALLEL', color: '#64C8FF' },
-                      { value: AlgorithmType.DUAL_SERIAL, name: 'DUAL SERIAL', color: '#FFFF64' },
-                      { value: AlgorithmType.FAN_OUT, name: 'FAN OUT', color: '#96FF96' },
-                      { value: AlgorithmType.SPLIT, name: 'SPLIT', color: '#FF64FF' },
-                    ].map((algo) => (
-                      <button
-                        key={algo.value}
-                        onClick={() => {
-                          setAlgorithm(algo.value)
-                        }}
-                        style={{
-                          padding: 'var(--spacing-3)',
-                          backgroundColor:
-                            currentPreset?.algorithm === algo.value
-                              ? algo.color
-                              : 'var(--color-bg-primary)',
-                          color:
-                            currentPreset?.algorithm === algo.value
-                              ? '#000'
-                              : 'var(--color-text-primary)',
-                          border: `2px solid ${algo.color}`,
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: 'var(--font-size-sm)',
-                          cursor: 'pointer',
-                          fontFamily: 'var(--font-family-mono)',
-                          fontWeight: 'bold',
-                          transition: 'all 0.2s',
-                          boxShadow:
-                            currentPreset?.algorithm === algo.value
-                              ? `0 0 15px ${algo.color}`
-                              : 'none',
-                        }}
-                      >
-                        {algo.name}
-                      </button>
-                    ))}
-                  </div>
-                  <FMRoutingVisualizer algorithm={currentPreset.algorithm} width={700} height={300} />
-                </div>
-
-                {/* Portamento Controls */}
-                <PortamentoControls
-                  params={currentPreset.portamento}
-                  onChange={(params) => {
-                    updateCurrentPresetPortamento(params)
-                  }}
-                />
-
-                {/* Operators in 2x2 grid */}
-                <div>
-                  <h2
-                    style={{
-                      fontSize: 'var(--font-size-lg)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-3)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    FM OPERATORS
-                  </h2>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 'var(--spacing-3)',
-                    }}
-                  >
-                    {[1, 2, 3, 4].map((opNum) => {
-                      const opIndex = (opNum - 1) as 0 | 1 | 2 | 3
-                      return (
-                        <OperatorControls
-                          key={opNum}
-                          operatorNumber={opNum as 1 | 2 | 3 | 4}
-                          params={currentPreset.operators[opIndex]}
-                          onChange={(params) => {
-                            updateCurrentPresetOperator(opIndex, params)
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Filter */}
-                <div>
-                  <h2
-                    style={{
-                      fontSize: 'var(--font-size-lg)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-3)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    FILTER
-                  </h2>
-                  <FilterControls
-                    params={currentPreset.filter}
-                    onChange={(params) => {
-                      updateCurrentPresetFilter(params)
-                    }}
-                  />
-                </div>
-
-                {/* Pan Spread */}
-                <div>
-                  <PanControls
-                    stereoWidth={currentPreset.stereoWidth}
-                    onStereoWidthChange={(params) => {
-                      updateCurrentPresetStereoWidth(params)
-                    }}
-                  />
-                </div>
-              </div>
+            {/* LFO 2 */}
+            {currentPreset && (
+              <LFOPad
+                lfoNumber={2}
+                lfoIndex={1}
+                params={currentPreset.lfos[1]}
+                color={LFO_COLORS[1]}
+                onChange={(params) => updateCurrentPresetLFO(1, params)}
+                onPatchStart={() => setDraggingLfoIndex(1)}
+              />
             )}
+          </div>
 
-            {/* MODULATION TAB */}
-            {activeTab === 'MODULATION' && currentPreset && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--spacing-4)',
-                }}
-              >
-                {/* LFOs */}
-                <div>
-                  <h2
-                    style={{
-                      fontSize: 'var(--font-size-lg)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-3)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    LFOs (8 x 2 PAIRS)
-                  </h2>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 'var(--spacing-3)',
-                    }}
-                  >
-                    {[1, 2, 3, 4].map((pairNum) => {
-                      const pairNumber = pairNum as 1 | 2 | 3 | 4
-                      const lfo1Index = ((pairNum - 1) * 2) as 0 | 2 | 4 | 6
-                      const lfo2Index = ((pairNum - 1) * 2 + 1) as 1 | 3 | 5 | 7
-                      const pairDepthKey = `pair${pairNumber}` as 'pair1' | 'pair2' | 'pair3' | 'pair4'
+          {/* Oscilloscope XY - Center */}
+          <OscilloscopeXY width={500} height={500}>
+            <IntegratedOscilloscopeControls
+              latchMode={latchMode}
+              onLatchToggle={async () => {
+                // Start audio if not already started
+                if (!isStarted) {
+                  try {
+                    await startAudio()
+                  } catch (error) {
+                    console.error('Failed to start audio:', error)
+                  }
+                }
+                setLatchMode(!latchMode)
+              }}
+              activeNotesCount={activeNotes.size}
+              onClearNotes={() => {
+                activeNotes.forEach((note) => noteOff(note))
+                setActiveNotes(new Set())
+              }}
+              volume={(currentPreset?.masterVolume ?? 0.7) * 100}
+              onVolumeChange={(volume) => setMasterVolume(volume / 100)}
+            />
+          </OscilloscopeXY>
 
-                      return (
-                        <LFOPairPanel
-                          key={pairNumber}
-                          pairNumber={pairNumber}
-                          lfo1Params={currentPreset.lfos[lfo1Index]}
-                          lfo2Params={currentPreset.lfos[lfo2Index]}
-                          lfo1Index={lfo1Index}
-                          lfo2Index={lfo2Index}
-                          destination={currentPreset.lfos[lfo1Index].destination}
-                          pairDepth={currentPreset.lfoPairDepths[pairDepthKey]}
-                          color1={LFO_COLORS[lfo1Index] ?? '#00FF41'}
-                          color2={LFO_COLORS[lfo2Index] ?? '#00FFFF'}
-                          onLFO1Change={(params) => {
-                            updateCurrentPresetLFO(lfo1Index, params)
-                          }}
-                          onLFO2Change={(params) => {
-                            updateCurrentPresetLFO(lfo2Index, params)
-                          }}
-                          onDestinationChange={(destination) => {
-                            updateCurrentPresetLFO(lfo1Index, { destination })
-                            updateCurrentPresetLFO(lfo2Index, { destination })
-                          }}
-                          onPairDepthChange={(depth) => {
-                            updateCurrentPresetLFOPairDepth(pairNumber, depth)
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Envelope Follower */}
-                <div>
-                  <h2
-                    style={{
-                      fontSize: 'var(--font-size-lg)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-3)',
-                      fontFamily: 'var(--font-family-mono)',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    ENVELOPE FOLLOWER
-                  </h2>
-                  <EnvelopeFollowerControl
-                    params={currentPreset.envelopeFollower}
-                    onChange={(params) => {
-                      updateCurrentPresetEnvelopeFollower(params)
-                    }}
-                  />
-                </div>
-              </div>
+          {/* Right LFOs - Stacked Vertically */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+            {/* LFO 3 */}
+            {currentPreset && (
+              <LFOPad
+                lfoNumber={3}
+                lfoIndex={2}
+                params={currentPreset.lfos[2]}
+                color={LFO_COLORS[2]}
+                onChange={(params) => updateCurrentPresetLFO(2, params)}
+                onPatchStart={() => setDraggingLfoIndex(2)}
+              />
             )}
-
-            {/* EFFECTS TAB */}
-            {activeTab === 'EFFECTS' && currentPreset && (
-              <div>
-                <h2
-                  style={{
-                    fontSize: 'var(--font-size-lg)',
-                    color: 'var(--color-trace-primary)',
-                    marginBottom: 'var(--spacing-3)',
-                    fontFamily: 'var(--font-family-mono)',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  MASTER EFFECTS
-                </h2>
-                <MasterEffects
-                  params={currentPreset.masterEffects}
-                  onChange={(params) => {
-                    updateCurrentPresetMasterEffects(params)
-                  }}
-                />
-              </div>
-            )}
-
-            {/* VISUALIZE TAB */}
-            {activeTab === 'VISUALIZE' && currentPreset && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: 'var(--spacing-4)',
-                }}
-              >
-                <div>
-                  <h3
-                    style={{
-                      fontSize: 'var(--font-size-md)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-2)',
-                      fontFamily: 'var(--font-family-mono)',
-                    }}
-                  >
-                    SPECTRUM ANALYZER
-                  </h3>
-                  <SpectrumAnalyzer width={550} height={300} />
-                </div>
-                <div>
-                  <h3
-                    style={{
-                      fontSize: 'var(--font-size-md)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-2)',
-                      fontFamily: 'var(--font-family-mono)',
-                    }}
-                  >
-                    OSCILLOSCOPE
-                  </h3>
-                  <Oscilloscope width={550} height={300} lineWidth={2} glowIntensity={0.6} />
-                </div>
-                <div>
-                  <h3
-                    style={{
-                      fontSize: 'var(--font-size-md)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-2)',
-                      fontFamily: 'var(--font-family-mono)',
-                    }}
-                  >
-                    LISSAJOUS (XY)
-                  </h3>
-                  <OscilloscopeXY width={550} height={550} />
-                </div>
-                <div>
-                  <h3
-                    style={{
-                      fontSize: 'var(--font-size-md)',
-                      color: 'var(--color-trace-primary)',
-                      marginBottom: 'var(--spacing-2)',
-                      fontFamily: 'var(--font-family-mono)',
-                    }}
-                  >
-                    ADSR ENVELOPES
-                  </h3>
-                  <ADSRVisualizer operators={currentPreset.operators} width={550} height={300} />
-                </div>
-              </div>
+            {/* LFO 4 */}
+            {currentPreset && (
+              <LFOPad
+                lfoNumber={4}
+                lfoIndex={3}
+                params={currentPreset.lfos[3]}
+                color={LFO_COLORS[3]}
+                onChange={(params) => updateCurrentPresetLFO(3, params)}
+                onPatchStart={() => setDraggingLfoIndex(3)}
+              />
             )}
           </div>
         </div>
-      )}
 
-      {/* Preset Browser Modal */}
-      {showPresetBrowser && <PresetBrowser onClose={() => setShowPresetBrowser(false)} />}
+        {/* Filter → Noise → Effects (ordre du signal audio) */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 'var(--spacing-4)',
+            width: '100%',
+            maxWidth: '900px',
+          }}
+        >
+          {/* Filter */}
+          {currentPreset && getDisplayFilter() && (
+            <CompactFilterSection
+              params={getDisplayFilter()!}
+              onChange={updateCurrentPresetFilter}
+              lfos={getCombinedConnections()}
+              onPatchConnect={handlePatchConnect}
+              onPatchDisconnect={(destination) => {
+                const lfoIndex = currentPreset.lfos.findIndex((lfo) => lfo.destination === destination)
+                if (lfoIndex !== -1) {
+                  updateCurrentPresetLFO(lfoIndex, { destination: LFODestination.PITCH })
+                } else if (envelopeDestinations.includes(destination)) {
+                  handleEnvelopeDisconnect(destination)
+                }
+              }}
+            />
+          )}
+
+          {/* Noise Generator (avec son propre filtre) */}
+          {currentPreset && (
+            <NoiseGenerator
+              noiseType={noiseType}
+              noiseLevel={getDisplayValue(noiseLevel, 'noiseLevel')}
+              noiseFilterCutoff={getDisplayValue(noiseFilterCutoff, 'noiseFilterCutoff')}
+              noiseFilterResonance={noiseFilterResonance}
+              onNoiseTypeChange={(type) => {
+                setNoiseTypeUI(type)
+                setNoiseType(type)
+              }}
+              onNoiseLevelChange={(level) => {
+                setNoiseLevelUI(level)
+                setNoiseLevel(level)
+              }}
+              onNoiseFilterCutoffChange={(cutoff) => {
+                setNoiseFilterCutoffUI(cutoff)
+                setNoiseFilterCutoff(cutoff)
+              }}
+              onNoiseFilterResonanceChange={(resonance) => {
+                setNoiseFilterResonanceUI(resonance)
+                setNoiseFilterResonance(resonance)
+              }}
+              lfos={getCombinedConnections()}
+              onPatchConnect={handlePatchConnect}
+              onPatchDisconnect={(destination) => {
+                const lfoIndex = currentPreset.lfos.findIndex((lfo) => lfo.destination === destination)
+                if (lfoIndex !== -1) {
+                  updateCurrentPresetLFO(lfoIndex, { destination: LFODestination.PITCH })
+                } else if (envelopeDestinations.includes(destination)) {
+                  handleEnvelopeDisconnect(destination)
+                }
+              }}
+            />
+          )}
+
+          {/* Effects */}
+          {currentPreset && getDisplayEffects() && (
+            <CompactEffectsSection
+              params={getDisplayEffects()!}
+              onChange={updateCurrentPresetMasterEffects}
+              lfos={getCombinedConnections()}
+              onPatchConnect={handlePatchConnect}
+              onPatchDisconnect={(destination) => {
+                const lfoIndex = currentPreset.lfos.findIndex((lfo) => lfo.destination === destination)
+                if (lfoIndex !== -1) {
+                  updateCurrentPresetLFO(lfoIndex, { destination: LFODestination.PITCH })
+                } else if (envelopeDestinations.includes(destination)) {
+                  handleEnvelopeDisconnect(destination)
+                }
+              }}
+            />
+          )}
+        </div>
+
+        {/* ADSR Envelope + Synth Controls (Richness/Space) */}
+        {currentPreset && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '900px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 280px',
+              gap: 'var(--spacing-3)',
+            }}
+          >
+            <ADSREnvelope
+              attack={currentPreset.operators[0].attack}
+              decay={currentPreset.operators[0].decay}
+              sustain={currentPreset.operators[0].sustain}
+              release={currentPreset.operators[0].release}
+              onChange={(params) => updateCurrentPresetOperator(0, params)}
+              onEnvelopePatchStart={() => setDraggingEnvelope(true)}
+              color="#FF8C42"
+            />
+            <CompactSynthSection
+              title="RICHNESS"
+              feedback={getDisplaySynthEngine()?.feedback ?? currentPreset.synthEngine.feedback}
+              subOscLevel={getDisplaySynthEngine()?.subOscLevel ?? currentPreset.synthEngine.subOscLevel}
+              stereoSpread={getDisplaySynthEngine()?.stereoSpread ?? currentPreset.synthEngine.stereoSpread}
+              onChange={updateCurrentPresetSynthEngine}
+              showHarmonicControls={false}
+              lfos={getCombinedConnections()}
+              onPatchConnect={handlePatchConnect}
+              onPatchDisconnect={(destination) => {
+                const lfoIndex = currentPreset.lfos.findIndex((lfo) => lfo.destination === destination)
+                if (lfoIndex !== -1) {
+                  updateCurrentPresetLFO(lfoIndex, { destination: LFODestination.PITCH })
+                } else if (envelopeDestinations.includes(destination)) {
+                  handleEnvelopeDisconnect(destination)
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Synth Engine - Ultra Compact + Synth Controls (Harmonic) */}
+        {currentPreset && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '900px',
+              display: 'grid',
+              gridTemplateColumns: '1fr 280px',
+              gap: 'var(--spacing-3)',
+            }}
+          >
+            <SimplifiedSynthEngine
+              algorithm={currentPreset.algorithm}
+              operators={(getDisplayOperators() as any) ?? currentPreset.operators}
+              onAlgorithmChange={setAlgorithm}
+              onOperatorChange={updateCurrentPresetOperator}
+              lfos={getCombinedConnections()}
+              onPatchConnect={handlePatchConnect}
+              onPatchDisconnect={(destination) => {
+                const lfoIndex = currentPreset.lfos.findIndex((lfo) => lfo.destination === destination)
+                if (lfoIndex !== -1) {
+                  updateCurrentPresetLFO(lfoIndex, { destination: LFODestination.PITCH })
+                } else if (envelopeDestinations.includes(destination)) {
+                  handleEnvelopeDisconnect(destination)
+                }
+              }}
+            />
+            <CompactSynthSection
+              title="HARMONIC"
+              detune={getDisplaySynthEngine()?.detune ?? currentPreset.synthEngine.detune}
+              fmIndex={getDisplaySynthEngine()?.fmIndex ?? currentPreset.synthEngine.fmIndex}
+              brightness={getDisplaySynthEngine()?.brightness ?? currentPreset.synthEngine.brightness}
+              onChange={updateCurrentPresetSynthEngine}
+              showHarmonicControls={true}
+              lfos={getCombinedConnections()}
+              onPatchConnect={handlePatchConnect}
+              onPatchDisconnect={(destination) => {
+                const lfoIndex = currentPreset.lfos.findIndex((lfo) => lfo.destination === destination)
+                if (lfoIndex !== -1) {
+                  updateCurrentPresetLFO(lfoIndex, { destination: LFODestination.PITCH })
+                } else if (envelopeDestinations.includes(destination)) {
+                  handleEnvelopeDisconnect(destination)
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* Inline Keyboard - Bottom */}
+        <div style={{ width: '100%', maxWidth: '900px' }}>
+          <InlineKeyboard
+            onNoteOn={noteOn}
+            onNoteOff={noteOff}
+            isEnabled={isStarted}
+            latchMode={latchMode}
+            setLatchMode={async (mode) => {
+              // Start audio if not already started
+              if (!isStarted) {
+                try {
+                  await startAudio()
+                } catch (error) {
+                  console.error('Failed to start audio:', error)
+                }
+              }
+              setLatchMode(mode)
+            }}
+            activeNotes={activeNotes}
+            setActiveNotes={setActiveNotes}
+          />
+        </div>
+      </main>
     </div>
   )
 }

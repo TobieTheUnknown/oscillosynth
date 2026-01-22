@@ -107,10 +107,17 @@ export class AudioPipeline {
   }
 
   /**
-   * Connecte une source au pipeline
+   * Connecte une source au pipeline (passe par le filter)
    */
   connect(source: Tone.ToneAudioNode): void {
     source.connect(this.filter as Tone.InputNode)
+  }
+
+  /**
+   * Connecte une source après le filter, avant les effects (pour noise)
+   */
+  connectAfterFilter(source: Tone.ToneAudioNode): void {
+    source.connect(this.distortion as Tone.InputNode)
   }
 
   /**

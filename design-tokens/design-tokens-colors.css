@@ -1,42 +1,45 @@
 /**
  * OscilloSynth - Design Tokens - Colors
- * Palette oscilloscope vintage avec vert phosphore
+ * Modern digital color palette - NO GREEN
  */
 
 :root {
-  /* Background - Noir profond oscilloscope */
+  /* Background - Deep black oscilloscope */
   --color-bg-primary: #000000;
   --color-bg-secondary: #0a0a0a;
   --color-bg-tertiary: #121212;
 
-  /* Trace - Phosphore green (couleur signature) */
-  --color-trace-primary: #00FF41;
+  /* Idle/Default color - Customizable via UI (defined first so others can reference it) */
+  --color-idle: #F5DEB3; /* Wheat/Beige */
+
+  /* Trace - Based on idle color */
+  --color-trace-primary: var(--color-idle);
   --color-trace-secondary: #FFFFFF;
-  --color-trace-dim: #004411;
-  --color-trace-grid: #001a0a;
-  --color-trace-glow: rgba(0, 255, 65, 0.6);
+  --color-trace-dim: color-mix(in srgb, var(--color-idle) 30%, black);
+  --color-trace-grid: #0a1a1a;
+  --color-trace-glow: color-mix(in srgb, var(--color-idle) 60%, transparent);
 
   /* Status colors */
-  --color-success: #00FF41;
-  --color-warning: #FFB800;
-  --color-error: #FF3B30;
-  --color-info: #00D4FF;
+  --color-success: var(--color-idle);
+  --color-warning: #FFE66D;
+  --color-error: #FF6464;
+  --color-info: #6B9DFF;
 
   /* Text colors */
   --color-text-primary: #FFFFFF;
-  --color-text-secondary: #00FF41;
+  --color-text-secondary: var(--color-idle);
   --color-text-tertiary: #808080;
   --color-text-disabled: #404040;
 
   /* Interactive states */
-  --color-hover: rgba(0, 255, 65, 0.1);
-  --color-active: rgba(0, 255, 65, 0.2);
-  --color-focus: #00FF41;
-  --color-focus-ring: rgba(0, 255, 65, 0.4);
+  --color-hover: color-mix(in srgb, var(--color-idle) 10%, transparent);
+  --color-active: color-mix(in srgb, var(--color-idle) 20%, transparent);
+  --color-focus: var(--color-idle);
+  --color-focus-ring: color-mix(in srgb, var(--color-idle) 40%, transparent);
 
   /* Borders */
-  --color-border-primary: #00FF41;
-  --color-border-secondary: #004411;
+  --color-border-primary: var(--color-idle);
+  --color-border-secondary: color-mix(in srgb, var(--color-idle) 30%, black);
   --color-border-subtle: #1a1a1a;
 
   /* Overlays */

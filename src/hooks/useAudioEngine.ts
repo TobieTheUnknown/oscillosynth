@@ -6,15 +6,44 @@
 import { useEffect, useCallback, useMemo } from 'react'
 import { useAudioStore } from '../store/audioStore'
 import { usePresetStore } from '../store/presetStore'
+import * as Tone from 'tone'
 
 export function useAudioEngine() {
   const audioStore = useAudioStore()
+
+  // Subscribe to preset store state changes (using selectors to avoid re-renders)
+  const currentPresetId = usePresetStore((state) => state.currentPresetId)
+  const presets = usePresetStore((state) => state.presets)
+  const userPresets = usePresetStore((state) => state.userPresets)
+
+  // Compute derived values
+  const allPresets = useMemo(() => [...presets, ...userPresets], [presets, userPresets])
+  const currentPreset = useMemo(
+    () => allPresets.find((p) => p.id === currentPresetId) ?? null,
+    [allPresets, currentPresetId]
+  )
+
   const presetStore = usePresetStore()
 
   // Initialize on mount (only once)
   useEffect(() => {
     usePresetStore.getState().initPresets()
   }, [])
+
+  // Auto-start audio engine on mount
+  useEffect(() => {
+    const autoStart = async () => {
+      if (!audioStore.isStarted) {
+        try {
+          await Tone.start()
+          audioStore.startAudio()
+        } catch (error) {
+          console.warn('Auto-start failed - user interaction required:', error)
+        }
+      }
+    }
+    autoStart()
+  }, []) // Empty deps - only run once on mount
 
   // Keyboard MIDI mapping (computer keyboard → MIDI notes)
   const keyboardMap = useMemo(() => ({
@@ -68,18 +97,19 @@ export function useAudioEngine() {
   )
 
   // Setup keyboard listeners
-  useEffect(() => {
-    if (audioStore.isStarted) {
-      window.addEventListener('keydown', handleKeyDown)
-      window.addEventListener('keyup', handleKeyUp)
+  // DISABLED: KeyboardLatchControl now handles all keyboard input with latch mode support
+  // useEffect(() => {
+  //   if (audioStore.isStarted) {
+  //     window.addEventListener('keydown', handleKeyDown)
+  //     window.addEventListener('keyup', handleKeyUp)
 
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown)
-        window.removeEventListener('keyup', handleKeyUp)
-      }
-    }
-    return undefined
-  }, [audioStore.isStarted, handleKeyDown, handleKeyUp])
+  //     return () => {
+  //       window.removeEventListener('keydown', handleKeyDown)
+  //       window.removeEventListener('keyup', handleKeyUp)
+  //     }
+  //   }
+  //   return undefined
+  // }, [audioStore.isStarted, handleKeyDown, handleKeyUp])
 
   // Note: No cleanup needed - audio engine persists across component mounts
   // This allows the synth to keep playing even if the component unmounts/remounts
@@ -89,21 +119,17 @@ export function useAudioEngine() {
     ...audioStore,
 
     // Preset state
-    currentPreset: presetStore.getCurrentPreset(),
-    allPresets: presetStore.getAllPresets(),
+    currentPreset,
+    allPresets,
 
     // Preset actions
     loadPreset: presetStore.loadPreset,
     saveUserPreset: presetStore.saveUserPreset,
     deleteUserPreset: presetStore.deleteUserPreset,
     updateCurrentPresetLFO: presetStore.updateCurrentPresetLFO,
-    updateCurrentPresetLFOPairDepth: presetStore.updateCurrentPresetLFOPairDepth,
     updateCurrentPresetOperator: presetStore.updateCurrentPresetOperator,
     updateCurrentPresetFilter: presetStore.updateCurrentPresetFilter,
     updateCurrentPresetMasterEffects: presetStore.updateCurrentPresetMasterEffects,
-    updateCurrentPresetEnvelopeFollower: presetStore.updateCurrentPresetEnvelopeFollower,
-    updateCurrentPresetStepSequencer: presetStore.updateCurrentPresetStepSequencer,
-    updateCurrentPresetPortamento: presetStore.updateCurrentPresetPortamento,
-    updateCurrentPresetStereoWidth: presetStore.updateCurrentPresetStereoWidth,
+    updateCurrentPresetSynthEngine: presetStore.updateCurrentPresetSynthEngine,
   }
 }

@@ -12,6 +12,10 @@ export class FMEngine {
   private algorithm: AlgorithmType
   private output: Tone.Gain
   private feedbackGain: Tone.Gain | null = null
+  private subOscillator: Tone.Oscillator | null = null
+  private subOscGain: Tone.Gain
+  private panner: Tone.Panner
+  private currentFrequency: number = 440
 
   constructor(
     operatorParams: [OperatorParams, OperatorParams, OperatorParams, OperatorParams],
@@ -27,8 +31,20 @@ export class FMEngine {
       new FMOperator(operatorParams[3]),
     ]
 
+    // Sub oscillator setup
+    this.subOscillator = new Tone.Oscillator(220, 'sine') // Will be updated on noteOn
+    this.subOscGain = new Tone.Gain(0) // Start at 0
+    this.subOscillator.connect(this.subOscGain)
+    this.subOscillator.start()
+
+    // Stereo panner
+    this.panner = new Tone.Panner(0)
+
     // Output gain (master)
     this.output = new Tone.Gain(0.5)
+
+    // Route: operators -> output -> panner -> final output
+    this.subOscGain.connect(this.output)
 
     // Setup routing selon algorithm
     this.setupRouting()
@@ -147,9 +163,15 @@ export class FMEngine {
    * Déclenche une note
    */
   noteOn(frequency: number, velocity = 100): void {
+    this.currentFrequency = frequency
     this.operators.forEach((op) => {
       op.trigger(frequency, velocity)
     })
+
+    // Update sub oscillator frequency (one octave below)
+    if (this.subOscillator) {
+      this.subOscillator.frequency.rampTo(frequency / 2, 0.01)
+    }
   }
 
   /**
@@ -219,10 +241,58 @@ export class FMEngine {
   }
 
   /**
+   * Set feedback amount (0-100%)
+   */
+  setFeedback(amount: number): void {
+    // Feedback connects operator 4 back to itself
+    // Scale: 0-100% -> gain 0-0.5 (to prevent runaway feedback)
+    const feedbackLevel = (amount / 100) * 0.5
+
+    if (feedbackLevel > 0 && !this.feedbackGain) {
+      // Create feedback path: OP4 -> feedbackGain -> OP4
+      this.feedbackGain = new Tone.Gain(feedbackLevel)
+      this.operators[3].output.connect(this.feedbackGain)
+      this.feedbackGain.connect(this.operators[3].modulationInput)
+    } else if (this.feedbackGain) {
+      this.feedbackGain.gain.value = feedbackLevel
+
+      // Disconnect if feedback is 0
+      if (feedbackLevel === 0) {
+        this.feedbackGain.disconnect()
+        this.feedbackGain.dispose()
+        this.feedbackGain = null
+      }
+    }
+  }
+
+  /**
+   * Set sub oscillator level (0-100%)
+   */
+  setSubOscLevel(level: number): void {
+    const gain = level / 100
+    this.subOscGain.gain.rampTo(gain, 0.01)
+  }
+
+  /**
+   * Set stereo spread (-100 to +100, 0 = center)
+   */
+  setStereoSpread(spread: number): void {
+    // Convert 0-100 to -1 to +1 pan position
+    const panPosition = (spread / 100)
+    // Safety check: ensure panPosition is a valid number
+    if (isNaN(panPosition) || !isFinite(panPosition)) {
+      console.warn('Invalid pan position:', panPosition, 'from spread:', spread)
+      return
+    }
+    this.panner.pan.rampTo(panPosition, 0.01)
+  }
+
+  /**
    * Connecte le FM engine à une destination
    */
   connect(destination: Tone.ToneAudioNode): void {
-    this.output.connect(destination as Tone.InputNode)
+    this.output.connect(this.panner as Tone.InputNode)
+    this.panner.connect(destination as Tone.InputNode)
   }
 
   /**
@@ -238,6 +308,14 @@ export class FMEngine {
   dispose(): void {
     this.operators.forEach((op) => { op.dispose(); })
     this.output.dispose()
+    this.panner.dispose()
+    this.subOscGain.dispose()
+
+    if (this.subOscillator) {
+      this.subOscillator.stop()
+      this.subOscillator.dispose()
+    }
+
     if (this.feedbackGain) {
       this.feedbackGain.dispose()
     }
