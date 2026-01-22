@@ -8,6 +8,16 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  preview: {
+    port: 5173,
+    strictPort: true,
+    host: '0.0.0.0',
+    allowedHosts: [
+      'oscillosynth.clobie.synology.me',
+      '.synology.me',
+      'localhost',
+    ],
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
