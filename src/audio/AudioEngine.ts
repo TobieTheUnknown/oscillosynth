@@ -9,6 +9,7 @@ import { VoicePool, Voice } from './VoicePool'
 import { FMEngine } from './FMEngine'
 import { LFOEngine } from './LFOEngine'
 import { AudioPipeline } from './AudioPipeline'
+import { LFOModulator } from './LFOModulator'
 import { Preset, AlgorithmType, AudioEngineState, LFODestination } from './types'
 
 interface ActiveVoice {
@@ -309,225 +310,23 @@ export class AudioEngine {
     value: number,
     fmEngine: FMEngine | null
   ): void {
-    if (!this.currentPreset) return
-
-    switch (destination) {
-      case LFODestination.PITCH:
-        // Pitch vibrato: ±100 cents (requires fmEngine)
-        if (fmEngine) {
-          fmEngine.applyPitchModulation(value * 100)
-        }
-        break
-
-      case LFODestination.AMPLITUDE:
-        // Amplitude tremolo: 0.1 to 1.9 (±90% with clamp at 0.1 to prevent silence) (requires fmEngine)
-        if (fmEngine) {
-          const ampMod = 1 + value * 0.9
-          fmEngine.applyAmplitudeModulation(Math.max(0.1, ampMod))
-        }
-        break
-
-      case LFODestination.FILTER_CUTOFF:
-        // Filter cutoff modulation (global - no fmEngine needed)
-        this.pipeline.applyFilterCutoffModulation(this.currentPreset.filter.cutoff, value)
-        break
-
-      case LFODestination.FILTER_RESONANCE:
-        // Filter resonance modulation (global - no fmEngine needed)
-        this.pipeline.applyFilterResonanceModulation(this.currentPreset.filter.resonance, value)
-        break
-
-      case LFODestination.OP1_LEVEL:
-        if (fmEngine) {
-          fmEngine.applyOperatorLevelModulation(0, this.currentPreset.operators[0].level, value)
-        }
-        break
-
-      case LFODestination.OP2_LEVEL:
-        if (fmEngine) {
-          fmEngine.applyOperatorLevelModulation(1, this.currentPreset.operators[1].level, value)
-        }
-        break
-
-      case LFODestination.OP3_LEVEL:
-        if (fmEngine) {
-          fmEngine.applyOperatorLevelModulation(2, this.currentPreset.operators[2].level, value)
-        }
-        break
-
-      case LFODestination.OP4_LEVEL:
-        if (fmEngine) {
-          fmEngine.applyOperatorLevelModulation(3, this.currentPreset.operators[3].level, value)
-        }
-        break
-
-      case LFODestination.OP1_RATIO:
-        if (fmEngine) {
-          fmEngine.applyOperatorRatioModulation(0, this.currentPreset.operators[0].ratio, value)
-        }
-        break
-
-      case LFODestination.OP2_RATIO:
-        if (fmEngine) {
-          fmEngine.applyOperatorRatioModulation(1, this.currentPreset.operators[1].ratio, value)
-        }
-        break
-
-      case LFODestination.OP3_RATIO:
-        if (fmEngine) {
-          fmEngine.applyOperatorRatioModulation(2, this.currentPreset.operators[2].ratio, value)
-        }
-        break
-
-      case LFODestination.OP4_RATIO:
-        if (fmEngine) {
-          fmEngine.applyOperatorRatioModulation(3, this.currentPreset.operators[3].ratio, value)
-        }
-        break
-
-      // Master Effects modulation
-      case LFODestination.FX_REVERB_WET:
-        {
-          const baseWet = this.currentPreset.masterEffects.reverbWet
-          const modulatedWet = baseWet + value * 0.5 // ±50%
-          this.pipeline.setReverbWet(Math.max(0, Math.min(1, modulatedWet)))
-        }
-        break
-
-      case LFODestination.FX_DELAY_WET:
-        {
-          const baseWet = this.currentPreset.masterEffects.delayWet
-          const modulatedWet = baseWet + value * 0.5 // ±50%
-          this.pipeline.setDelayWet(Math.max(0, Math.min(1, modulatedWet)))
-        }
-        break
-
-      case LFODestination.FX_DELAY_TIME:
-        {
-          const baseTime = this.currentPreset.masterEffects.delayTime
-          const modulatedTime = baseTime * (1 + value * 0.5) // ±50%
-          this.pipeline.setDelayTime(Math.max(0, Math.min(2, modulatedTime)))
-        }
-        break
-
-      case LFODestination.FX_CHORUS_WET:
-        {
-          const baseWet = this.currentPreset.masterEffects.chorusWet
-          const modulatedWet = baseWet + value * 0.5 // ±50%
-          this.pipeline.setChorusWet(Math.max(0, Math.min(1, modulatedWet)))
-        }
-        break
-
-      case LFODestination.FX_DISTORTION_WET:
-        {
-          const baseWet = this.currentPreset.masterEffects.distortionWet
-          const modulatedWet = baseWet + value * 0.5 // ±50%
-          this.pipeline.setDistortionWet(Math.max(0, Math.min(1, modulatedWet)))
-        }
-        break
-
-      // Noise generator modulation
-      case LFODestination.NOISE_LEVEL:
-        if (this.noiseGain) {
-          const modulatedLevel = this.baseNoiseLevel + value * 50 // ±50%
-          this.noiseGain.gain.value = Math.max(0, Math.min(100, modulatedLevel)) / 100
-        }
-        break
-
-      case LFODestination.NOISE_FILTER_CUTOFF:
-        if (this.noiseFilter) {
-          const modulatedCutoff = this.baseNoiseFilterCutoff * (1 + value * 0.9) // ±90%
-          this.noiseFilter.frequency.value = Math.max(20, Math.min(20000, modulatedCutoff))
-        }
-        break
-
-      case LFODestination.NOISE_FILTER_RESONANCE:
-        if (this.noiseFilter) {
-          const modulatedReso = this.baseNoiseFilterResonance + value * 10 // ±10
-          this.noiseFilter.Q.value = Math.max(0.1, Math.min(20, modulatedReso))
-        }
-        break
-
-      // Synth engine parameters modulation
-      case LFODestination.SYNTH_DETUNE:
-        {
-          const modulatedDetune = this.baseSynthDetune + value * 50 // ±50 cents
-          const clampedDetune = Math.max(0, Math.min(100, modulatedDetune))
-          // Apply to all active voices
-          this.activeVoices.forEach((activeVoice) => {
-            activeVoice.fmEngine.applyPitchModulation(clampedDetune)
-          })
-        }
-        break
-
-      case LFODestination.SYNTH_FM_INDEX:
-        {
-          const modulatedFmIndex = this.baseSynthFmIndex + value * 100 // ±100%
-          const clampedFmIndex = Math.max(0, Math.min(200, modulatedFmIndex))
-          // Apply FM depth scaling to all active voices
-          this.activeVoices.forEach((activeVoice) => {
-            // Scale operator levels by FM index (simplified implementation)
-            const scaleFactor = clampedFmIndex / 100
-            if (this.currentPreset) {
-              for (let i = 0; i < 4; i++) {
-                const baseLevel = this.currentPreset.operators[i].level
-                activeVoice.fmEngine.applyOperatorLevelModulation(i, baseLevel, (scaleFactor - 1))
-              }
-            }
-          })
-        }
-        break
-
-      case LFODestination.SYNTH_BRIGHTNESS:
-        {
-          // Brightness modulation via high shelf filter (TODO: implement in AudioPipeline)
-          // For now, modulate filter cutoff as a proxy
-          const modulatedBrightness = this.baseSynthBrightness + value * 12 // ±12 dB
-          const clampedBrightness = Math.max(-12, Math.min(12, modulatedBrightness))
-          // Convert dB to cutoff frequency adjustment (simplified)
-          const cutoffMultiplier = Math.pow(10, clampedBrightness / 20)
-          if (this.currentPreset) {
-            this.pipeline.applyFilterCutoffModulation(
-              this.currentPreset.filter.cutoff,
-              (cutoffMultiplier - 1)
-            )
-          }
-        }
-        break
-
-      case LFODestination.SYNTH_FEEDBACK:
-        {
-          const modulatedFeedback = this.baseSynthFeedback + value * 50 // ±50%
-          const clampedFeedback = Math.max(0, Math.min(100, modulatedFeedback))
-          // Apply feedback to all active voices (TODO: implement in FMEngine)
-          // For now, log the modulation
-          // console.log('Feedback modulation:', clampedFeedback)
-        }
-        break
-
-      case LFODestination.SYNTH_SUB_OSC:
-        {
-          // Sub oscillator level modulation (TODO: implement sub osc in AudioEngine)
-          const modulatedSubOsc = this.baseSynthSubOscLevel + value * 50 // ±50%
-          const clampedSubOsc = Math.max(0, Math.min(100, modulatedSubOsc))
-          // For now, log the modulation
-          // console.log('Sub osc modulation:', clampedSubOsc)
-        }
-        break
-
-      case LFODestination.SYNTH_STEREO_SPREAD:
-        {
-          const modulatedSpread = this.baseSynthStereoSpread + value * 50 // ±50%
-          const clampedSpread = Math.max(0, Math.min(100, modulatedSpread))
-          // Apply stereo spread to all active voices (TODO: implement in FMEngine)
-          // For now, log the modulation
-          // console.log('Stereo spread modulation:', clampedSpread)
-        }
-        break
-
-      default:
-        console.warn(`Unknown LFO destination: ${String(destination)}`)
-    }
+    // Delegate to LFOModulator module
+    LFOModulator.applyModulation(destination, value, fmEngine, {
+      currentPreset: this.currentPreset,
+      pipeline: this.pipeline,
+      noiseGain: this.noiseGain,
+      noiseFilter: this.noiseFilter,
+      baseNoiseLevel: this.baseNoiseLevel,
+      baseNoiseFilterCutoff: this.baseNoiseFilterCutoff,
+      baseNoiseFilterResonance: this.baseNoiseFilterResonance,
+      baseSynthDetune: this.baseSynthDetune,
+      baseSynthFmIndex: this.baseSynthFmIndex,
+      baseSynthBrightness: this.baseSynthBrightness,
+      baseSynthFeedback: this.baseSynthFeedback,
+      baseSynthSubOscLevel: this.baseSynthSubOscLevel,
+      baseSynthStereoSpread: this.baseSynthStereoSpread,
+      activeVoices: this.activeVoices as Map<number, { fmEngine: FMEngine }>,
+    })
   }
 
   /**
