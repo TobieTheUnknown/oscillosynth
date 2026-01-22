@@ -13,7 +13,7 @@ import {
   MasterEffectsParams,
   SynthEngineParams,
 } from '../audio/types'
-import { factoryPresets, defaultPreset, defaultSynthEngine } from '../audio/presets/defaultPreset'
+import { factoryPresets, defaultPreset } from '../audio/presets/defaultPreset'
 import { audioEngine } from '../audio/AudioEngine'
 
 /**
