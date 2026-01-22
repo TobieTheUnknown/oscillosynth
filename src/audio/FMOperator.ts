@@ -291,6 +291,20 @@ export class FMOperator {
   }
 
   /**
+   * Get the output node (for connecting feedback or other effects)
+   */
+  get output(): Tone.Gain {
+    return this.gain
+  }
+
+  /**
+   * Get the frequency AudioParam (for connecting feedback modulation)
+   */
+  get frequency(): AudioParam {
+    return this.oscillator.frequency
+  }
+
+  /**
    * Dispose (cleanup)
    */
   dispose(): void {

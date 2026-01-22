@@ -245,14 +245,14 @@ export class FMEngine {
    */
   setFeedback(amount: number): void {
     // Feedback connects operator 4 back to itself
-    // Scale: 0-100% -> gain 0-0.5 (to prevent runaway feedback)
-    const feedbackLevel = (amount / 100) * 0.5
+    // Scale: 0-100% -> gain 0-2000 Hz modulation depth
+    const feedbackLevel = (amount / 100) * 2000
 
     if (feedbackLevel > 0 && !this.feedbackGain) {
-      // Create feedback path: OP4 -> feedbackGain -> OP4
+      // Create feedback path: OP4.output -> feedbackGain -> OP4.frequency
       this.feedbackGain = new Tone.Gain(feedbackLevel)
       this.operators[3].output.connect(this.feedbackGain)
-      this.feedbackGain.connect(this.operators[3].modulationInput)
+      this.feedbackGain.connect(this.operators[3].frequency)
     } else if (this.feedbackGain) {
       this.feedbackGain.gain.value = feedbackLevel
 
