@@ -959,13 +959,110 @@ export class AudioEngine {
   }
 
   /**
+   * Reset a parameter to its base value (removes LFO modulation)
+   */
+  private resetParameterToBase(destination: LFODestination): void {
+    switch (destination) {
+      case LFODestination.FILTER_CUTOFF:
+        if (this.currentPreset) {
+          this.pipeline.setFilterCutoff(this.currentPreset.filter.cutoff)
+        }
+        break
+      case LFODestination.FILTER_RESONANCE:
+        if (this.currentPreset) {
+          this.pipeline.setFilterResonance(this.currentPreset.filter.resonance)
+        }
+        break
+      case LFODestination.NOISE_LEVEL:
+        if (this.noiseGain) {
+          this.noiseGain.gain.value = this.baseNoiseLevel / 100
+        }
+        break
+      case LFODestination.NOISE_FILTER_CUTOFF:
+        if (this.noiseFilter) {
+          this.noiseFilter.frequency.value = this.baseNoiseFilterCutoff
+        }
+        break
+      case LFODestination.NOISE_FILTER_RESONANCE:
+        if (this.noiseFilter) {
+          this.noiseFilter.Q.value = this.baseNoiseFilterResonance
+        }
+        break
+      case LFODestination.FX_REVERB_WET:
+        if (this.currentPreset) {
+          this.pipeline.setReverbWet(this.currentPreset.masterEffects.reverbWet)
+        }
+        break
+      case LFODestination.FX_DELAY_WET:
+        if (this.currentPreset) {
+          this.pipeline.setDelayWet(this.currentPreset.masterEffects.delayWet)
+        }
+        break
+      case LFODestination.FX_DELAY_TIME:
+        if (this.currentPreset) {
+          this.pipeline.setDelayTime(this.currentPreset.masterEffects.delayTime)
+        }
+        break
+      case LFODestination.FX_CHORUS_WET:
+        if (this.currentPreset) {
+          this.pipeline.setChorusWet(this.currentPreset.masterEffects.chorusWet)
+        }
+        break
+      case LFODestination.FX_DISTORTION_WET:
+        if (this.currentPreset) {
+          this.pipeline.setDistortionWet(this.currentPreset.masterEffects.distortionWet)
+        }
+        break
+      // Per-voice destinations and LFO rates don't need reset (handled by voice lifecycle)
+      default:
+        // No reset needed for per-voice destinations or LFO rates
+        break
+    }
+  }
+
+  /**
    * Update LFO parameters live (without stopping notes)
    */
   updateLFOParams(index: 0 | 1 | 2 | 3, params: Partial<import('./types').LFOParams>): void {
     if (!this.currentPreset) return
 
+    // If destination is changing, reset the old destination to base value
+    // BUT only if no other LFO is still modulating it
+    if (params.destination !== undefined) {
+      const oldDestination = this.currentPreset.lfos[index].destination
+      if (oldDestination !== params.destination) {
+        // Check if any other LFO is still modulating the old destination
+        const otherLFOsOnSameDestination = this.currentPreset.lfos.filter(
+          (lfo, i) => i !== index && lfo.destination === oldDestination && lfo.depth > 0
+        )
+
+        // Only reset if no other LFO is modulating this destination
+        if (otherLFOsOnSameDestination.length === 0) {
+          this.resetParameterToBase(oldDestination)
+          console.log(`🔄 Reset ${String(oldDestination)} to base value (LFO ${index} destination changed, no other LFOs on this destination)`)
+        } else {
+          console.log(`⚠️ Not resetting ${String(oldDestination)} - ${otherLFOsOnSameDestination.length} other LFO(s) still modulating it`)
+        }
+      }
+    }
+
     // Update current preset
     this.currentPreset.lfos[index] = { ...this.currentPreset.lfos[index]!, ...params }
+
+    // If depth is set to 0, check if we should reset the parameter
+    if (params.depth === 0) {
+      const currentDestination = this.currentPreset.lfos[index].destination
+      // Check if any other LFO is still modulating this destination
+      const otherLFOsOnSameDestination = this.currentPreset.lfos.filter(
+        (lfo, i) => i !== index && lfo.destination === currentDestination && lfo.depth > 0
+      )
+
+      // Only reset if no other LFO is modulating this destination
+      if (otherLFOsOnSameDestination.length === 0) {
+        this.resetParameterToBase(currentDestination)
+        console.log(`🔄 Reset ${String(currentDestination)} to base value (LFO ${index} depth set to 0, no other LFOs on this destination)`)
+      }
+    }
 
     // Update global LFO engine (without recreating - preserves phase)
     if (this.globalLFOEngine) {
@@ -977,7 +1074,7 @@ export class AudioEngine {
       activeVoice.lfoEngine.updateLFO(index, params)
     })
 
-    console.log(`✅ LFO ${index} updated live: rate=${params.rate ?? 'unchanged'}, depth=${params.depth ?? 'unchanged'}`)
+    console.log(`✅ LFO ${index} updated live: rate=${params.rate ?? 'unchanged'}, depth=${params.depth ?? 'unchanged'}, destination=${params.destination ? String(params.destination) : 'unchanged'}`)
   }
 
   /**
