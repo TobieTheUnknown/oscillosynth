@@ -291,17 +291,11 @@ export class FMOperator {
   }
 
   /**
-   * Get the output node (for connecting feedback or other effects)
-   */
-  get output(): Tone.Gain {
-    return this.gain
-  }
-
-  /**
    * Get the frequency AudioParam (for connecting feedback modulation)
+   * Alias for frequencyParam for convenience
    */
   get frequency(): AudioParam {
-    return this.oscillator.frequency
+    return this.frequencyParam
   }
 
   /**

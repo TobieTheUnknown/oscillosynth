@@ -30,6 +30,7 @@ export class AudioEngine {
   private currentPreset: Preset | null = null
   private isMuted = false
   private globalLFOEngine: LFOEngine | null = null // For visualization
+  private globalLFOInterval: ReturnType<typeof setInterval> | null = null // Global LFO modulation loop
   private envelopeFollowerInterval: ReturnType<typeof setInterval> | null = null // Envelope follower polling
   private stepSequencerInterval: ReturnType<typeof setInterval> | null = null // Step sequencer polling
   private stepSequencerCurrentStep = 0 // Current step index
@@ -154,7 +155,7 @@ export class AudioEngine {
       // Stereo spread: vary per voice for width
       try {
         const stereoSpread = this.currentPreset.synthEngine.stereoSpread ?? 0
-        const voiceSpread = ((voice.voiceId % 8) - 3.5) / 3.5 * stereoSpread
+        const voiceSpread = ((voice.id % 8) - 3.5) / 3.5 * stereoSpread
         fmEngine.setStereoSpread(voiceSpread)
       } catch (error) {
         console.error('Error setting stereo spread:', error)
@@ -182,6 +183,8 @@ export class AudioEngine {
 
     // Setup LFO + Envelope modulation with dynamic routing
     // Poll LFO and envelope values every 10ms and route to appropriate destinations
+    // NOTE: Only per-voice destinations are modulated here (pitch, amplitude, operators)
+    // Global destinations (noise, filter, effects) are handled by startGlobalLFOModulation()
     const lfoInterval = setInterval(() => {
       if (!this.currentPreset) return
 
@@ -189,26 +192,30 @@ export class AudioEngine {
       for (let lfoIndex = 0; lfoIndex < 4; lfoIndex++) {
         const lfoIdx = lfoIndex as 0 | 1 | 2 | 3
         const destination = lfoEngine.getLFODestination(lfoIdx)
-        let lfoValue = 0
 
-        // Get LFO value
-        switch (lfoIdx) {
-          case 0:
-            lfoValue = lfoEngine.getLFO1Value()
-            break
-          case 1:
-            lfoValue = lfoEngine.getLFO2Value()
-            break
-          case 2:
-            lfoValue = lfoEngine.getLFO3Value()
-            break
-          case 3:
-            lfoValue = lfoEngine.getLFO4Value()
-            break
+        // Only apply per-voice destinations here (global handled by startGlobalLFOModulation)
+        if (LFOModulator.isPerVoiceDestination(destination)) {
+          let lfoValue = 0
+
+          // Get LFO value
+          switch (lfoIdx) {
+            case 0:
+              lfoValue = lfoEngine.getLFO1Value()
+              break
+            case 1:
+              lfoValue = lfoEngine.getLFO2Value()
+              break
+            case 2:
+              lfoValue = lfoEngine.getLFO3Value()
+              break
+            case 3:
+              lfoValue = lfoEngine.getLFO4Value()
+              break
+          }
+
+          // Route to destination with LFO value (per-voice modulation)
+          this.applyLFOModulation(destination, lfoValue, fmEngine)
         }
-
-        // Route to destination with LFO value
-        this.applyLFOModulation(destination, lfoValue, fmEngine)
       }
 
       // Process envelope modulation
@@ -223,7 +230,9 @@ export class AudioEngine {
 
         // Apply envelope modulation to all destinations
         this.envelopeDestinations.forEach(destination => {
-          this.applyLFOModulation(destination, modulationValue, fmEngine)
+          // Per-voice: use fmEngine, Global: use null
+          const engine = LFOModulator.isPerVoiceDestination(destination) ? fmEngine : null
+          this.applyLFOModulation(destination, modulationValue, engine)
         })
       }
     }, 10)
@@ -326,7 +335,70 @@ export class AudioEngine {
       baseSynthSubOscLevel: this.baseSynthSubOscLevel,
       baseSynthStereoSpread: this.baseSynthStereoSpread,
       activeVoices: this.activeVoices as Map<number, { fmEngine: FMEngine }>,
+      globalLFOEngine: this.globalLFOEngine ? this.globalLFOEngine : undefined,
     })
+  }
+
+  /**
+   * Start global LFO modulation loop
+   * Modulates global parameters (noise, filter, effects) continuously
+   * Independent of active voices
+   */
+  private startGlobalLFOModulation(): void {
+    // Stop existing global LFO interval if any
+    this.stopGlobalLFOModulation()
+
+    if (!this.globalLFOEngine || !this.currentPreset) {
+      return
+    }
+
+    // Poll LFO values every 10ms and apply to global parameters
+    this.globalLFOInterval = setInterval(() => {
+      if (!this.currentPreset || !this.globalLFOEngine) return
+
+      // Process each of the 4 individual LFOs
+      for (let lfoIndex = 0; lfoIndex < 4; lfoIndex++) {
+        const lfoIdx = lfoIndex as 0 | 1 | 2 | 3
+        const destination = this.globalLFOEngine.getLFODestination(lfoIdx)
+
+        // Only apply global destinations here (per-voice handled in voice loop)
+        if (!LFOModulator.isPerVoiceDestination(destination)) {
+          let lfoValue = 0
+
+          // Get LFO value
+          switch (lfoIdx) {
+            case 0:
+              lfoValue = this.globalLFOEngine.getLFO1Value()
+              break
+            case 1:
+              lfoValue = this.globalLFOEngine.getLFO2Value()
+              break
+            case 2:
+              lfoValue = this.globalLFOEngine.getLFO3Value()
+              break
+            case 3:
+              lfoValue = this.globalLFOEngine.getLFO4Value()
+              break
+          }
+
+          // Apply modulation to global parameter (no fmEngine for global modulation)
+          this.applyLFOModulation(destination, lfoValue, null)
+        }
+      }
+    }, 10)
+
+    console.log('✅ Global LFO modulation loop started')
+  }
+
+  /**
+   * Stop global LFO modulation loop
+   */
+  private stopGlobalLFOModulation(): void {
+    if (this.globalLFOInterval) {
+      clearInterval(this.globalLFOInterval)
+      this.globalLFOInterval = null
+      console.log('🛑 Global LFO modulation loop stopped')
+    }
   }
 
   /**
@@ -412,6 +484,9 @@ export class AudioEngine {
       this.globalLFOEngine.dispose()
     }
     this.globalLFOEngine = new LFOEngine(preset.lfos)
+
+    // Start global LFO modulation loop (for noise, filter, effects)
+    this.startGlobalLFOModulation()
 
     // Setup envelope follower
     // this.setupEnvelopeFollower(preset.envelopeFollower) // REMOVED: envelopeFollower not in UI
@@ -1063,6 +1138,7 @@ export class AudioEngine {
    */
   dispose(): void {
     this.stopAll()
+    this.stopGlobalLFOModulation()
     if (this.envelopeFollowerInterval) {
       clearInterval(this.envelopeFollowerInterval)
     }

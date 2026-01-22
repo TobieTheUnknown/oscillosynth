@@ -60,6 +60,11 @@ export enum LFODestination {
   SYNTH_FEEDBACK = 'synth_feedback',
   SYNTH_SUB_OSC = 'synth_sub_osc',
   SYNTH_STEREO_SPREAD = 'synth_stereo_spread',
+  // LFO-to-LFO modulation (modulate LFO rate)
+  LFO1_RATE = 'lfo1_rate',
+  LFO2_RATE = 'lfo2_rate',
+  LFO3_RATE = 'lfo3_rate',
+  LFO4_RATE = 'lfo4_rate',
 }
 
 /**

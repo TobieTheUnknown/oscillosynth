@@ -24,9 +24,61 @@ interface ModulationContext {
   baseSynthSubOscLevel: number
   baseSynthStereoSpread: number
   activeVoices: Map<number, { fmEngine: FMEngine }>
+  globalLFOEngine?: {
+    getLFO: (index: 0 | 1 | 2 | 3) => { params: { rate: number }, updateParams: (params: any) => void }
+  } | undefined
 }
 
 export class LFOModulator {
+  /**
+   * Check if a destination is per-voice (true) or global (false)
+   * Per-voice destinations: pitch, amplitude, operator parameters
+   * Global destinations: filter, effects, noise, synth engine params
+   */
+  static isPerVoiceDestination(destination: LFODestination): boolean {
+    switch (destination) {
+      // Per-voice modulation (requires fmEngine)
+      case LFODestination.PITCH:
+      case LFODestination.AMPLITUDE:
+      case LFODestination.OP1_LEVEL:
+      case LFODestination.OP2_LEVEL:
+      case LFODestination.OP3_LEVEL:
+      case LFODestination.OP4_LEVEL:
+      case LFODestination.OP1_RATIO:
+      case LFODestination.OP2_RATIO:
+      case LFODestination.OP3_RATIO:
+      case LFODestination.OP4_RATIO:
+        return true
+
+      // Global modulation (affects all voices or global parameters)
+      case LFODestination.FILTER_CUTOFF:
+      case LFODestination.FILTER_RESONANCE:
+      case LFODestination.FX_REVERB_WET:
+      case LFODestination.FX_DELAY_WET:
+      case LFODestination.FX_DELAY_TIME:
+      case LFODestination.FX_CHORUS_WET:
+      case LFODestination.FX_DISTORTION_WET:
+      case LFODestination.NOISE_LEVEL:
+      case LFODestination.NOISE_FILTER_CUTOFF:
+      case LFODestination.NOISE_FILTER_RESONANCE:
+      case LFODestination.SYNTH_DETUNE:
+      case LFODestination.SYNTH_FM_INDEX:
+      case LFODestination.SYNTH_BRIGHTNESS:
+      case LFODestination.SYNTH_FEEDBACK:
+      case LFODestination.SYNTH_SUB_OSC:
+      case LFODestination.SYNTH_STEREO_SPREAD:
+      case LFODestination.LFO1_RATE:
+      case LFODestination.LFO2_RATE:
+      case LFODestination.LFO3_RATE:
+      case LFODestination.LFO4_RATE:
+        return false
+
+      default:
+        console.warn(`Unknown LFO destination: ${String(destination)}, assuming global`)
+        return false
+    }
+  }
+
   /**
    * Apply LFO modulation to the appropriate destination
    *
@@ -146,6 +198,22 @@ export class LFOModulator {
 
       case LFODestination.SYNTH_STEREO_SPREAD:
         this.modulateSynthStereoSpread(value, context)
+        break
+
+      case LFODestination.LFO1_RATE:
+        this.modulateLFORate(0, value, context)
+        break
+
+      case LFODestination.LFO2_RATE:
+        this.modulateLFORate(1, value, context)
+        break
+
+      case LFODestination.LFO3_RATE:
+        this.modulateLFORate(2, value, context)
+        break
+
+      case LFODestination.LFO4_RATE:
+        this.modulateLFORate(3, value, context)
         break
 
       default:
@@ -392,5 +460,30 @@ export class LFOModulator {
   private static modulateSynthStereoSpread(_value: number, _context: ModulationContext): void {
     // TODO: Implement stereo spread modulation in FMEngine
     // For now, this is a placeholder
+  }
+
+  /**
+   * Modulate LFO rate: ±5 Hz (relative to base rate)
+   * Allows one LFO to modulate another LFO's rate
+   */
+  private static modulateLFORate(
+    lfoIndex: 0 | 1 | 2 | 3,
+    value: number,
+    context: ModulationContext
+  ): void {
+    if (!context.globalLFOEngine || !context.currentPreset) return
+
+    const lfo = context.globalLFOEngine.getLFO(lfoIndex)
+    const baseRate = context.currentPreset.lfos[lfoIndex].rate
+
+    // Modulate rate by ±5 Hz (or ±100% of base rate if base < 5Hz)
+    const modulationRange = Math.min(5, baseRate)
+    const modulatedRate = baseRate + value * modulationRange
+
+    // Clamp to valid LFO rate range (0.01 - 40 Hz)
+    const clampedRate = Math.max(0.01, Math.min(40, modulatedRate))
+
+    // Apply modulation
+    lfo.updateParams({ rate: clampedRate })
   }
 }
